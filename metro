@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Apoya Mi Proyecto</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      padding: 1rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .payment-options {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-top: 2rem;
+    }
+    .payment-option {
+      text-align: center;
+    }
+    .support-message {
+      text-align: center;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>¡Apoya Mi Proyecto!</h1>
+  </header>
+  <div class="container">
+    <h2>Hola, soy [Tu Nombre]</h2>
+    <p>Estoy emocionado/a de presentarte mi proyecto [Nombre del Proyecto].</p>
+    <h3>Opciones de Pagos:</h3>
+    <div class="payment-options">
+      <div class="payment-option">
+        <h4>Pago en Línea</h4>
+        <img src="tarjeta.png" alt="Tarjeta de Crédito">
+        <p>Aceptamos tarjetas de crédito y débito.</p>
+      </div>
+      <div class="payment-option">
+        <h4>PayPal</h4>
+        <img src="paypal.png" alt="PayPal">
+        <p>Puedes realizar tu contribución a través de PayPal.</p>
+      </div>
+      <div class="payment-option">
+        <h4>Transferencia Bancaria</h4>
+        <img src="banco.png" alt="Transferencia Bancaria">
+        <p>Para opciones de transferencia bancaria, contáctanos.</p>
+      </div>
+    </div>
+    <div class="support-message">
+      <h3>¡Apóyanos!</h3>
+      <p>Tu apoyo es fundamental para que este proyecto crezca y se haga realidad. Juntos podemos lograrlo.</p>
+      <p>¡Gracias por ser parte de este emocionante viaje!</p>
+    </div>
+  </div>
+</body>
+</html>
