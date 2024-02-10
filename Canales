@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title></title>
+</head>
+<body>
+     <img style="border-radius: 30px 30px 0 0;" src="https://dabuttonfactory.com/button.jpg?t=Redes+Sociales&f=Open+Sans-Bold&ts=26&tc=fff&hp=50&vp=27&c=0&bgt=unicolored&bgc=1593d6">
+ 
+ <hr>
+ 
+ <TABLE align="center" CELLPADDING=20 CELLSPACING=0>
+  <tr>
+   <td>
+   <a href=" https://m.facebook.com/home.php  " >
+   <img style="border-radius: 40px;" src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcTH0ndKkUXu5xyo3Bc2KjTlDkfEXYaebU9lnQ&usqp=CAU " width="200" height="200">
+   </a>
+   <td>
+   <a href=" https://www.instagram.com/  " >
+   <img style="border-radius: 40px;" src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQ9pzWIDdkOShiBjKIOEFHe4nqpY4rNcwedFg&usqp=CAU  " width="200" height="200">
+   </a>
+   <td>
+   <a href=" https://www.twitter.com/home?lang=es  " >
+   <img style="border-radius: 40px;" src=" https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcRV1M6EKxobP8ix1HTX_3rlT1KNsfKitcBK3Q&usqp=CAU " width="200" height="200">
+   </a>
+   <td>
+   <a href=" https://www.tiktok.com/trending/?lang=es  " >
+   <img style="border-radius: 40px;" src="  https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQOgWMoZRio30IBrnRK1_4RkFaZPga8KYGtwg&usqp=CAU" width="200" height="200">
+   </a>
+   </tr>
+</table>
+
+<font align="center"><h1>© Anova Media Center</h1></font>
+<p>Versión de desarrollo: v_2.1     &nbsp    (Nov/2020)
+ 
+</body>
+</html>
