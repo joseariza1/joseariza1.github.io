@@ -15,6 +15,7 @@
             --card: #ffffff; 
             --cash: #1e3a8a; /* Azul Oscuro para Efectivo */
             --bank: #facc15; /* Amarillo para Banco */
+            --transfer: #8b5cf6; /* Morado para Transferencia */
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; color: #333; }
         
@@ -54,7 +55,7 @@
         nav button.active { color: var(--primary); }
         nav button span { font-size: 1.4rem; margin-bottom: 3px; }
 
-        /* Tarjetas de Deuda */
+        /* Etiquetas */
         .debt-card { border-left: 5px solid var(--danger); }
         .tag { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-left: 8px; }
         .tag-cash { background: var(--cash); color: white; }
@@ -96,20 +97,39 @@
         <div class="card">
             <h3>📈 Registrar Movimiento</h3>
 
-            <select id="movement-type" onchange="toggleDebtFields()">
+            <select id="movement-type" onchange="toggleFormFields()">
                 <option value="income">Ganancia (Ingreso)</option>
                 <option value="expense">Gasto (Egreso)</option>
+                <option value="transfer">Transferencia Interna</option>
                 <option value="register-debt">Registrar Nueva Deuda/Préstamo</option>
             </select>
+            
+            <div id="standard-fields">
+                <input type="number" id="mov-amount" placeholder="Monto ($)" min="0">
+                
+                <div id="account-selector">
+                    <select id="mov-account">
+                        <option value="cash">Efectivo</option>
+                        <option value="bank">Cuenta Bancaria</option>
+                    </select>
+                </div>
+                
+                <div id="transfer-selectors" style="display:none;">
+                    <label style="font-size:0.9rem; display:block; margin-bottom:5px;">De:</label>
+                    <select id="transfer-from">
+                        <option value="cash">Efectivo</option>
+                        <option value="bank">Cuenta Bancaria</option>
+                    </select>
 
-            <input type="number" id="mov-amount" placeholder="Monto ($)" min="0">
-            
-            <select id="mov-account">
-                <option value="cash">Efectivo</option>
-                <option value="bank">Cuenta Bancaria</option>
-            </select>
-            
-            <input type="text" id="mov-description" placeholder="Descripción (ej. Venta, Alquiler, Comida)">
+                    <label style="font-size:0.9rem; display:block; margin-bottom:5px;">A:</label>
+                    <select id="transfer-to">
+                        <option value="bank">Cuenta Bancaria</option>
+                        <option value="cash">Efectivo</option>
+                    </select>
+                </div>
+
+                <input type="text" id="mov-description" placeholder="Descripción (ej. Venta, Alquiler, Depósito)">
+            </div>
             
             <div id="debt-fields" style="display:none; border-top:1px dashed #ddd; margin-top:10px; padding-top:10px;">
                 <h4 style="margin-top:0;">Detalles de Deuda/Préstamo</h4>
@@ -126,7 +146,7 @@
                 <button onclick="addDebt()" class="btn btn-primary">✅ Registrar Deuda</button>
             </div>
 
-            <button onclick="addMovement()" class="btn btn-primary" id="mov-btn">💾 Registrar Ganancia</button>
+            <button onclick="handleMovement()" class="btn btn-primary" id="mov-btn">💾 Registrar Movimiento</button>
 
             <h4 style="margin-top:20px;">Historial de Movimientos (Últimos 5)</h4>
             <div id="history-list">
@@ -202,19 +222,45 @@
             }
 
             recentMovements.forEach(mov => {
-                const color = mov.type === 'income' ? 'var(--success)' : (mov.type === 'debt-payment' ? 'var(--warning)' : 'var(--danger)');
-                const sign = mov.type === 'income' ? '+' : (mov.type === 'debt-payment' ? (mov.isDebtPaymentOut ? '-' : '+') : '-');
+                let color = 'var(--danger)'; // Default Gasto
+                let sign = '-';
+                let movType = 'Gasto';
+                let description = mov.description;
+
+                if (mov.type === 'income') {
+                    color = 'var(--success)';
+                    sign = '+';
+                    movType = 'Ingreso';
+                } else if (mov.type === 'debt-payment') {
+                    color = 'var(--warning)';
+                    movType = 'Pago/Cobro Deuda';
+                    sign = mov.isDebtPaymentOut ? '-' : '+';
+                } else if (mov.type === 'transfer') {
+                    color = 'var(--transfer)';
+                    movType = 'Transferencia';
+                    // Para transferencias, mostramos las dos partes de la transacción en el historial:
+                    const fromAccount = mov.fromAccount === 'cash' ? 'Efectivo' : 'Banco';
+                    const toAccount = mov.toAccount === 'cash' ? 'Efectivo' : 'Banco';
+                    description = `De ${fromAccount} a ${toAccount}`;
+                    // Mostramos solo la transferencia de salida
+                    if (mov.fromAccount === 'cash' && mov.toAccount === 'bank') {
+                        // Salida de efectivo
+                         mov.account = mov.fromAccount;
+                    } else if (mov.fromAccount === 'bank' && mov.toAccount === 'cash') {
+                        // Salida de banco
+                        mov.account = mov.fromAccount;
+                    } else {
+                        // Si no es un movimiento de efectivo a banco o viceversa, lo ignoramos o manejamos el caso
+                        return; 
+                    }
+                }
+
                 const accountTag = `<span class="tag ${mov.account === 'cash' ? 'tag-cash' : 'tag-bank'}">${mov.account === 'cash' ? 'Efectivo' : 'Banco'}</span>`;
-                
-                let movType = '';
-                if(mov.type === 'income') movType = 'Ingreso';
-                if(mov.type === 'expense') movType = 'Gasto';
-                if(mov.type === 'debt-payment') movType = 'Pago/Cobro Deuda';
 
                 list.innerHTML += `
                     <div class="card flex-row" style="border-left: 5px solid ${color}; padding:10px;">
                         <div style="flex:1;">
-                            <p style="margin:0; font-weight:bold;">${mov.description} ${accountTag}</p>
+                            <p style="margin:0; font-weight:bold;">${description} ${mov.type !== 'transfer' ? accountTag : ''}</p>
                             <p style="margin:0; font-size:0.8rem; color:#666;">${movType} - ${new Date(mov.date).toLocaleDateString()}</p>
                         </div>
                         <span style="font-weight:bold; color:${color};">${sign}$${mov.amount.toFixed(2)}</span>
@@ -230,7 +276,7 @@
             homeList.innerHTML = '';
             managementList.innerHTML = '';
 
-            const activeDebts = debts.filter(d => d.pendingAmount > 0.01); // Filtrar deudas con saldo > 0.01
+            const activeDebts = debts.filter(d => d.pendingAmount > 0.01);
 
             if (activeDebts.length === 0) {
                 homeList.innerHTML = '<p style="text-align:center; color:#666;">No hay deudas activas registradas.</p>';
@@ -273,38 +319,53 @@
             });
         }
 
-        // --- LÓGICA DE MOVIMIENTOS ---
+        // --- LÓGICA DE MOVIMIENTOS Y FORMULARIO ---
         
-        function toggleDebtFields() {
+        function toggleFormFields() {
             const type = document.getElementById('movement-type').value;
             const debtFields = document.getElementById('debt-fields');
+            const standardFields = document.getElementById('standard-fields');
             const movBtn = document.getElementById('mov-btn');
-            const movInputs = [
-                document.getElementById('mov-amount'),
-                document.getElementById('mov-account'),
-                document.getElementById('mov-description')
-            ];
+            const accountSelector = document.getElementById('account-selector');
+            const transferSelectors = document.getElementById('transfer-selectors');
+            const movAmount = document.getElementById('mov-amount');
+            const movDescription = document.getElementById('mov-description');
             
+            // Ocultar todo por defecto
+            debtFields.style.display = 'none';
+            standardFields.style.display = 'block';
+            movBtn.style.display = 'block';
+            accountSelector.style.display = 'block';
+            transferSelectors.style.display = 'none';
+            movAmount.disabled = false;
+            movDescription.disabled = false;
+
+
             if (type === 'register-debt') {
                 debtFields.style.display = 'block';
+                standardFields.style.display = 'none';
                 movBtn.style.display = 'none';
-                movInputs.forEach(input => {
-                    input.style.display = 'none';
-                    input.disabled = true;
-                });
-            } else {
-                debtFields.style.display = 'none';
-                movBtn.style.display = 'block';
-                movInputs.forEach(input => {
-                    input.style.display = 'block';
-                    input.disabled = false;
-                });
-
+            } else if (type === 'transfer') {
+                accountSelector.style.display = 'none';
+                transferSelectors.style.display = 'block';
+                movBtn.innerText = '💾 Registrar Transferencia';
+            } else { // income o expense
                 movBtn.innerText = type === 'income' ? '💾 Registrar Ganancia' : '💾 Registrar Gasto';
             }
         }
-
-        function addMovement() {
+        
+        // Manejador principal del botón "Registrar Movimiento"
+        function handleMovement() {
+            const type = document.getElementById('movement-type').value;
+            
+            if (type === 'income' || type === 'expense') {
+                addIncomeExpense();
+            } else if (type === 'transfer') {
+                addTransfer();
+            }
+        }
+        
+        function addIncomeExpense() {
             const type = document.getElementById('movement-type').value;
             const amount = parseFloat(document.getElementById('mov-amount').value);
             const account = document.getElementById('mov-account').value;
@@ -345,6 +406,49 @@
             document.getElementById('mov-description').value = '';
         }
 
+        function addTransfer() {
+            const amount = parseFloat(document.getElementById('mov-amount').value);
+            const fromAccount = document.getElementById('transfer-from').value;
+            const toAccount = document.getElementById('transfer-to').value;
+            const description = document.getElementById('mov-description').value || 'Transferencia Interna';
+
+            if (isNaN(amount) || amount <= 0) {
+                alert('Ingresa un monto válido.');
+                return;
+            }
+
+            if (fromAccount === toAccount) {
+                alert('Las cuentas de origen y destino deben ser diferentes.');
+                return;
+            }
+
+            // 1. Verificar saldo de origen
+            if (balances[fromAccount] < amount) {
+                alert(`¡Saldo insuficiente en ${fromAccount === 'cash' ? 'Efectivo' : 'Banco'}! Saldo actual: $${balances[fromAccount].toFixed(2)}`);
+                return;
+            }
+
+            // 2. Ejecutar transferencia
+            balances[fromAccount] -= amount;
+            balances[toAccount] += amount;
+
+            // 3. Registrar movimiento (solo una entrada para la transferencia)
+            movements.push({
+                date: new Date().toISOString(),
+                type: 'transfer',
+                amount: amount,
+                fromAccount: fromAccount,
+                toAccount: toAccount,
+                account: fromAccount, // Usamos fromAccount para mostrar la salida en el historial
+                description: description
+            });
+
+            saveLocal();
+            // Limpiar campos
+            document.getElementById('mov-amount').value = '';
+            document.getElementById('mov-description').value = '';
+        }
+
         // --- LÓGICA DE DEUDAS/PRÉSTAMOS ---
         
         function addDebt() {
@@ -372,7 +476,7 @@
             document.getElementById('debt-name').value = '';
             document.getElementById('debt-original-amount').value = '';
             document.getElementById('movement-type').value = 'income'; // Resetear selector
-            toggleDebtFields(); 
+            toggleFormFields(); 
 
             switchTab('debts');
             alert('Deuda/Préstamo registrado.');
@@ -390,7 +494,7 @@
             // 1. Solicitar el monto
             const paymentAmountInput = prompt(`Monto a ${action} de "${debt.name}" (Pendiente: $${debt.pendingAmount.toFixed(2)}):`);
             
-            if (paymentAmountInput === null) return; // Cancelado
+            if (paymentAmountInput === null) return;
             
             const paymentAmount = parseFloat(paymentAmountInput);
 
@@ -408,14 +512,14 @@
             let account = '';
             while (account !== 'cash' && account !== 'bank') {
                 const accountInput = prompt(`¿${action} con (escribe 'cash' para Efectivo o 'bank' para Banco)?`).toLowerCase();
-                if (accountInput === null) return; // Cancelado
+                if (accountInput === null) return;
                 account = accountInput;
             }
             
             // 3. Lógica de saldo:
-            let isDebtPaymentOut = false; // Bandera para el historial
+            let isDebtPaymentOut = false; 
             if (isDebt) {
-                // Es DEUDA (debt-due): Es un GASTO (sale dinero)
+                // Es DEUDA: Gasto de tu cuenta
                 if (balances[account] < paymentAmount) {
                     alert(`¡Saldo insuficiente en ${account === 'cash' ? 'Efectivo' : 'Banco'} para el pago!`);
                     return;
@@ -423,15 +527,15 @@
                 balances[account] -= paymentAmount;
                 isDebtPaymentOut = true;
             } else { 
-                // Es PRÉSTAMO (loan-active): Es un INGRESO (entra dinero)
+                // Es PRÉSTAMO: Ingreso a tu cuenta
                 balances[account] += paymentAmount;
                 isDebtPaymentOut = false;
             }
             
-            // 4. Actualizar deuda (se reduce el saldo pendiente)
+            // 4. Actualizar deuda
             debts[debtIndex].pendingAmount -= paymentAmount;
             if (debts[debtIndex].pendingAmount < 0.01) {
-                 debts[debtIndex].pendingAmount = 0; // Evitar errores de coma flotante
+                 debts[debtIndex].pendingAmount = 0; 
             }
 
             // 5. Registrar movimiento especial
@@ -462,7 +566,7 @@
         }
 
         // Iniciar
-        toggleDebtFields(); // Inicializa el formulario de registro
+        toggleFormFields(); 
         render();
     </script>
 </body>
