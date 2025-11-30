@@ -65,30 +65,8 @@
         .btn-income { background: var(--success); color: white; }
         .btn-expense { background: var(--danger); color: white; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: var(--adjust-add); color: white; } 
-
-        /* Controles de Deuda */
-        .debt-control-group { 
-            display: flex; 
-            align-items: center; 
-            gap: 5px;
-            margin-top: 8px;
-        }
-        .debt-control-group input[type="number"] {
-            flex-grow: 1;
-            padding: 8px;
-            margin-bottom: 0;
-            text-align: right;
-            font-size: 0.9rem;
-        }
-        .debt-control-group button {
-            width: 50px;
-            padding: 8px;
-            margin-top: 0;
-            font-size: 0.9rem;
-        }
         
-        /* Modal de Pago de Deuda */
+        /* Modal General */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -113,12 +91,13 @@
             max-width: 400px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
-        #payment-buttons .btn {
+        #payment-buttons .btn, #adjust-buttons .btn {
             width: 48%;
             margin-left: 2%;
             margin-right: 2%;
+            padding: 10px;
         }
-
+        
         /* Navegación */
         nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
         nav button { background: none; color: #999; border: none; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; padding: 5px; cursor: pointer; }
@@ -231,7 +210,7 @@
 
     <div id="tab-debts" class="container">
         <h3>🏦 Gestión de Préstamos y Deudas</h3>
-        <p style="font-size:0.9rem; color:#666;">**Pago/Cobro:** Ajusta tu saldo y el de la deuda.<br>**Ajustar Saldo:** Modifica solo el saldo pendiente de la deuda.</p>
+        <p style="font-size:0.9rem; color:#666;">**Pago/Cobro:** Afecta tu saldo de efectivo/banco.<br>**Ajustar Saldo:** Modifica solo el saldo pendiente de la deuda.</p>
         <div id="debt-management-list">
             <p style="text-align:center; color:#666;">Aquí aparecerán las deudas para pagar o los préstamos para cobrar.</p>
         </div>
@@ -240,17 +219,32 @@
     <div id="debt-payment-modal" class="modal-overlay">
         <div class="modal-content">
             <h4 id="modal-title">Registrar Pago</h4>
-            <p style="font-size: 0.9rem; color: #666;" id="modal-debt-info"></p>
+            <p style="font-size: 0.9rem; color: #666;" id="modal-debt-info-payment"></p>
             
             <label style="font-size:0.9rem; display:block; margin-bottom:5px;">Monto de la Transacción ($):</label>
             <input type="number" id="debt-payment-amount" placeholder="Monto">
             
             <div id="payment-buttons" class="flex-row">
-                <button class="btn btn-income" style="background: var(--cash);" onclick="finalizeDebtPayment('cash')">Con Efectivo</button>
-                <button class="btn btn-income" style="background: var(--bank);" onclick="finalizeDebtPayment('bank')">Con Banco</button>
+                </div>
+            
+            <button onclick="closeModal('debt-payment-modal')" class="btn btn-expense" style="background: #ccc; color: #333;">Cancelar</button>
+        </div>
+    </div>
+    
+    <div id="debt-adjust-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h4 id="adjust-modal-title">Ajustar Saldo Pendiente</h4>
+            <p style="font-size: 0.9rem; color: #666;" id="modal-debt-info-adjust"></p>
+            
+            <label style="font-size:0.9rem; display:block; margin-bottom:5px;">Monto a Sumar o Restar ($):</label>
+            <input type="number" id="debt-adjust-amount-input" placeholder="Ej: 50.00" value="0.00">
+            
+            <div id="adjust-buttons" class="flex-row">
+                <button class="btn" style="background: var(--adjust-add);" onclick="finalizeDebtAdjustment('add')">➕ Sumar al Adeudo</button>
+                <button class="btn" style="background: var(--adjust-sub);" onclick="finalizeDebtAdjustment('sub')">➖ Restar del Adeudo</button>
             </div>
             
-            <button onclick="document.getElementById('debt-payment-modal').classList.remove('visible');" class="btn btn-expense" style="background: #ccc; color: #333;">Cancelar</button>
+            <button onclick="closeModal('debt-adjust-modal')" class="btn btn-expense" style="background: #ccc; color: #333;">Cancelar</button>
         </div>
     </div>
 
@@ -267,7 +261,7 @@
     </nav>
 
     <script>
-        // Almacenar temporalmente la deuda que se está pagando
+        // Almacenar temporalmente la deuda que se está pagando/ajustando
         let currentDebtId = null;
 
         // --- BASE DE DATOS LOCAL ---
@@ -285,6 +279,10 @@
             localStorage.setItem('financesMovements', JSON.stringify(movements));
             localStorage.setItem('financesDebts', JSON.stringify(debts));
             render();
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('visible');
         }
 
         // --- RENDERIZADO (DIBUJAR PANTALLA) ---
@@ -405,19 +403,10 @@
                             <p style="margin:5px 0 10px 0; font-size:0.8rem; color:#999;">Original: $${d.originalAmount.toFixed(2)}</p>
                         </div>
                         
-                        <div class="flex-row" style="margin-bottom: 10px;">
-                            <button onclick="openDebtPaymentModal(${d.id})" class="btn-primary" style="background:${color}; width:100%; padding:10px; margin-top:0;">${actionText} (Afecta Saldo de Cuenta)</button>
+                        <div class="flex-row" style="margin-bottom: 5px; flex-wrap: wrap;">
+                            <button onclick="openDebtPaymentModal(${d.id})" class="btn-primary" style="background:${color}; width:100%; padding:10px; margin-top:0; margin-bottom: 5px;">${actionText} (Afecta Saldo Cuentas)</button>
+                            <button onclick="openDebtAdjustModal(${d.id})" class="btn-primary" style="background: ${isDebt ? 'var(--adjust-sub)' : 'var(--adjust-add)'}; width:100%; padding:10px; margin-top:0;">+/- Ajuste Manual</button>
                         </div>
-                        
-                        <div style="border-top: 1px dashed #ddd; padding-top: 10px;">
-                            <h5 style="margin:0 0 5px 0; font-size:1rem;">Ajuste Manual de Saldo Pendiente:</h5>
-                            <div class="debt-control-group">
-                                <input type="number" id="debt-adjust-amount-${d.id}" placeholder="Monto a ajustar" value="0.00">
-                                <button style="background: var(--adjust-add);" onclick="adjustDebtAmount(${d.id}, 'add')">➕</button>
-                                <button style="background: var(--adjust-sub);" onclick="adjustDebtAmount(${d.id}, 'sub')">➖</button>
-                            </div>
-                        </div>
-
                     </div>
                 `;
             });
@@ -455,14 +444,14 @@
             const buttonColor = isDebt ? 'var(--danger)' : 'var(--success)';
 
             document.getElementById('modal-title').innerText = `Registrar ${action}`;
-            document.getElementById('modal-debt-info').innerText = `${debt.name} - Pendiente: $${debt.pendingAmount.toFixed(2)}`;
+            document.getElementById('modal-debt-info-payment').innerText = `${debt.name} - Pendiente: $${debt.pendingAmount.toFixed(2)}`;
             document.getElementById('debt-payment-amount').value = '';
             
             // Configurar botones de pago/cobro
             const paymentButtons = document.getElementById('payment-buttons');
             paymentButtons.innerHTML = `
-                <button class="btn btn-cash" style="background: ${buttonColor};" onclick="finalizeDebtPayment('cash')">${action} con Efectivo ($${balances.cash.toFixed(2)})</button>
-                <button class="btn btn-bank" style="background: ${buttonColor};" onclick="finalizeDebtPayment('bank')">${action} con Banco ($${balances.bank.toFixed(2)})</button>
+                <button class="btn" style="background: ${buttonColor};" onclick="finalizeDebtPayment('cash')">${action} con Efectivo ($${balances.cash.toFixed(2)})</button>
+                <button class="btn" style="background: ${buttonColor};" onclick="finalizeDebtPayment('bank')">${action} con Banco ($${balances.bank.toFixed(2)})</button>
             `;
 
             document.getElementById('debt-payment-modal').classList.add('visible');
@@ -477,7 +466,7 @@
             const amountInput = document.getElementById('debt-payment-amount').value;
             const paymentAmount = parseFloat(amountInput);
 
-            document.getElementById('debt-payment-modal').classList.remove('visible');
+            closeModal('debt-payment-modal');
             currentDebtId = null; 
 
             if (isNaN(paymentAmount) || paymentAmount <= 0) {
@@ -529,17 +518,32 @@
         }
 
 
-        // --- AJUSTE DE ADEUDOS CON BOTONES (Se mantiene igual) ---
-        function adjustDebtAmount(debtId, operation) {
-            const debtIndex = debts.findIndex(d => d.id === debtId);
-            if (debtIndex === -1) return;
+        // --- AJUSTE DE ADEUDOS (MODAL Y BOTONES) ---
+        
+        function openDebtAdjustModal(debtId) {
+            const debt = debts.find(d => d.id === debtId);
+            if (!debt) return;
 
-            const debt = debts[debtIndex];
-            const inputElement = document.getElementById(`debt-adjust-amount-${debtId}`);
+            currentDebtId = debtId;
+
+            document.getElementById('adjust-modal-title').innerText = `Ajustar Saldo: ${debt.name}`;
+            document.getElementById('modal-debt-info-adjust').innerText = `Saldo Pendiente Actual: $${debt.pendingAmount.toFixed(2)}`;
+            document.getElementById('debt-adjust-amount-input').value = '0.00'; 
             
-            if (!inputElement) return;
+            document.getElementById('debt-adjust-modal').classList.add('visible');
+        }
 
+        function finalizeDebtAdjustment(operation) {
+            if (currentDebtId === null) return;
+            
+            const debtIndex = debts.findIndex(d => d.id === currentDebtId);
+            const debt = debts[debtIndex];
+            
+            const inputElement = document.getElementById('debt-adjust-amount-input');
             const inputAmount = parseFloat(inputElement.value);
+
+            closeModal('debt-adjust-modal');
+            currentDebtId = null;
 
             if (isNaN(inputAmount) || inputAmount <= 0) {
                 alert('Ingresa un monto positivo válido para el ajuste.');
@@ -554,25 +558,22 @@
 
             const newPendingAmount = debt.pendingAmount + adjustment;
             
+            // VALIDACIÓN CORREGIDA: Solo impide saldo pendiente negativo.
             if (newPendingAmount < 0) {
                 alert('El ajuste resultaría en un saldo pendiente negativo. Se limitó el ajuste para dejar el saldo en $0.');
-                adjustment = -debt.pendingAmount; 
+                adjustment = -debt.pendingAmount; // Calcula el ajuste real para llegar a 0
                 debt.pendingAmount = 0;
             } else {
-                if (newPendingAmount > debt.originalAmount) {
-                     alert(`El nuevo saldo pendiente ($${newPendingAmount.toFixed(2)}) excede el monto original ($${debt.originalAmount.toFixed(2)}). El saldo se ajustará al monto original.`);
-                     adjustment = debt.originalAmount - debt.pendingAmount;
-                     debt.pendingAmount = debt.originalAmount;
-                } else {
-                    debt.pendingAmount = newPendingAmount;
-                }
+                // AHORA PERMITE QUE EL SALDO PENDIENTE EXCEDA EL MONTO ORIGINAL
+                debt.pendingAmount = newPendingAmount;
             }
             
             if (adjustment === 0) {
-                 alert('No se realizó ningún cambio debido a las restricciones de saldo (ya está en $0 o en el monto original).');
+                 alert('No se realizó ningún cambio.');
                  return;
             }
             
+            // Registrar movimiento
             movements.push({
                 date: new Date().toISOString(),
                 type: 'debt-adjust',
@@ -584,11 +585,10 @@
 
 
             saveLocal();
-            inputElement.value = '0.00';
             alert(`Saldo pendiente de "${debt.name}" ajustado. Nuevo saldo: $${debt.pendingAmount.toFixed(2)}`);
         }
         
-        // --- LÓGICA DE MOVIMIENTOS Y PAGOS (Se mantiene igual) ---
+        // --- LÓGICA DE MOVIMIENTOS GENERALES (Se mantiene igual) ---
         
         function toggleFormFields() {
             const type = document.getElementById('movement-type').value;
