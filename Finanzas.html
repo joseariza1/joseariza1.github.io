@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -16,7 +16,8 @@
             --cash: #1e3a8a; /* Azul Oscuro para Efectivo */
             --bank: #facc15; /* Amarillo para Banco */
             --transfer: #8b5cf6; /* Morado para Transferencia */
-            --info: #3b82f6; /* Azul claro para información */
+            --adjust-add: #22c55e; /* Verde para Sumar Adeudo */
+            --adjust-sub: #f97316; /* Naranja para Restar Adeudo */
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; color: #333; }
         
@@ -37,9 +38,21 @@
         .balance-card { text-align: center; padding: 25px; background: var(--primary); color: white; border-radius: 12px; position: relative;}
         .balance-amount { font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; }
         .balance-label { opacity: 0.8; }
-        .edit-balance-btn { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 5px; padding: 5px 10px; font-size: 0.75rem; cursor: pointer;}
-        .edit-balance-btn:hover { background: rgba(255, 255, 255, 0.3); }
-
+        
+        /* Controles de Saldo Detallado */
+        .balance-detail { 
+            font-size:0.9rem; 
+            opacity:0.9; 
+            margin:10px 0 0 0; 
+            display: flex; 
+            justify-content: center;
+            gap: 15px;
+        }
+        .balance-item { 
+            display: inline-block; 
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.5);
+        }
 
         /* Tarjetas de Resumen */
         .summary-card { padding: 15px; border-radius: 10px; color: white; flex: 1; text-align: center; margin: 0 5px; }
@@ -52,7 +65,59 @@
         .btn-income { background: var(--success); color: white; }
         .btn-expense { background: var(--danger); color: white; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-secondary { background: var(--info); color: white; }
+        .btn-secondary { background: var(--adjust-add); color: white; } 
+
+        /* Controles de Deuda */
+        .debt-control-group { 
+            display: flex; 
+            align-items: center; 
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .debt-control-group input[type="number"] {
+            flex-grow: 1;
+            padding: 8px;
+            margin-bottom: 0;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+        .debt-control-group button {
+            width: 50px;
+            padding: 8px;
+            margin-top: 0;
+            font-size: 0.9rem;
+        }
+        
+        /* Modal de Pago de Deuda */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s;
+        }
+        .modal-overlay.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        #payment-buttons .btn {
+            width: 48%;
+            margin-left: 2%;
+            margin-right: 2%;
+        }
 
         /* Navegación */
         nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
@@ -78,8 +143,11 @@
         <div class="balance-card">
             <div class="balance-label">SALDO TOTAL DISPONIBLE</div>
             <div class="balance-amount">$<span id="total-balance">0.00</span></div>
-            <p style="font-size:0.9rem; opacity:0.9; margin:10px 0 0 0;">(Efectivo: $<span id="cash-balance">0.00</span> | Banco: $<span id="bank-balance">0.00</span>)</p>
-            <button class="edit-balance-btn" onclick="editAccountBalances()">✏️ Corregir Saldos</button>
+            <p class="balance-detail">
+                <span class="balance-item" onclick="promptEditBalance('cash')">Efectivo: $<span id="cash-balance">0.00</span> ✏️</span>
+                |
+                <span class="balance-item" onclick="promptEditBalance('bank')">Banco: $<span id="bank-balance">0.00</span> ✏️</span>
+            </p>
         </div>
 
         <div class="flex-row" style="margin-bottom:15px;">
@@ -163,12 +231,28 @@
 
     <div id="tab-debts" class="container">
         <h3>🏦 Gestión de Préstamos y Deudas</h3>
-        <p style="font-size:0.9rem; color:#666;">Usa el botón "Pagar/Cobrar" para registrar pagos, o el botón "Editar" para modificar los detalles de la obligación.</p>
+        <p style="font-size:0.9rem; color:#666;">**Pago/Cobro:** Ajusta tu saldo y el de la deuda.<br>**Ajustar Saldo:** Modifica solo el saldo pendiente de la deuda.</p>
         <div id="debt-management-list">
             <p style="text-align:center; color:#666;">Aquí aparecerán las deudas para pagar o los préstamos para cobrar.</p>
         </div>
     </div>
 
+    <div id="debt-payment-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h4 id="modal-title">Registrar Pago</h4>
+            <p style="font-size: 0.9rem; color: #666;" id="modal-debt-info"></p>
+            
+            <label style="font-size:0.9rem; display:block; margin-bottom:5px;">Monto de la Transacción ($):</label>
+            <input type="number" id="debt-payment-amount" placeholder="Monto">
+            
+            <div id="payment-buttons" class="flex-row">
+                <button class="btn btn-income" style="background: var(--cash);" onclick="finalizeDebtPayment('cash')">Con Efectivo</button>
+                <button class="btn btn-income" style="background: var(--bank);" onclick="finalizeDebtPayment('bank')">Con Banco</button>
+            </div>
+            
+            <button onclick="document.getElementById('debt-payment-modal').classList.remove('visible');" class="btn btn-expense" style="background: #ccc; color: #333;">Cancelar</button>
+        </div>
+    </div>
 
     <nav>
         <button onclick="switchTab('home')" id="nav-home" class="nav-btn active">
@@ -183,6 +267,9 @@
     </nav>
 
     <script>
+        // Almacenar temporalmente la deuda que se está pagando
+        let currentDebtId = null;
+
         // --- BASE DE DATOS LOCAL ---
         let balances = JSON.parse(localStorage.getItem('financesBalances')) || {
             cash: 0,
@@ -251,12 +338,16 @@
                     const toAccount = mov.toAccount === 'cash' ? 'Efectivo' : 'Banco';
                     description = `De ${fromAccount} a ${toAccount}`;
                     
-                    // Solo mostramos la salida de dinero en el historial
-                    if (mov.fromAccount !== 'cash' && mov.fromAccount !== 'bank') return; // Asegurar que es una cuenta válida
+                    if (mov.fromAccount !== 'cash' && mov.fromAccount !== 'bank') return;
                     mov.account = mov.fromAccount;
                     accountTag = `<span class="tag ${mov.account === 'cash' ? 'tag-cash' : 'tag-bank'}">Origen: ${mov.account === 'cash' ? 'Efectivo' : 'Banco'}</span>`;
                     sign = '-'; 
+                } else if (mov.type === 'debt-adjust') {
+                    color = mov.adjustment > 0 ? 'var(--adjust-add)' : 'var(--adjust-sub)';
+                    movType = 'Ajuste Deuda';
+                    sign = mov.adjustment > 0 ? '+' : '-';
                 }
+
 
                 list.innerHTML += `
                     <div class="card flex-row" style="border-left: 5px solid ${color}; padding:10px;">
@@ -308,109 +399,196 @@
                 // Lista de gestión de deudas
                 managementList.innerHTML += `
                     <div class="card ${isDebt ? 'debt-card' : ''}" style="border-left-color: ${color};">
-                        <div class="flex-row" style="flex-wrap: wrap;">
-                            <div style="flex:100%;">
-                                <h4 style="margin:0 0 5px 0;">${d.name}</h4>
-                                <p style="margin:0; font-weight:bold; color:${isDebt ? 'var(--danger)' : 'var(--success)'};">Pendiente: $${d.pendingAmount.toFixed(2)}</p>
-                                <p style="margin:5px 0 10px 0; font-size:0.8rem; color:#999;">Original: $${d.originalAmount.toFixed(2)}</p>
-                            </div>
-                            <button onclick="prepDebtPayment(${d.id})" class="btn-primary" style="background:${color}; width:48%; padding:10px; margin-top:0;">${actionText}</button>
-                            <button onclick="editDebtDetails(${d.id})" class="btn-secondary" style="width:48%; padding:10px; margin-top:0; margin-left: 4%;">✏️ Editar</button>
+                        <div style="margin-bottom: 10px;">
+                            <h4 style="margin:0 0 5px 0;">${d.name}</h4>
+                            <p style="margin:0; font-weight:bold; color:${isDebt ? 'var(--danger)' : 'var(--success)'};">Pendiente: $${d.pendingAmount.toFixed(2)}</p>
+                            <p style="margin:5px 0 10px 0; font-size:0.8rem; color:#999;">Original: $${d.originalAmount.toFixed(2)}</p>
                         </div>
+                        
+                        <div class="flex-row" style="margin-bottom: 10px;">
+                            <button onclick="openDebtPaymentModal(${d.id})" class="btn-primary" style="background:${color}; width:100%; padding:10px; margin-top:0;">${actionText} (Afecta Saldo de Cuenta)</button>
+                        </div>
+                        
+                        <div style="border-top: 1px dashed #ddd; padding-top: 10px;">
+                            <h5 style="margin:0 0 5px 0; font-size:1rem;">Ajuste Manual de Saldo Pendiente:</h5>
+                            <div class="debt-control-group">
+                                <input type="number" id="debt-adjust-amount-${d.id}" placeholder="Monto a ajustar" value="0.00">
+                                <button style="background: var(--adjust-add);" onclick="adjustDebtAmount(${d.id}, 'add')">➕</button>
+                                <button style="background: var(--adjust-sub);" onclick="adjustDebtAmount(${d.id}, 'sub')">➖</button>
+                            </div>
+                        </div>
+
                     </div>
                 `;
             });
         }
         
-        // --- MODIFICACIÓN DE SALDOS ---
-        function editAccountBalances() {
-            const cashAmount = parseFloat(prompt(`Ingresa el saldo ACTUAL CORRECTO para EFECTIVO. Saldo actual: $${balances.cash.toFixed(2)}`));
+        // --- MODIFICACIÓN DE SALDOS EN LÍNEA ---
+        function promptEditBalance(account) {
+            const currentBalance = balances[account];
+            const accountName = account === 'cash' ? 'Efectivo' : 'Banco';
             
-            if (cashAmount !== null && !isNaN(cashAmount)) {
-                balances.cash = Math.max(0, cashAmount); // Asegura que no sea negativo
-            } else if (cashAmount !== null && isNaN(cashAmount)) {
-                alert('Entrada no válida para Efectivo. No se modificó.');
+            const newBalanceInput = prompt(`Ingresa el saldo ACTUAL CORRECTO para ${accountName}. Saldo actual: $${currentBalance.toFixed(2)}`);
+            
+            if (newBalanceInput === null) return;
+            
+            const newBalance = parseFloat(newBalanceInput);
+
+            if (!isNaN(newBalance) && newBalance >= 0) {
+                balances[account] = newBalance;
+                saveLocal();
+                alert(`Saldo de ${accountName} actualizado a $${newBalance.toFixed(2)}.`);
+            } else {
+                alert('Monto no válido. El saldo debe ser un número positivo.');
             }
+        }
+        
+        // --- PAGOS DE DEUDAS (MODAL Y BOTONES) ---
 
-            const bankAmount = parseFloat(prompt(`Ingresa el saldo ACTUAL CORRECTO para BANCO. Saldo actual: $${balances.bank.toFixed(2)}`));
+        function openDebtPaymentModal(debtId) {
+            const debt = debts.find(d => d.id === debtId);
+            if (!debt) return;
 
-            if (bankAmount !== null && !isNaN(bankAmount)) {
-                balances.bank = Math.max(0, bankAmount); // Asegura que no sea negativo
-            } else if (bankAmount !== null && isNaN(bankAmount)) {
-                 alert('Entrada no válida para Banco. No se modificó.');
-            }
+            currentDebtId = debtId;
+            const isDebt = debt.status === 'debt-due';
+            const action = isDebt ? 'Pagar' : 'Cobrar';
+            const buttonColor = isDebt ? 'var(--danger)' : 'var(--success)';
 
-            // Nota: totalIncome y totalExpense no se tocan en la corrección de saldo.
-            saveLocal();
+            document.getElementById('modal-title').innerText = `Registrar ${action}`;
+            document.getElementById('modal-debt-info').innerText = `${debt.name} - Pendiente: $${debt.pendingAmount.toFixed(2)}`;
+            document.getElementById('debt-payment-amount').value = '';
+            
+            // Configurar botones de pago/cobro
+            const paymentButtons = document.getElementById('payment-buttons');
+            paymentButtons.innerHTML = `
+                <button class="btn btn-cash" style="background: ${buttonColor};" onclick="finalizeDebtPayment('cash')">${action} con Efectivo ($${balances.cash.toFixed(2)})</button>
+                <button class="btn btn-bank" style="background: ${buttonColor};" onclick="finalizeDebtPayment('bank')">${action} con Banco ($${balances.bank.toFixed(2)})</button>
+            `;
+
+            document.getElementById('debt-payment-modal').classList.add('visible');
         }
 
-        // --- MODIFICACIÓN DE DEUDAS ---
-        function editDebtDetails(debtId) {
+        function finalizeDebtPayment(account) {
+            if (currentDebtId === null) return;
+
+            const debtIndex = debts.findIndex(d => d.id === currentDebtId);
+            const debt = debts[debtIndex];
+            
+            const amountInput = document.getElementById('debt-payment-amount').value;
+            const paymentAmount = parseFloat(amountInput);
+
+            document.getElementById('debt-payment-modal').classList.remove('visible');
+            currentDebtId = null; 
+
+            if (isNaN(paymentAmount) || paymentAmount <= 0) {
+                alert('Monto de pago inválido. Por favor, inténtalo de nuevo.');
+                return;
+            }
+            if (paymentAmount > debt.pendingAmount) {
+                alert(`El monto ($${paymentAmount.toFixed(2)}) excede el saldo pendiente ($${debt.pendingAmount.toFixed(2)}).`);
+                return;
+            }
+
+            const isDebt = debt.status === 'debt-due';
+            const action = isDebt ? 'Pagar' : 'Cobrar';
+            let isDebtPaymentOut = false; 
+
+            // Lógica de saldo:
+            if (isDebt) { // Es DEUDA: Sale dinero de tu cuenta (Gasto)
+                if (balances[account] < paymentAmount) {
+                    alert(`¡Saldo insuficiente en ${account === 'cash' ? 'Efectivo' : 'Banco'} para el pago! Saldo: $${balances[account].toFixed(2)}`);
+                    return;
+                }
+                balances[account] -= paymentAmount;
+                isDebtPaymentOut = true;
+                balances.totalExpense += paymentAmount; // Contabilizar como gasto
+            } else { // Es PRÉSTAMO: Entra dinero a tu cuenta (Ingreso)
+                balances[account] += paymentAmount;
+                isDebtPaymentOut = false;
+                balances.totalIncome += paymentAmount; // Contabilizar como ingreso
+            }
+            
+            // Actualizar deuda
+            debt.pendingAmount -= paymentAmount;
+            if (debt.pendingAmount < 0.01) {
+                 debt.pendingAmount = 0; 
+            }
+
+            // Registrar movimiento
+            movements.push({
+                date: new Date().toISOString(),
+                type: 'debt-payment',
+                amount: paymentAmount,
+                account: account,
+                description: `${action} de ${debt.name}`,
+                isDebtPaymentOut: isDebtPaymentOut
+            });
+
+            saveLocal();
+            alert(`${action} de $${paymentAmount.toFixed(2)} con ${account === 'cash' ? 'Efectivo' : 'Banco'} registrado con éxito.`);
+        }
+
+
+        // --- AJUSTE DE ADEUDOS CON BOTONES (Se mantiene igual) ---
+        function adjustDebtAmount(debtId, operation) {
             const debtIndex = debts.findIndex(d => d.id === debtId);
             if (debtIndex === -1) return;
 
             const debt = debts[debtIndex];
+            const inputElement = document.getElementById(`debt-adjust-amount-${debtId}`);
             
-            // 1. Modificar Nombre
-            const newName = prompt(`Editar nombre de la obligación. (Actual: ${debt.name})`);
-            if (newName !== null && newName.trim() !== '') {
-                debt.name = newName.trim();
-            } else if (newName !== null) {
-                alert('El nombre no puede estar vacío.');
+            if (!inputElement) return;
+
+            const inputAmount = parseFloat(inputElement.value);
+
+            if (isNaN(inputAmount) || inputAmount <= 0) {
+                alert('Ingresa un monto positivo válido para el ajuste.');
                 return;
             }
+
+            let adjustment = inputAmount;
             
-            // 2. Modificar Monto Original
-            const newOriginalAmountInput = prompt(`Editar MONTO ORIGINAL de la obligación. (Actual: $${debt.originalAmount.toFixed(2)})`);
-            if (newOriginalAmountInput !== null) {
-                const newOriginalAmount = parseFloat(newOriginalAmountInput);
-                
-                if (!isNaN(newOriginalAmount) && newOriginalAmount > 0) {
-                    const diff = newOriginalAmount - debt.originalAmount;
-                    
-                    // Ajustar el saldo pendiente
-                    debt.pendingAmount += diff;
-                    debt.originalAmount = newOriginalAmount;
-
-                    // Asegurarse de que el saldo pendiente no sea mayor al original (si se redujo)
-                    if (debt.pendingAmount > debt.originalAmount) {
-                         debt.pendingAmount = debt.originalAmount;
-                    }
-                    
-                    // Asegurarse de que el saldo pendiente no sea negativo
-                    if (debt.pendingAmount < 0) {
-                        debt.pendingAmount = 0;
-                    }
-
-                } else if (newOriginalAmountInput.trim() !== '') {
-                    alert('Monto original no válido. No se modificó.');
-                    return;
-                }
+            if (operation === 'sub') {
+                adjustment = -adjustment;
             }
 
-            // 3. Modificar Saldo Pendiente (Solo si es menor o igual al original)
-            const newPendingAmountInput = prompt(`Editar SALDO PENDIENTE. (Actual: $${debt.pendingAmount.toFixed(2)})`);
-            if (newPendingAmountInput !== null) {
-                const newPendingAmount = parseFloat(newPendingAmountInput);
-                
-                if (!isNaN(newPendingAmount) && newPendingAmount >= 0) {
-                    if (newPendingAmount > debt.originalAmount) {
-                        alert('El saldo pendiente no puede ser mayor al monto original. Se ajustará al monto original.');
-                        debt.pendingAmount = debt.originalAmount;
-                    } else {
-                        debt.pendingAmount = newPendingAmount;
-                    }
-                } else if (newPendingAmountInput.trim() !== '') {
-                    alert('Saldo pendiente no válido. No se modificó.');
-                    return;
+            const newPendingAmount = debt.pendingAmount + adjustment;
+            
+            if (newPendingAmount < 0) {
+                alert('El ajuste resultaría en un saldo pendiente negativo. Se limitó el ajuste para dejar el saldo en $0.');
+                adjustment = -debt.pendingAmount; 
+                debt.pendingAmount = 0;
+            } else {
+                if (newPendingAmount > debt.originalAmount) {
+                     alert(`El nuevo saldo pendiente ($${newPendingAmount.toFixed(2)}) excede el monto original ($${debt.originalAmount.toFixed(2)}). El saldo se ajustará al monto original.`);
+                     adjustment = debt.originalAmount - debt.pendingAmount;
+                     debt.pendingAmount = debt.originalAmount;
+                } else {
+                    debt.pendingAmount = newPendingAmount;
                 }
             }
             
+            if (adjustment === 0) {
+                 alert('No se realizó ningún cambio debido a las restricciones de saldo (ya está en $0 o en el monto original).');
+                 return;
+            }
+            
+            movements.push({
+                date: new Date().toISOString(),
+                type: 'debt-adjust',
+                amount: Math.abs(adjustment),
+                adjustment: adjustment,
+                debtId: debt.id,
+                description: `Ajuste manual de ${debt.name} (${adjustment > 0 ? 'Aumento' : 'Reducción'})`
+            });
+
+
             saveLocal();
-            alert(`Deuda "${debt.name}" modificada exitosamente.`);
+            inputElement.value = '0.00';
+            alert(`Saldo pendiente de "${debt.name}" ajustado. Nuevo saldo: $${debt.pendingAmount.toFixed(2)}`);
         }
         
-        // --- LÓGICA DE MOVIMIENTOS Y FORMULARIO (Se mantiene igual) ---
+        // --- LÓGICA DE MOVIMIENTOS Y PAGOS (Se mantiene igual) ---
         
         function toggleFormFields() {
             const type = document.getElementById('movement-type').value;
@@ -439,7 +617,7 @@
                 accountSelector.style.display = 'none';
                 transferSelectors.style.display = 'block';
                 movBtn.innerText = '💾 Registrar Transferencia';
-            } else { // income o expense
+            } else { 
                 movBtn.innerText = type === 'income' ? '💾 Registrar Ganancia' : '💾 Registrar Gasto';
             }
         }
@@ -559,69 +737,6 @@
 
             switchTab('debts');
             alert('Deuda/Préstamo registrado.');
-        }
-
-        function prepDebtPayment(debtId) {
-            const debtIndex = debts.findIndex(d => d.id === debtId);
-            if (debtIndex === -1) return;
-
-            const debt = debts[debtIndex];
-            const isDebt = debt.status === 'debt-due';
-            const action = isDebt ? 'Pagar' : 'Cobrar';
-            const transactionType = isDebt ? 'Egreso' : 'Ingreso';
-            
-            const paymentAmountInput = prompt(`Monto a ${action} de "${debt.name}" (Pendiente: $${debt.pendingAmount.toFixed(2)}):`);
-            
-            if (paymentAmountInput === null) return;
-            
-            const paymentAmount = parseFloat(paymentAmountInput);
-
-            if (isNaN(paymentAmount) || paymentAmount <= 0) {
-                alert('Monto inválido. Inténtalo de nuevo.');
-                return;
-            }
-
-            if (paymentAmount > debt.pendingAmount) {
-                alert(`El monto excede el saldo pendiente ($${debt.pendingAmount.toFixed(2)}).`);
-                return;
-            }
-
-            let account = '';
-            while (account !== 'cash' && account !== 'bank') {
-                const accountInput = prompt(`¿${action} con (escribe 'cash' para Efectivo o 'bank' para Banco)?`).toLowerCase();
-                if (accountInput === null) return;
-                account = accountInput;
-            }
-            
-            let isDebtPaymentOut = false; 
-            if (isDebt) {
-                if (balances[account] < paymentAmount) {
-                    alert(`¡Saldo insuficiente en ${account === 'cash' ? 'Efectivo' : 'Banco'} para el pago!`);
-                    return;
-                }
-                balances[account] -= paymentAmount;
-                isDebtPaymentOut = true;
-            } else { 
-                balances[account] += paymentAmount;
-                isDebtPaymentOut = false;
-            }
-            
-            debts[debtIndex].pendingAmount -= paymentAmount;
-            if (debts[debtIndex].pendingAmount < 0.01) {
-                 debts[debtIndex].pendingAmount = 0; 
-            }
-
-            movements.push({
-                date: new Date().toISOString(),
-                type: 'debt-payment',
-                amount: paymentAmount,
-                account: account,
-                description: `${action} de ${debt.name}`,
-                isDebtPaymentOut: isDebtPaymentOut
-            });
-
-            saveLocal();
-            alert(`${transactionType} de $${paymentAmount.toFixed(2)} (${action} de deuda) registrado con éxito.`);
         }
 
 
