@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Herramientas Digitales</title>
+    <title>Mis Herramientas Digitales - Pestañas</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
+    
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,14 +17,49 @@
         /* ================================================= */
         /* == ESTILOS CSS ================================== */
         /* ================================================= */
+        
+        /* --- Estilos base de los iconos --- */
+
+/* Oculta los íconos I de Font Awesome para que no interfieran con las imágenes */
+.grid-item i {
+    display: none; 
+}
+
+/* Define el estilo para las imágenes personalizadas (el método más fácil) */
+.custom-icon {
+    width: 60px;       /* Controla el tamaño del icono */
+    height: 60px;
+    margin-bottom: 10px;
+    object-fit: contain; /* Asegura que la imagen no se distorsione */
+    transition: transform 0.2s;
+}
+
+/* Si quieres que los íconos de Font Awesome sigan funcionando, 
+   solo debes usar la etiqueta <img> en los elementos que quieres personalizar
+   y dejar la etiqueta <i> en el resto. 
+   Para que Font Awesome funcione solo cuando la etiqueta <img> no existe: */
+
+.grid-item i {
+    /* Mantiene los estilos originales de Font Awesome, 
+       solo si no has agregado la clase 'custom-icon' */
+    display: block; 
+    font-size: 2.8em; 
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+/* Si un elemento tiene la clase 'custom-icon', usa esa imagen y no el <i> */
+.grid-item:has(.custom-icon) i {
+    display: none;
+}
 
         :root {
-            --primary-color: #3498db; /* Azul vibrante */
-            --secondary-color: #2c3e50; /* Gris oscuro */
-            --bg-color: #ecf0f1; /* Fondo claro */
+            --primary-color: #3498db; 
+            --secondary-color: #2c3e50; 
+            --bg-color: #ecf0f1; 
             --card-bg: #ffffff;
             --text-color: #333;
-            --border-radius: 10px;
+            --border-radius: 8px;
             --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
@@ -35,8 +70,6 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             line-height: 1.6;
-            display: flex;
-            flex-direction: column;
             min-height: 100vh;
         }
 
@@ -47,181 +80,323 @@
             text-align: center;
             box-shadow: var(--shadow);
         }
-
-        header h1 {
-            margin: 0;
-            font-size: 2.5em;
-        }
-
-        header p {
-            margin-top: 5px;
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
+        header h1 { margin: 0; font-size: 2.5em; }
 
         main {
-            flex-grow: 1; /* Permite que el contenido principal ocupe el espacio restante */
-            padding: 30px 20px;
+            padding: 20px 20px 30px;
             max-width: 1200px;
             margin: 0 auto;
-            width: 100%; /* Asegura que ocupe todo el ancho disponible */
-            box-sizing: border-box; /* Incluye padding en el ancho */
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        /* Contenedor de la Cuadrícula */
-        #grid-container {
+        /* --- Estilos de Pestañas (Tabs) --- */
+        #tabs-container {
+            width: 100%;
+            overflow-x: auto; /* Permite desplazamiento horizontal en móviles */
+            white-space: nowrap; /* Evita que los botones se envuelvan */
+            margin-bottom: 20px;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+        }
+
+        .tab-button {
+            background-color: transparent;
+            color: var(--secondary-color);
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: color 0.3s, background-color 0.3s, border-bottom 0.3s;
+            display: inline-flex;
+            align-items: center;
+            border-bottom: 3px solid transparent; /* Línea inactiva */
+        }
+        
+        .tab-button i {
+            margin-right: 8px;
+        }
+
+        .tab-button:hover:not(.active) {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color); /* Línea activa */
+        }
+
+        /* Contenido de la Sección (Oculto por defecto) */
+        .tab-content {
+            display: none;
+            padding: 10px 0;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* --- Estilos de la Cuadrícula --- */
+        .grid-section-container {
             display: grid;
-            /* Columnas automáticas: al menos 150px, máximo 1fr */
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-            gap: 20px; /* Espacio entre las tarjetas */
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 15px; 
+            padding-bottom: 20px;
         }
 
         .grid-item {
             background-color: var(--card-bg);
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 20px 10px;
             text-decoration: none;
             color: var(--text-color);
             text-align: center;
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            min-height: 150px; /* Altura mínima para cada tarjeta */
+            transition: transform 0.2s;
+            min-height: 130px; 
         }
 
         .grid-item:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
         }
 
         .grid-item i {
-            font-size: 3em; /* Tamaño grande para los íconos */
+            font-size: 2.8em; 
             color: var(--primary-color);
-            margin-bottom: 15px;
-            transition: color 0.2s ease-in-out;
-        }
-
-        .grid-item:hover i {
-            color: var(--secondary-color);
+            margin-bottom: 10px;
         }
 
         .grid-item h3 {
             margin: 0;
-            font-size: 1.2em;
+            font-size: 1.1em;
             color: var(--secondary-color);
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            width: 100%;
         }
 
-        /* Estilos específicos para iconos de marcas si quieres darles el color original */
+        /* Estilos específicos de marca */
         .grid-item.social i.fa-facebook { color: #3b5998; }
-        .grid-item.social i.fa-twitter { color: #00acee; }
-        .grid-item.social i.fa-tumblr { color: #001935; }
-        .grid-item.social i.fa-youtube { color: #FF0000; }
-        .grid-item.social i.fa-linkedin { color: #0A66C2; }
-        .grid-item.social i.fa-tiktok { color: #000; } /* TikTok tiene un color complejo, negro es común */
-        .grid-item.social i.fa-discord { color: #5865F2; }
+        .grid-item.social i.fa-tumblr { color: #35465C; }
+        .grid-item.social i.fa-pinterest { color: #F0002A; }
+        .grid-item.financial i.fa-money-bill { color: #85BB65; }
+        .grid-item.financial i.fa-wallet { color: #f39c12; }
+        
 
-        footer {
-            margin-top: 40px;
-            padding: 20px;
-            text-align: center;
-            background-color: var(--secondary-color);
-            color: white;
-            font-size: 0.9em;
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        /* Media Queries para responsividad */
-        @media (max-width: 768px) {
-            header h1 {
-                font-size: 2em;
-            }
-            main {
-                padding: 20px 10px;
-            }
-            #grid-container {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-                gap: 15px;
-            }
-            .grid-item {
-                padding: 15px;
-                min-height: 120px;
-            }
-            .grid-item i {
-                font-size: 2.5em;
-                margin-bottom: 10px;
-            }
-            .grid-item h3 {
-                font-size: 1em;
-            }
-        }
-
-        @media (max-width: 480px) {
-            #grid-container {
-                grid-template-columns: 1fr 1fr; /* 2 columnas fijas en móviles muy pequeños */
+        @media (max-width: 600px) {
+            .grid-section-container {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
             }
             .grid-item {
                 min-height: 100px;
+                padding: 15px 5px;
             }
             .grid-item i {
-                font-size: 2em;
+                font-size: 2.2em;
             }
-            .grid-item h3 {
+            .tab-button {
+                padding: 10px 12px;
                 font-size: 0.9em;
             }
         }
     </style>
 </head>
 <body>
-
-
+    
     <main>
-        <div id="grid-container">
-            <a href="https://www.facebook.com" target="_blank" class="grid-item social">
-                <i class="fab fa-facebook-f"></i>
-                <h3>Facebook</h3>
-            </a>
-            <a href="https://www.twitter.com" target="_blank" class="grid-item social">
-                <i class="fab fa-twitter"></i>
-                <h3>X (Twitter)</h3>
-            </a>
+        
+        <div id="tabs-container">
             
-            <a href="https://www.tumblr.com" target="_blank" class="grid-item social">
-                <i class="fab fa-tumblr"></i>
-                <h3>Tumblr</h3>
-            </a>
-            
-            <a href="https://mail.google.com/mail/mu/mp/646/#tl/priority/%5Eu" target="_blank" class="grid-item social">
-                <i class="fa-solid fa-envelope"></i>
-                <h3>Gmail</h3>
-            </a>
-            
-            <a href="https://drive.google.com/drive/mobile/my-drive" target="_blank" class="grid-item social">
-                <i class="fab fa-google-drive"></i>
-                <h3>Drive</h3>
-            </a>
-            
-            <a href="https://www.paypal.com/mx/home" target="_blank" class="grid-item social">
-                <i class="fab fa-paypal"></i>
-                <h3>Paypal</h3>
-            </a>
-            
-            <a href="https://wordpress.com/home/" target="_blank" class="grid-item social">
-                <i class="fab fa-wordpress"></i>
-                <h3>Wordpress</h3>
-            </a>
-          
-          
+            <button class="tab-button active" onclick="openSection(event, 'social')">
+                <i class="fas fa-users"></i> Social
+            </button>
+            <button class="tab-button" onclick="openSection(event, 'productivity')">
+                <i class="fas fa-tools"></i> Productividad
+            </button>
+            <button class="tab-button" onclick="openSection(event, 'finance')">
+                <i class="fas fa-money-bill-wave"></i> Finanzas
+            </button>
+            <button class="tab-button" onclick="openSection(event, 'entertainment')">
+                <i class="fas fa-tv"></i> Entretenimiento
+            </button>
+        </div>
+
+        <div id="social" class="tab-content active">
+            <div class="grid-section-container">
+                <a href="https://www.facebook.com" target="_blank" class="grid-item social">
+                    <i class="fab fa-facebook-f"></i>
+                    <h3>Facebook</h3>
+                </a>
+                <a href="https://www.twitter.com" target="_blank" class="grid-item social">
+                    <i class="fab fa-twitter"></i>
+                    <h3>X (Twitter)</h3>
+                </a>
+                <a href="https://www.tumblr.com" target="_blank" class="grid-item social">
+                    <i class="fab fa-tumblr"></i>
+                    <h3>Tumblr</h3>
+                </a>
+                
+                <a href="https://www.pinterest.com.mx/" target="_blank" class="grid-item">
+                    <i class="fa-brands fa-pinterest"></i>
+                    <h3>Pinterest</h3>
+                </a>
+                
+                
+            </div>
+        </div>
+
+        <div id="productivity" class="tab-content">
+            <div class="grid-section-container">
+                <a href="https://gemini.google.com/app" target="_blank" class="grid-item">
+                    <img src="https://img.icons8.com/skeuomorphism/1200/gemini-ai.jpg" alt="Icono ChatGPT" class="custom-icon">
+                    <h3>Gemini</h3>
+                </a>
+                <a href="https://chat.openai.com" target="_blank" class="grid-item">
+                   <img src="https://img.icons8.com/pulsar-line/1200/chatgpt.jpg" alt="Icono ChatGPT" class="custom-icon">
+                   
+                    <h3>ChatGPT</h3>
+                </a>
+                 <a href="https://www.google.com/maps/" target="_blank" class="grid-item">
+                    <i class="fa-solid fa-map"></i>
+                    <h3>Maps</h3>
+                </a>
+                
+                
+                <a href="https://translate.google.com" target="_blank" class="grid-item">
+                    <i class="fas fa-language"></i>
+                    <h3>Traductor</h3>
+                </a>
+                <a href=" https://classroom.google.com/ " target="_blank" class="grid-item">
+                    <img src="https://images.seeklogo.com/logo-png/47/1/google-classroom-logo-png_seeklogo-479750.png" alt="Icono ChatGPT" class="custom-icon">
+                    <h3>Classroom</h3>
+                </a>
+                <a href="https://mail.google.com" target="_blank" class="grid-item">
+                    <i class="fas fa-envelope"></i>
+                    <h3>Gmail</h3>
+                </a>
+                <a href="https://drive.google.com" target="_blank" class="grid-item">
+                    <i class="fa-brands fa-google-drive"></i>
+                    <h3>Google Drive</h3>
+                </a>
+                
+                <a href="https://wordpress.com/es/" target="_blank" class="grid-item">
+                    <i class="fa-brands fa-wordpress"></i>
+                    <h3>Wordpress</h3>
+                </a>
+                
+                <a href="https://www.fishersci.es/es/es/search/chemical/substructure.html" target="_blank" class="grid-item">
+                    <i class="fa fa-vial"></i>
+                    <h3>Estructuras Quimicas</h3>
+                </a>
+                
+                <a href="https://www.mathway.com/es/Algebra" target="_blank" class="grid-item">
+                    <i class="fa fa-square-root-variable"></i>
+                    <h3>Mathway</h3>
+                </a>
+                
+                <a href="https://drive.google.com" target="_blank" class="grid-item">
+                    <i class="fa-brands fa-google-drive"></i>
+                    <h3>Google Drive</h3>
+                </a>
+                
+                
+            </div>
+        </div>
+        
+        <div id="finance" class="tab-content">
+            <div class="grid-section-container">
+                
+                <a href="https://joseariza1.github.io/Finanzas.html" target="_blank" class="grid-item financial">
+                    <i class="fa-solid fa-money-bill"></i>
+                    <h3>Finanzas</h3>
+                </a>
+                
+                <a href="https://joseariza1.github.io/Capricho.html" target="_blank" class="grid-item financial">
+                    <i class="fa-solid fa-gifts"></i>
+                    <h3>Capricho</h3>
+                </a>
+                
+                <a href="https://web.paypal.com" target="_blank" class="grid-item financial">
+                    <i class="fab fa-paypal"></i>
+                    <h3>PayPal</h3>
+                </a>
+                <a href="https://impuestos.ejemplo.gob.mx" target="_blank" class="grid-item financial">
+                    <i class="fas fa-calculator"></i>
+                    <h3>Impuestos</h3>
+                </a>
+                <a href="https://billetera.ejemplo.com" target="_blank" class="grid-item financial">
+                    <i class="fas fa-wallet"></i>
+                    <h3>Billetera Digital</h3>
+                </a>
+            </div>
+        </div>
+
+        <div id="entertainment" class="tab-content">
+            <div class="grid-section-container">
+                <a href="https://www.youtube.com" target="_blank" class="grid-item social">
+                    <i class="fab fa-youtube"></i>
+                    <h3>YouTube</h3>
+                </a>
+                <a href="https://www.netflix.com" target="_blank" class="grid-item">
+                    <i class="fas fa-film"></i>
+                    <h3>Netflix</h3>
+                </a>
+                <a href="https://www.twitch.tv" target="_blank" class="grid-item social">
+                    <i class="fab fa-twitch"></i>
+                    <h3>Twitch</h3>
+                </a>
+                <a href="https://open.spotify.com" target="_blank" class="grid-item">
+                    <i class="fab fa-spotify"></i>
+                    <h3>Spotify Web</h3>
+                </a>
+            </div>
         </div>
     </main>
 
-    <footer>
-        <p>&copy; 2023 Mis Herramientas Digitales. Desarrollado con 💙.</p>
-    </footer>
-
+    
+    
     <script>
+        function openSection(evt, sectionId) {
+            // 1. Ocultar todos los contenidos de las pestañas
+            const tabContent = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContent.length; i++) {
+                tabContent[i].classList.remove('active');
+            }
+
+            // 2. Desactivar todos los botones de las pestañas
+            const tabButtons = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove('active');
+            }
+
+            // 3. Mostrar el contenido de la pestaña actual
+            document.getElementById(sectionId).classList.add('active');
+
+            // 4. Activar el botón de la pestaña actual
+            evt.currentTarget.classList.add('active');
+            
+            // Opcional: Asegurar que el botón activo esté visible si hay desplazamiento horizontal
+            evt.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }
+        
+        // Registro del Service Worker (para la funcionalidad PWA)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
