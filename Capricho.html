@@ -2,621 +2,368 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gestión Comercial Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Pro v3 - Control Total</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ESTILOS (CSS) */
-        :root { --primary: #2563eb; --success: #16a34a; --danger: #dc2626; --warning: #f59e0b; --bg: #f3f4f6; --card: #ffffff; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
+        :root {
+            --primary: #2563eb; --success: #10b981; --danger: #ef4444;
+            --warning: #f59e0b; --dark: #1e293b; --light: #f8fafc;
+        }
+
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: #f1f5f9; color: var(--dark); padding-bottom: 80px; }
+        header { background: var(--primary); color: white; padding: 1rem; text-align: center; }
         
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h1 { margin: 0; font-size: 1.2rem; }
+        nav { display: flex; background: white; border-top: 1px solid #e2e8f0; position: fixed; bottom: 0; width: 100%; z-index: 100; }
+        nav button { flex: 1; padding: 15px 0; border: none; background: none; font-size: 0.8rem; font-weight: 600; color: #64748b; cursor: pointer; }
+        nav button.active { color: var(--primary); border-top: 3px solid var(--primary); }
 
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; display: none; }
-        .container.active { display: block; }
+        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .hidden { display: none !important; }
 
-        /* Tarjetas */
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .flex-row { display: flex; justify-content: space-between; align-items: center; }
+        /* Buscador */
+        .search-box { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; margin-bottom: 15px; font-size: 1rem; outline: none; transition: 0.3s; }
+        .search-box:focus { border-color: var(--primary); }
+
+        /* Cuadrícula POS */
+        .grid-pos { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+        .item-card { background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .item-card:hover { border-color: var(--primary); background: #f0f7ff; }
+        .item-card.pkg { background: #fffbeb; border: 1px solid var(--warning); }
+
+        /* Formularios */
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-edit { background: #6366f1; color: white; }
+        .btn-cancel { background: #94a3b8; color: white; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
+        th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #f1f5f9; }
         
-        .product-info h3 { margin: 0 0 5px 0; font-size: 1rem; }
-        .product-info p { margin: 0; color: #666; font-size: 0.85rem; }
-        .stock-badge { background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        
-        /* Botones */
-        button { border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-add { background: var(--primary); color: white; width: 100%; margin-top: 10px; }
-        .btn-update { background: var(--warning); color: black; width: 100%; margin-top: 10px; display: none; }
-        .btn-sell { background: var(--success); color: white; width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 10px; }
-        .btn-schedule { background: var(--primary); color: white; width: 100%; padding: 15px; font-size: 1.1rem; margin-top: 10px; }
-        .btn-icon { background: none; font-size: 1.2rem; padding: 5px 10px; }
-        .btn-remove { color: var(--danger); background: #fee2e2; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; }
-        .btn-package-mode { background: #555; color: white; margin-bottom: 10px; font-size: 0.9rem; }
+        .badge { padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; display: inline-block; margin-top: 2px; }
+        .b-desc { background: #dcfce7; color: #166534; }
+        .b-sug { background: #dbeafe; color: #1e40af; }
 
-        /* Inputs */
-        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        textarea { resize: vertical; }
-        .input-group { display: flex; gap: 10px; }
-
-        /* Finanzas Cards */
-        .stat-card { text-align: center; padding: 20px; border-radius: 12px; color: white; margin-bottom: 15px; }
-        .stat-blue { background: var(--primary); }
-        .stat-green { background: var(--success); }
-        .stat-red { background: var(--danger); }
-        .stat-number { font-size: 2rem; font-weight: bold; margin: 10px 0; }
-        .stat-label { font-size: 0.9rem; opacity: 0.9; }
-
-        /* Carrito y Entregas Detalles */
-        .cart-item-card { background: #f9fafb; padding: 10px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--danger); }
-        .delivery-card.pending { border-left: 5px solid var(--primary); }
-        .delivery-card.completed { border-left: 5px solid var(--success); }
-        .item-info { font-size: 0.9rem; }
-
-        /* Navegación */
-        nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
-        nav button { background: none; color: #999; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; }
-        nav button.active { color: var(--primary); }
-        nav button span { font-size: 1.4rem; margin-bottom: 3px; }
-
-        .editing-mode-indicator { background: var(--warning); color: black; text-align: center; padding: 5px; font-size: 0.8rem; display: none; }
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1 id="page-title">Punto de Venta</h1>
-    </header>
-    <div id="editing-indicator" class="editing-mode-indicator">✏️ MODO EDICIÓN ACTIVO</div>
+<header><h1 style="margin:0; font-size: 1.2rem;">Control de Negocio v3</h1></header>
 
-    <div id="tab-sell" class="container active">
-        <div class="card" style="border: 2px solid var(--primary);">
-            
-            <button onclick="togglePackageMode()" id="btn-package-mode" class="btn-package-mode">Activar Precio Manual / Combo 📦</button>
-
-            <div class="flex-row" id="subtotal-view">
-                <h4 style="margin:0;">Subtotal</h4>
-                <p style="margin:0;">$<span id="cart-subtotal">0.00</span></p>
-            </div>
-            
-            <div class="flex-row">
-                <h4 style="margin:0;">Descuento Fijo ($)</h4>
-                <input type="number" id="discount-fixed" oninput="updateCartUI()" value="0" min="0" style="width:40%; text-align:right; padding:5px; margin:0; font-size:1rem;">
-            </div>
-
-            <div class="flex-row" id="discount-amount-view">
-                <h4 style="margin:0; color:var(--danger)">Monto Descontado</h4>
-                <p style="margin:0; color:var(--danger)">$<span id="discount-amount">0.00</span></p>
-            </div>
-
-            <div id="manual-price-view" style="display:none;">
-                <h4 style="margin:0;">Precio Combo/Manual</h4>
-                <input type="number" id="manual-total-input" oninput="updateCartUI()" placeholder="Precio final a cobrar" style="padding:10px; font-size:1.2rem; margin-bottom:10px;">
-            </div>
-
-            <div class="flex-row" style="border-top: 1px dashed #ddd; padding-top:10px; margin-top:10px;">
-                <h2 style="margin:0; color:var(--primary)">TOTAL FINAL</h2>
-                <h2 style="margin:0; color:var(--primary)">$<span id="cart-total">0.00</span></h2>
-            </div>
-            
-            <p id="cart-items-count" style="margin:5px 0 0 0; text-align:center; font-weight:bold;"></p>
-            <button onclick="checkout()" class="btn-sell">Cobrar</button>
-        </div>
-        
-        <h3>🛒 Carrito Actual</h3>
-        <div id="cart-details-list"></div>
-
-        <h3>Catálogo</h3>
-        <div id="sell-list"></div>
-    </div>
+<div class="container">
     
-    <div id="tab-deliveries" class="container">
+    <section id="tab-pos">
         <div class="card">
-            <h3>Agendar Nueva Entrega</h3>
-            <div class="input-group">
-                <input type="datetime-local" id="del-datetime">
+            <h3>🛒 Punto de Venta</h3>
+            <input type="text" id="pos-search" class="search-box" placeholder="🔍 Buscar producto o paquete..." oninput="renderPOS()">
+            <div id="pos-grid" class="grid-pos"></div>
+        </div>
+        
+        <div class="card">
+            <h3>Cesta Actual</h3>
+            <div id="cart-items"></div>
+            <h2 style="text-align: right; margin-top:15px;">Total: $<span id="total-val">0.00</span></h2>
+            <button class="btn btn-main" onclick="confirmarVenta()" style="background: var(--success); font-size: 1.1rem;">Finalizar Venta</button>
+        </div>
+    </section>
+
+    <section id="tab-stock" class="hidden">
+        <div class="card">
+            <h3 id="form-title">📦 Agregar Producto</h3>
+            <input type="hidden" id="edit-id" value="">
+            <input type="text" id="p-name" placeholder="Nombre del Producto">
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="p-qty" placeholder="Piezas">
+                <input type="number" id="p-cost" placeholder="Costo Inversión ($)" oninput="verSugerencias()">
             </div>
-            <input type="text" id="del-client-name" placeholder="Nombre del Cliente (Requerido)">
-            <input type="text" id="del-location" placeholder="Ubicación de Entrega (Requerido)">
-            <textarea id="del-items" placeholder="Artículos a Entregar (ej. 1 Paquete Básico, 2 Redes Sociales)"></textarea>
-            <button onclick="scheduleDelivery()" class="btn-schedule">📅 Guardar Entrega</button>
-        </div>
-        <h3>Próximas Entregas</h3>
-        <div id="deliveries-list"></div>
-    </div>
-
-
-    <div id="tab-inventory" class="container">
-        <div class="card">
-            <h3 id="form-title">Nuevo Producto</h3>
-            <input type="text" id="inp-name" placeholder="Nombre (ej. Paquete Básico)">
-            <div class="input-group">
-                <input type="number" id="inp-price" placeholder="Precio Venta ($)">
-                <input type="number" id="inp-cost" placeholder="Costo Inversión ($)">
+            <div id="sug-box" style="margin: 5px 0;"></div>
+            <input type="number" id="p-final-price" placeholder="Precio de Venta Final ($)" style="border: 2px solid var(--primary);">
+            
+            <div id="stock-buttons">
+                <button class="btn btn-main" id="btn-save-prod" onclick="guardarProducto()">Guardar en Stock</button>
             </div>
-            <input type="number" id="inp-stock" placeholder="Cantidad Stock">
-            
-            <button onclick="addProduct()" id="btn-save" class="btn-add">💾 Guardar Producto</button>
-            <button onclick="updateProduct()" id="btn-update" class="btn-update">🔄 Actualizar Producto</button>
-            <button onclick="cancelEdit()" id="btn-cancel" class="btn-update" style="background:#ddd; color:#333; margin-top:5px;">Cancelar Edición</button>
+            <button class="btn btn-cancel hidden" id="btn-cancel-edit" onclick="resetForm()">Cancelar Edición</button>
+            <button class="btn btn-warning" onclick="toggleModal(true)" style="background:var(--warning); color:white;">🎁 Armar Nuevo Paquete</button>
         </div>
-        <h3>Tus Productos</h3>
-        <div id="inventory-list"></div>
-    </div>
 
-    <div id="tab-stats" class="container">
-        <div class="stat-card stat-blue">
-            <div class="stat-label">VENTAS TOTALES (Ingresos)</div>
-            <div class="stat-number">$<span id="stat-revenue">0.00</span></div>
+        <div class="card" style="overflow-x: auto;">
+            <h3>Inventario Actual</h3>
+            <table>
+                <thead>
+                    <tr><th>Item</th><th>Cant.</th><th>Costo</th><th>Venta</th><th>Acción</th></tr>
+                </thead>
+                <tbody id="stock-body"></tbody>
+            </table>
         </div>
-        <div class="stat-card stat-red">
-            <div class="stat-label">TOTAL INVERTIDO (En lo vendido)</div>
-            <div class="stat-number">$<span id="stat-cost">0.00</span></div>
-        </div>
-        <div class="stat-card stat-green">
-            <div class="stat-label">GANANCIA NETA (Utilidad)</div>
-            <div class="stat-number">$<span id="stat-profit">0.00</span></div>
+    </section>
+
+    <section id="tab-reports" class="hidden">
+        <div class="card" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><small>Ventas Hoy</small><h3 id="rep-today">$0.00</h3></div>
+            <div><small>Ganancia Hoy</small><h3 id="rep-profit" style="color:var(--success)">$0.00</h3></div>
+            <div><small>Inversión en Stock</small><h3 id="rep-in-stock" style="color:var(--primary)">$0.00</h3></div>
+            <div><small>Inversión Vendida</small><h3 id="rep-in-sold" style="color:var(--danger)">$0.00</h3></div>
         </div>
         <div class="card">
-            <h3>Valor del Inventario Actual</h3>
-            <p>Dinero detenido en mercancía sin vender: <strong>$<span id="stat-stock-value">0.00</span></strong></p>
-            <button onclick="resetStats()" style="background:none; color:red; font-size:0.8rem; margin-top:10px; text-decoration:underline;">Borrar historial de ventas</button>
+            <canvas id="chartSemanal"></canvas>
+        </div>
+    </section>
+</div>
+
+<div id="modal-pkg" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3>🎁 Crear Paquete</h3>
+        <input type="text" id="pkg-name" placeholder="Nombre del Paquete">
+        <p><small>Selecciona del stock:</small></p>
+        <div id="pkg-checklist" style="max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px;"></div>
+        <input type="number" id="pkg-price" placeholder="Precio Final del Paquete">
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-main" onclick="guardarPaquete()">Crear</button>
+            <button class="btn btn-outline" onclick="toggleModal(false)" style="background:#eee;">Cerrar</button>
         </div>
     </div>
+</div>
 
-    <nav>
-        <button onclick="switchTab('sell')" id="nav-sell" class="nav-btn active">
-            <span>🛒</span>Vender
-        </button>
-        <button onclick="switchTab('deliveries')" id="nav-deliveries" class="nav-btn">
-            <span>🚚</span>Entregas
-        </button>
-        <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-btn">
-            <span>📦</span>Stock
-        </button>
-        <button onclick="switchTab('stats')" id="nav-stats" class="nav-btn">
-            <span>📈</span>Finanzas
-        </button>
-    </nav>
+<nav>
+    <button onclick="navTo('tab-pos')" class="active" id="nav-pos">🛒 Ventas</button>
+    <button onclick="navTo('tab-stock')" id="nav-stock">📦 Stock</button>
+    <button onclick="navTo('tab-reports')" id="nav-reports">📊 Reportes</button>
+</nav>
 
-    <script>
-        // --- BASE DE DATOS LOCAL ---
-        let products = JSON.parse(localStorage.getItem('myProducts')) || [];
-        let salesHistory = JSON.parse(localStorage.getItem('mySales')) || [];
-        let deliveries = JSON.parse(localStorage.getItem('myDeliveries')) || []; // NUEVO: Entregas
-        let cart = [];
-        let editingIndex = -1; 
-        let isPackageMode = false; // Estado del modo paquete/precio manual
+<script>
+    let db_p = JSON.parse(localStorage.getItem('p_v3')) || [];
+    let db_pkg = JSON.parse(localStorage.getItem('pkg_v3')) || [];
+    let db_sales = JSON.parse(localStorage.getItem('s_v3')) || [];
+    let carrito = [];
+    let chartObj = null;
 
-        function saveLocal() {
-            localStorage.setItem('myProducts', JSON.stringify(products));
-            localStorage.setItem('mySales', JSON.stringify(salesHistory));
-            localStorage.setItem('myDeliveries', JSON.stringify(deliveries)); // GUARDAR ENTREGAS
-            render();
+    function navTo(id) {
+        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.remove('hidden');
+        document.getElementById('nav-' + id.replace('tab-', '')).classList.add('active');
+        if(id === 'tab-stock') renderStock();
+        if(id === 'tab-pos') renderPOS();
+        if(id === 'tab-reports') renderReportes();
+    }
+
+    // --- LÓGICA DE STOCK Y EDICIÓN ---
+    function verSugerencias() {
+        let c = parseFloat(document.getElementById('p-cost').value) || 0;
+        if(c > 0) {
+            document.getElementById('sug-box').innerHTML = 
+                `<span class="badge b-desc">Desc 50%: $${(c*1.5).toFixed(2)}</span> ` +
+                `<span class="badge b-sug">Sug 70%: $${(c*1.7).toFixed(2)}</span>`;
+        }
+    }
+
+    function guardarProducto() {
+        let id = document.getElementById('edit-id').value;
+        let n = document.getElementById('p-name').value;
+        let q = parseInt(document.getElementById('p-qty').value);
+        let c = parseFloat(document.getElementById('p-cost').value);
+        let pf = parseFloat(document.getElementById('p-final-price').value);
+
+        if(!n || isNaN(q) || isNaN(c) || isNaN(pf)) return alert("Completa todos los campos, incluyendo el precio final.");
+
+        if(id) {
+            // EDITAR
+            let index = db_p.findIndex(p => p.id == id);
+            db_p[index] = { id: parseInt(id), name: n, qty: q, cost: c, finalPrice: pf };
+            alert("Producto actualizado");
+        } else {
+            // NUEVO
+            db_p.push({ id: Date.now(), name: n, qty: q, cost: c, finalPrice: pf });
         }
 
-        // --- RENDERIZADO (DIBUJAR PANTALLA) ---
-        function render() {
-            renderInventoryList();
-            renderDeliveries(); // NUEVO: Dibuja las entregas
-            updateStatsUI();
-            updateCartUI(); 
-        }
+        actualizarDB();
+        resetForm();
+        renderStock();
+    }
+
+    function editarProd(id) {
+        let p = db_p.find(prod => prod.id == id);
+        document.getElementById('edit-id').value = p.id;
+        document.getElementById('p-name').value = p.name;
+        document.getElementById('p-qty').value = p.qty;
+        document.getElementById('p-cost').value = p.cost;
+        document.getElementById('p-final-price').value = p.finalPrice;
         
-        function renderInventoryList() {
-            const sellList = document.getElementById('sell-list');
-            const invList = document.getElementById('inventory-list');
-            
-            sellList.innerHTML = '';
-            invList.innerHTML = '';
+        document.getElementById('form-title').innerText = "✎ Editando: " + p.name;
+        document.getElementById('btn-save-prod').innerText = "Actualizar Cambios";
+        document.getElementById('btn-save-prod').classList.replace('btn-main', 'btn-edit');
+        document.getElementById('btn-cancel-edit').classList.remove('hidden');
+        verSugerencias();
+        window.scrollTo(0,0);
+    }
 
-            products.forEach((p, i) => {
-                // Lista para VENDER
-                sellList.innerHTML += `
-                    <div class="card flex-row">
-                        <div class="product-info">
-                            <h3>${p.name}</h3>
-                            <p>Precio: $${p.price}</p>
-                        </div>
-                        <div style="text-align:right">
-                            <div class="stock-badge" style="margin-bottom:5px;">Stock: ${p.stock}</div>
-                            <button class="btn-add" style="margin:0; padding:5px 15px;" onclick="addToCart(${i})">➕</button>
-                        </div>
-                    </div>
-                `;
+    function resetForm() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('p-name').value = "";
+        document.getElementById('p-qty').value = "";
+        document.getElementById('p-cost').value = "";
+        document.getElementById('p-final-price').value = "";
+        document.getElementById('form-title').innerText = "📦 Agregar Producto";
+        document.getElementById('btn-save-prod').innerText = "Guardar en Stock";
+        document.getElementById('btn-save-prod').classList.replace('btn-edit', 'btn-main');
+        document.getElementById('btn-cancel-edit').classList.add('hidden');
+        document.getElementById('sug-box').innerHTML = "";
+    }
 
-                // Lista para INVENTARIO (Administrar)
-                invList.innerHTML += `
-                    <div class="card flex-row">
-                        <div class="product-info">
-                            <h3>${p.name}</h3>
-                            <p>Venta: $${p.price} | Costo: $${p.cost}</p>
-                            <p style="color:${p.stock < 3 ? 'red' : 'green'}">Stock: ${p.stock}</p>
-                        </div>
-                        <div>
-                            <button class="btn-icon" onclick="startEdit(${i})">✏️</button>
-                            <button class="btn-icon" style="color:red;" onclick="deleteProduct(${i})">🗑️</button>
-                        </div>
-                    </div>
-                `;
-            });
+    function renderStock() {
+        let html = '';
+        db_p.forEach((p) => {
+            html += `<tr>
+                <td><b>${p.name}</b></td>
+                <td>${p.qty}</td>
+                <td>$${p.cost.toFixed(2)}</td>
+                <td style="color:var(--primary); font-weight:bold;">$${p.finalPrice.toFixed(2)}</td>
+                <td>
+                    <button onclick="editarProd(${p.id})" style="border:none; color:var(--primary); background:none; cursor:pointer; font-size:1.1rem;">✎</button>
+                    <button onclick="borrarProd(${p.id})" style="border:none; color:red; background:none; cursor:pointer; margin-left:10px;">✖</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('stock-body').innerHTML = html || '<tr><td colspan="5">No hay productos</td></tr>';
+    }
+
+    function borrarProd(id) {
+        if(confirm("¿Eliminar este producto permanentemente?")) {
+            db_p = db_p.filter(p => p.id != id);
+            actualizarDB(); renderStock();
         }
+    }
 
-        // --- LÓGICA INVENTARIO (Mantiene lógica original) ---
-        function addProduct() {
-            const name = document.getElementById('inp-name').value;
-            const price = parseFloat(document.getElementById('inp-price').value);
-            const cost = parseFloat(document.getElementById('inp-cost').value);
-            const stock = parseInt(document.getElementById('inp-stock').value);
+    // --- POS CON BUSCADOR ---
+    function renderPOS() {
+        let grid = document.getElementById('pos-grid');
+        let search = document.getElementById('pos-search').value.toLowerCase();
+        let html = '';
 
-            if(name && !isNaN(price) && !isNaN(cost) && !isNaN(stock)) {
-                products.push({ name, price, cost, stock });
-                saveLocal();
-                clearForm();
-                alert('Producto creado');
+        // Filtrar Productos
+        db_p.filter(p => p.name.toLowerCase().includes(search)).forEach(p => {
+            if(p.qty > 0) {
+                html += `<div class="item-card" onclick="sumarAlCarro('${p.id}', false)">
+                    <b>${p.name}</b><br><span style="color:var(--primary)">$${p.finalPrice.toFixed(2)}</span><br><small>Stock: ${p.qty}</small>
+                </div>`;
+            }
+        });
+
+        // Filtrar Paquetes
+        db_pkg.filter(k => k.name.toLowerCase().includes(search)).forEach(k => {
+            html += `<div class="item-card pkg" onclick="sumarAlCarro('${k.id}', true)">
+                <b>🎁 ${k.name}</b><br><span style="color:var(--warning)">$${k.price.toFixed(2)}</span><br><small>Paquete</small>
+            </div>`;
+        });
+
+        grid.innerHTML = html || '<p style="grid-column: 1/-1; text-align:center;">No se encontró nada.</p>';
+    }
+
+    // --- RESTO DE LÓGICA (MANTENIDA) ---
+    function sumarAlCarro(id, esPkg) {
+        let item;
+        if(esPkg) {
+            let k = db_pkg.find(x => x.id === id);
+            item = { id: k.id, name: k.name, price: k.price, esPkg: true, qty: 1, cost: 0 };
+        } else {
+            let p = db_p.find(x => x.id == id);
+            item = { id: p.id, name: p.name, price: p.finalPrice, esPkg: false, qty: 1, cost: p.cost };
+        }
+        let ya = carrito.find(c => c.id === id);
+        if(ya) ya.qty++; else carrito.push(item);
+        renderCarro();
+    }
+
+    function renderCarro() {
+        let html = ''; let t = 0;
+        carrito.forEach((c, i) => {
+            t += c.price * c.qty;
+            html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                <span><b>${c.name}</b> x${c.qty}</span>
+                <span>$${(c.price * c.qty).toFixed(2)} <button onclick="quitar(${i})" style="border:none; color:red; background:none; cursor:pointer;">✖</button></span>
+            </div>`;
+        });
+        document.getElementById('cart-items').innerHTML = html;
+        document.getElementById('total-val').innerText = t.toFixed(2);
+    }
+
+    function quitar(i) { carrito.splice(i,1); renderCarro(); }
+
+    function confirmarVenta() {
+        if(carrito.length === 0) return;
+        let v_total = 0; let v_inv = 0;
+        carrito.forEach(c => {
+            v_total += c.price * c.qty;
+            if(c.esPkg) {
+                let pkg = db_pkg.find(x => x.id === c.id);
+                pkg.items.forEach(pid => {
+                    let prod = db_p.find(p => p.id == pid);
+                    if(prod) { prod.qty -= c.qty; v_inv += (prod.cost * c.qty); }
+                });
             } else {
-                alert('Completa todos los campos correctamente');
+                let prod = db_p.find(p => p.id == c.id);
+                if(prod) { prod.qty -= c.qty; v_inv += (prod.cost * c.qty); }
             }
-        }
+        });
+        db_sales.push({ date: new Date().toISOString().split('T')[0], total: v_total, inv: v_inv });
+        carrito = []; actualizarDB(); renderCarro(); renderPOS();
+        alert("¡Venta finalizada!");
+    }
 
-        function deleteProduct(i) {
-            if(confirm('¿Eliminar este producto?')) {
-                products.splice(i, 1);
-                saveLocal();
-            }
-        }
-
-        // --- LÓGICA EDICIÓN (Mantiene lógica original) ---
-        function startEdit(i) {
-            editingIndex = i;
-            const p = products[i];
-            
-            document.getElementById('inp-name').value = p.name;
-            document.getElementById('inp-price').value = p.price;
-            document.getElementById('inp-cost').value = p.cost;
-            document.getElementById('inp-stock').value = p.stock;
-
-            document.getElementById('btn-save').style.display = 'none';
-            document.getElementById('btn-update').style.display = 'block';
-            document.getElementById('btn-cancel').style.display = 'block';
-            document.getElementById('form-title').innerText = 'Editando: ' + p.name;
-            document.getElementById('editing-indicator').style.display = 'block';
-            
-            window.scrollTo(0,0);
-        }
-
-        function updateProduct() {
-            if(editingIndex === -1) return;
-
-            const name = document.getElementById('inp-name').value;
-            const price = parseFloat(document.getElementById('inp-price').value);
-            const cost = parseFloat(document.getElementById('inp-cost').value);
-            const stock = parseInt(document.getElementById('inp-stock').value);
-
-            if(name && !isNaN(price)) {
-                products[editingIndex] = { name, price, cost, stock };
-                saveLocal();
-                clearForm();
-                alert('Producto actualizado');
-            }
-        }
-
-        function cancelEdit() {
-            clearForm();
-        }
-
-        function clearForm() {
-            document.getElementById('inp-name').value = '';
-            document.getElementById('inp-price').value = '';
-            document.getElementById('inp-cost').value = '';
-            document.getElementById('inp-stock').value = '';
-            
-            document.getElementById('btn-save').style.display = 'block';
-            document.getElementById('btn-update').style.display = 'none';
-            document.getElementById('btn-cancel').style.display = 'none';
-            document.getElementById('form-title').innerText = 'Nuevo Producto';
-            document.getElementById('editing-indicator').style.display = 'none';
-            editingIndex = -1;
-        }
-
-        // --- LÓGICA VENTA (Mantiene lógica original) ---
-        function addToCart(productIndex) {
-            if(products[productIndex].stock > 0) {
-                let item = { ...products[productIndex], originalIndex: productIndex }; 
-                cart.push(item);
-                products[productIndex].stock--; 
-                updateCartUI();
-                saveLocal(); 
-            } else {
-                alert('Sin stock');
-            }
-        }
+    function renderReportes() {
+        let hoy = new Date().toISOString().split('T')[0];
+        let v_hoy = db_sales.filter(s => s.date === hoy);
+        let t_hoy = v_hoy.reduce((a,b) => a + b.total, 0);
+        let i_hoy = v_hoy.reduce((a,b) => a + b.inv, 0);
+        document.getElementById('rep-today').innerText = `$${t_hoy.toFixed(2)}`;
+        document.getElementById('rep-profit').innerText = `$${(t_hoy - i_hoy).toFixed(2)}`;
+        document.getElementById('rep-in-stock').innerText = `$${db_p.reduce((a,b) => a + (b.cost * b.qty), 0).toFixed(2)}`;
+        document.getElementById('rep-in-sold').innerText = `$${db_sales.reduce((a,b) => a + b.inv, 0).toFixed(2)}`;
         
-        function removeFromCart(cartIndex) {
-            if (cartIndex >= 0 && cartIndex < cart.length) {
-                const itemToRemove = cart[cartIndex];
-                const originalProductIndex = itemToRemove.originalIndex;
-
-                // Solo devolvemos stock si el item es un producto individual (no un combo/manual)
-                if (originalProductIndex !== undefined) {
-                    products[originalProductIndex].stock++; 
-                }
-
-                cart.splice(cartIndex, 1);
-                
-                saveLocal(); 
-                updateCartUI();
-            }
+        let labels = []; let valores = [];
+        for(let i=6; i>=0; i--) {
+            let d = new Date(); d.setDate(d.getDate() - i);
+            let ds = d.toISOString().split('T')[0];
+            labels.push(ds);
+            valores.push(db_sales.filter(s => s.date === ds).reduce((a,b) => a + b.total, 0));
         }
+        if(chartObj) chartObj.destroy();
+        chartObj = new Chart(document.getElementById('chartSemanal'), {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Ventas Semanales', data: valores, borderColor: '#2563eb', tension:0.3 }] }
+        });
+    }
 
-        // --- LÓGICA PAQUETE / PRECIO MANUAL (Mantiene lógica original) ---
-        function togglePackageMode() {
-            isPackageMode = !isPackageMode;
-            const btn = document.getElementById('btn-package-mode');
-            const manualView = document.getElementById('manual-price-view');
-            const subtotalView = document.getElementById('subtotal-view');
-            const discountFixedInput = document.getElementById('discount-fixed');
-            const discountAmountView = document.getElementById('discount-amount-view');
-            
-            if (isPackageMode) {
-                btn.innerText = '✅ Modo Combo ACTIVO (Precio Manual)';
-                btn.style.backgroundColor = 'var(--warning)'; 
-                btn.style.color = 'black'; 
-                manualView.style.display = 'block';
-                subtotalView.style.display = 'none';
-                discountFixedInput.disabled = true; 
-                discountFixedInput.style.backgroundColor = '#ddd';
-                discountAmountView.style.display = 'none';
-                
-            } else {
-                btn.innerText = 'Activar Precio Manual / Combo 📦';
-                btn.style.backgroundColor = '#555';
-                btn.style.color = 'white';
-                manualView.style.display = 'none';
-                subtotalView.style.display = 'flex';
-                discountFixedInput.disabled = false; 
-                discountFixedInput.style.backgroundColor = 'var(--card)';
-                discountAmountView.style.display = 'flex';
-                document.getElementById('manual-total-input').value = ''; 
-                document.getElementById('discount-fixed').value = '0'; 
-            }
-            
-            updateCartUI();
+    function toggleModal(show) {
+        document.getElementById('modal-pkg').classList.toggle('hidden', !show);
+        if(show) {
+            let list = '';
+            db_p.forEach(p => list += `<label style="display:block;"><input type="checkbox" class="pkg-check" value="${p.id}"> ${p.name}</label>`);
+            document.getElementById('pkg-checklist').innerHTML = list || 'No hay productos';
         }
+    }
 
-        // --- LÓGICA CARITO y TOTALES (Mantiene lógica original) ---
-        function updateCartUI() {
-            let subtotal = cart.reduce((sum, item) => item.price !== undefined ? sum + item.price : sum, 0); // Manejar items sin precio (si existieran, aunque no deberían)
-            document.getElementById('cart-subtotal').innerText = subtotal.toFixed(2);
-            
-            const discountFixedInput = document.getElementById('discount-fixed');
-            const manualTotalInput = document.getElementById('manual-total-input');
-            
-            let finalTotal = 0;
-            let discountAmount = 0;
+    function guardarPaquete() {
+        let n = document.getElementById('pkg-name').value;
+        let pr = parseFloat(document.getElementById('pkg-price').value);
+        let sel = Array.from(document.querySelectorAll('.pkg-check:checked')).map(el => parseInt(el.value));
+        if(!n || isNaN(pr) || sel.length < 2) return alert("Completa el paquete");
+        db_pkg.push({ id: 'pkg-'+Date.now(), name: n, price: pr, items: sel });
+        actualizarDB(); toggleModal(false); alert("Paquete creado");
+    }
 
-            if (isPackageMode) {
-                finalTotal = parseFloat(manualTotalInput.value) || 0;
-                discountAmount = subtotal - finalTotal;
-                // Si el carrito está vacío, el descuento debe ser 0
-                if(subtotal === 0) discountAmount = 0; 
+    function actualizarDB() {
+        localStorage.setItem('p_v3', JSON.stringify(db_p));
+        localStorage.setItem('pkg_v3', JSON.stringify(db_pkg));
+        localStorage.setItem('s_v3', JSON.stringify(db_sales));
+    }
 
-                discountFixedInput.value = discountAmount.toFixed(2);
-                
-            } else {
-                discountAmount = parseFloat(discountFixedInput.value) || 0;
-                
-                if (discountAmount > subtotal) { 
-                    discountAmount = subtotal;
-                    discountFixedInput.value = subtotal.toFixed(2);
-                }
-                
-                finalTotal = subtotal - discountAmount;
-                manualTotalInput.value = '';
-            }
-            
-            document.getElementById('discount-amount').innerText = discountAmount.toFixed(2);
-            document.getElementById('cart-total').innerText = finalTotal.toFixed(2);
-            document.getElementById('cart-items-count').innerText = `${cart.length} items`;
-
-            const cartDetailsList = document.getElementById('cart-details-list');
-            cartDetailsList.innerHTML = '';
-            cart.forEach((item, i) => {
-                const isPackage = isPackageMode && i === cart.length - 1; // Podríamos marcar el último item como el "combo" si el modo está activo.
-                cartDetailsList.innerHTML += `
-                    <div class="cart-item-card" style="border-left-color:${isPackage ? 'var(--warning)' : 'var(--danger)'};">
-                        <div class="cart-item-info">${isPackage ? '📦' : ''} ${item.name} ($${item.price.toFixed(2)})</div>
-                        <button class="btn-remove" onclick="removeFromCart(${i})">🗑️ Eliminar</button>
-                    </div>
-                `;
-            });
-        }
-
-        function checkout() {
-            if(cart.length === 0) return alert('Carrito vacío');
-            
-            if(confirm('¿Confirmar venta?')) {
-                const totalSale = parseFloat(document.getElementById('cart-total').innerText);
-                const totalCostOfItems = cart.reduce((sum, item) => sum + (item.cost || 0), 0); // Asegurarse de que `cost` exista
-                const discountAmount = parseFloat(document.getElementById('discount-amount').innerText);
-                const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
-
-                const saleRecord = {
-                    date: new Date().toISOString(),
-                    items: cart.map(item => ({name: item.name, price: item.price, cost: item.cost})),
-                    subtotal: subtotal,
-                    discount: discountAmount,
-                    totalSale: totalSale, 
-                    totalCost: totalCostOfItems 
-                };
-                
-                salesHistory.push(saleRecord);
-                
-                // Resetear carrito y modo
-                cart = [];
-                isPackageMode = true; // Forzamos un toggle para resetear la interfaz
-                togglePackageMode(); 
-                
-                saveLocal(); 
-                alert('¡Venta registrada!');
-                switchTab('stats'); 
-            }
-        }
-
-        // --- LÓGICA ENTREGAS (NUEVO) ---
-
-        function scheduleDelivery() {
-            const datetime = document.getElementById('del-datetime').value;
-            const clientName = document.getElementById('del-client-name').value;
-            const location = document.getElementById('del-location').value;
-            const items = document.getElementById('del-items').value;
-
-            if (!datetime || !clientName || !location || !items) {
-                alert('Por favor, completa todos los campos.');
-                return;
-            }
-
-            deliveries.push({
-                datetime,
-                clientName,
-                location,
-                items,
-                isCompleted: false,
-                id: Date.now() 
-            });
-
-            saveLocal();
-            // Limpiar formulario
-            document.getElementById('del-datetime').value = '';
-            document.getElementById('del-client-name').value = '';
-            document.getElementById('del-location').value = '';
-            document.getElementById('del-items').value = '';
-            
-            alert('Entrega agendada con éxito.');
-        }
-
-        function findDeliveryIndexById(id) {
-            return deliveries.findIndex(d => d.id === id);
-        }
-
-        function deleteDelivery(id) {
-            if(confirm('¿Eliminar esta entrega agendada?')) {
-                const index = findDeliveryIndexById(id);
-                if (index > -1) {
-                    deliveries.splice(index, 1);
-                    saveLocal();
-                }
-            }
-        }
-
-        function markDelivery(id) {
-            const index = findDeliveryIndexById(id);
-            if (index > -1) {
-                deliveries[index].isCompleted = true;
-                saveLocal();
-            }
-        }
-
-        function unmarkDelivery(id) {
-            const index = findDeliveryIndexById(id);
-            if (index > -1) {
-                deliveries[index].isCompleted = false;
-                saveLocal();
-            }
-        }
-
-        function renderDeliveries() {
-            const list = document.getElementById('deliveries-list');
-            list.innerHTML = '';
-            
-            // Ordenar por fecha/hora (más cercano primero)
-            const sortedDeliveries = [...deliveries].sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
-
-            sortedDeliveries.forEach(d => {
-                const dateTimeStr = d.datetime ? new Date(d.datetime).toLocaleString('es-MX', { 
-                    year: 'numeric', month: 'short', day: 'numeric', 
-                    hour: '2-digit', minute: '2-digit' 
-                }) : 'Sin fecha';
-                
-                const cardClass = d.isCompleted ? 'delivery-card completed' : 'delivery-card pending';
-                const statusText = d.isCompleted ? '✅ Entregado' : '⏳ Pendiente';
-                const btnAction = d.isCompleted ? `unmarkDelivery(${d.id})` : `markDelivery(${d.id})`;
-                const btnText = d.isCompleted ? 'Desmarcar' : 'Completar';
-
-                list.innerHTML += `
-                    <div class="card ${cardClass}" style="border-left-color: ${d.isCompleted ? 'var(--success)' : 'var(--primary)'};">
-                        <div class="flex-row" style="align-items:flex-start;">
-                            <div style="flex-grow:1;">
-                                <h4 style="margin:0 0 5px 0;">Cliente: ${d.clientName}</h4>
-                                <p style="margin:0 0 5px 0; font-weight:bold; color:var(--primary);">${dateTimeStr}</p>
-                                <p style="margin:0; font-size:0.9rem;">📍 **Ubicación:** ${d.location}</p>
-                                <p style="margin:5px 0 10px 0; font-size:0.9rem;">📦 **Artículos:** ${d.items}</p>
-                                <span class="stock-badge" style="background:${d.isCompleted ? '#dcfce7' : '#eff6ff'}; color:${d.isCompleted ? 'var(--success)' : 'var(--primary)'};">${statusText}</span>
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:5px;">
-                                <button class="btn-remove" style="background:none; color:var(--danger); margin-top:0;" onclick="deleteDelivery(${d.id})">🗑️</button>
-                                <button class="btn-icon" style="background:${d.isCompleted ? '#dcfce7' : '#e0f2f1'}; color:${d.isCompleted ? 'var(--success)' : 'var(--primary)'}; padding: 8px 10px; font-size: 0.8rem; font-weight:bold;" onclick="${btnAction}">${btnText}</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            if (deliveries.length === 0) {
-                list.innerHTML = '<p style="text-align:center; color:#666;">No hay entregas programadas.</p>';
-            }
-        }
-
-
-        // --- LÓGICA FINANZAS (Mantiene lógica original) ---
-        function updateStatsUI() {
-            let totalRevenue = 0;
-            let totalCostOfSold = 0;
-
-            salesHistory.forEach(sale => {
-                totalRevenue += sale.totalSale;
-                totalCostOfSold += sale.totalCost;
-            });
-
-            let profit = totalRevenue - totalCostOfSold;
-            
-            let inventoryValue = products.reduce((sum, p) => sum + (p.cost * p.stock), 0);
-
-            document.getElementById('stat-revenue').innerText = totalRevenue.toFixed(2);
-            document.getElementById('stat-cost').innerText = totalCostOfSold.toFixed(2);
-            document.getElementById('stat-profit').innerText = profit.toFixed(2);
-            document.getElementById('stat-stock-value').innerText = inventoryValue.toFixed(2);
-        }
-
-        function resetStats() {
-            if(confirm('¿Deseas BORRAR todo el historial de dinero? (El stock se mantiene)')) {
-                salesHistory = [];
-                saveLocal();
-            }
-        }
-
-        // --- NAVEGACIÓN (Actualizada para 4 pestañas) ---
-        function switchTab(tab) {
-            document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
-            
-            const tabElement = document.getElementById(`tab-${tab}`);
-            const navButton = document.getElementById(`nav-${tab}`);
-            
-            if (tabElement) tabElement.classList.add('active');
-            if (navButton) navButton.classList.add('active');
-            
-            let titles = { 'sell': 'Punto de Venta', 'deliveries': 'Mis Entregas', 'inventory': 'Inventario', 'stats': 'Mis Finanzas' };
-            document.getElementById('page-title').innerText = titles[tab] || 'Gestión Comercial Pro';
-        }
-
-        // Iniciar
-        // Usamos switchTab para establecer el estado inicial y asegurarnos de que el botón se vea activo
-        switchTab('sell');
-        // El modo paquete debe estar desactivado inicialmente
-        isPackageMode = true; 
-        togglePackageMode(); // Lo activamos y desactivamos para dejarlo en modo Normal (false)
-        
-        render();
-    </script>
+    navTo('tab-pos');
+</script>
 </body>
 </html>
