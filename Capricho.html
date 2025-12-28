@@ -3,367 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Pro v3 - Control Total</title>
+    <title>Gestor Cloud Pro - v7</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        :root {
-            --primary: #2563eb; --success: #10b981; --danger: #ef4444;
-            --warning: #f59e0b; --dark: #1e293b; --light: #f8fafc;
-        }
-
-        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background: #f1f5f9; color: var(--dark); padding-bottom: 80px; }
-        header { background: var(--primary); color: white; padding: 1rem; text-align: center; }
-        
-        nav { display: flex; background: white; border-top: 1px solid #e2e8f0; position: fixed; bottom: 0; width: 100%; z-index: 100; }
-        nav button { flex: 1; padding: 15px 0; border: none; background: none; font-size: 0.8rem; font-weight: 600; color: #64748b; cursor: pointer; }
-        nav button.active { color: var(--primary); border-top: 3px solid var(--primary); }
-
-        .container { padding: 15px; max-width: 800px; margin: 0 auto; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .hidden { display: none !important; }
-
-        /* Buscador */
-        .search-box { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; margin-bottom: 15px; font-size: 1rem; outline: none; transition: 0.3s; }
-        .search-box:focus { border-color: var(--primary); }
-
-        /* Cuadrícula POS */
-        .grid-pos { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-        .item-card { background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .item-card:hover { border-color: var(--primary); background: #f0f7ff; }
-        .item-card.pkg { background: #fffbeb; border: 1px solid var(--warning); }
-
-        /* Formularios */
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
-        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-        .btn-main { background: var(--primary); color: white; }
-        .btn-edit { background: #6366f1; color: white; }
-        .btn-cancel { background: #94a3b8; color: white; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
-        th, td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #f1f5f9; }
-        
-        .badge { padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; display: inline-block; margin-top: 2px; }
-        .b-desc { background: #dcfce7; color: #166534; }
-        .b-sug { background: #dbeafe; color: #1e40af; }
-
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 2000; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; }
+        .grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+        [v-cloak] { display: none; }
+        .loading-overlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
-<body>
-
-<header><h1 style="margin:0; font-size: 1.2rem;">Control de Negocio v3</h1></header>
-
-<div class="container">
-    
-    <section id="tab-pos">
-        <div class="card">
-            <h3>🛒 Punto de Venta</h3>
-            <input type="text" id="pos-search" class="search-box" placeholder="🔍 Buscar producto o paquete..." oninput="renderPOS()">
-            <div id="pos-grid" class="grid-pos"></div>
-        </div>
+<body class="bg-gray-50 text-gray-800">
+    <div id="app" v-cloak>
         
-        <div class="card">
-            <h3>Cesta Actual</h3>
-            <div id="cart-items"></div>
-            <h2 style="text-align: right; margin-top:15px;">Total: $<span id="total-val">0.00</span></h2>
-            <button class="btn btn-main" onclick="confirmarVenta()" style="background: var(--success); font-size: 1.1rem;">Finalizar Venta</button>
+        <div v-if="cargando" class="loading-overlay font-bold flex-col">
+            <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+            Sincronizando...
         </div>
-    </section>
 
-    <section id="tab-stock" class="hidden">
-        <div class="card">
-            <h3 id="form-title">📦 Agregar Producto</h3>
-            <input type="hidden" id="edit-id" value="">
-            <input type="text" id="p-name" placeholder="Nombre del Producto">
-            <div style="display: flex; gap: 10px;">
-                <input type="number" id="p-qty" placeholder="Piezas">
-                <input type="number" id="p-cost" placeholder="Costo Inversión ($)" oninput="verSugerencias()">
-            </div>
-            <div id="sug-box" style="margin: 5px 0;"></div>
-            <input type="number" id="p-final-price" placeholder="Precio de Venta Final ($)" style="border: 2px solid var(--primary);">
+        <nav class="bg-indigo-800 text-white shadow-lg p-4 sticky top-0 z-50 flex justify-around">
+            <button @click="vista = 'ventas'"><i class="bi bi-cart"></i> Ventas</button>
+            <button @click="vista = 'agendados'"><i class="bi bi-calendar"></i> Agenda</button>
+            <button @click="vista = 'stock'"><i class="bi bi-box"></i> Stock</button>
+            <button @click="vista = 'reportes'"><i class="bi bi-graph-up"></i> Reportes</button>
+        </nav>
+
+        <main class="p-4 max-w-5xl mx-auto">
             
-            <div id="stock-buttons">
-                <button class="btn btn-main" id="btn-save-prod" onclick="guardarProducto()">Guardar en Stock</button>
+            <section v-if="vista === 'ventas'">
+                <div class="bg-white p-6 rounded-2xl shadow-lg mb-6 border-l-8 border-indigo-500">
+                    <div class="flex justify-between mb-4">
+                        <h2 class="font-bold text-xl text-indigo-900">Carrito</h2>
+                        <button v-if="carrito.length > 0" @click="abrirModalDescuento" class="text-xs bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold">
+                            <i class="bi bi-percent"></i> Aplicar Descuento
+                        </button>
+                    </div>
+
+                    <div v-for="(item, i) in carrito" :key="i" class="flex justify-between items-center text-sm border-b py-2">
+                        <span>{{ item.nombre }}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold">${{ item.precioVenta }}</span>
+                            <button @click="quitarDelCarrito(i)" class="text-red-400"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex flex-col items-end">
+                        <div v-if="descuentoAplicado > 0" class="text-red-500 text-xs font-bold">
+                            Descuento: -${{ descuentoAplicado }}
+                        </div>
+                        <div class="text-3xl font-black">${{ totalConDescuento }}</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <button @click="finalizarVentaInmediata" :disabled="carrito.length === 0" class="bg-green-600 text-white p-3 rounded-xl font-bold disabled:opacity-30">Vender</button>
+                        <button @click="mostrarModalAgenda = true" :disabled="carrito.length === 0" class="bg-indigo-600 text-white p-3 rounded-xl font-bold disabled:opacity-30">Agendar</button>
+                    </div>
+                </div>
+
+                <input type="text" v-model="busqueda" placeholder="Buscar producto..." class="w-full p-4 rounded-xl mb-6 shadow-sm border-none focus:ring-2 focus:ring-indigo-400">
+
+                <div class="grid-products">
+                    <div v-for="p in productosFiltrados" @click="agregarAlCarrito(p)" 
+                         :class="{'opacity-40': obtenerStockReal(p) <= 0}"
+                         class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center cursor-pointer active:scale-95 transition">
+                        <i v-if="p.esPaquete" class="bi bi-box-seam-fill text-purple-500 text-2xl"></i>
+                        <i v-else class="bi bi-tag text-indigo-400 text-2xl"></i>
+                        <h3 class="text-xs font-bold mt-2 h-8 overflow-hidden">{{ p.nombre }}</h3>
+                        <p class="font-black text-lg">${{ p.precioVenta }}</p>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase">Stock: {{ obtenerStockReal(p) }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="vista === 'stock'">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Inventario</h2>
+                    <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">
+                        <i class="bi bi-boxes"></i> Crear Paquete
+                    </button>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow mb-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" v-model="nuevoProd.nombre" placeholder="Nombre" class="p-2 border rounded-lg col-span-2">
+                        <input type="number" v-model="nuevoProd.costo" placeholder="Costo Unit" class="p-2 border rounded-lg">
+                        <input type="number" v-model="nuevoProd.piezas" placeholder="Cantidad" class="p-2 border rounded-lg">
+                        <input type="number" v-model="nuevoProd.precioVenta" placeholder="Precio Venta" class="p-2 border rounded-lg col-span-2 font-bold text-indigo-600 bg-indigo-50">
+                    </div>
+                    <button @click="guardarProducto" class="w-full mt-4 bg-indigo-600 text-white p-3 rounded-xl font-bold shadow-lg">Registrar Producto</button>
+                </div>
+
+                <div class="bg-white rounded-xl overflow-hidden shadow">
+                    <table class="w-full text-left text-sm">
+                        <tr class="bg-gray-100 text-[10px] uppercase text-gray-400">
+                            <th class="p-3">Producto</th>
+                            <th class="p-3">Stock</th>
+                            <th class="p-3">Venta</th>
+                            <th class="p-3">Acción</th>
+                        </tr>
+                        <tr v-for="p in productos" class="border-b">
+                            <td class="p-3 font-bold">{{ p.nombre }}</td>
+                            <td class="p-3">{{ obtenerStockReal(p) }}</td>
+                            <td class="p-3 font-bold text-green-600">${{ p.precioVenta }}</td>
+                            <td class="p-3">
+                                <button @click="eliminarProducto(p.id)" class="text-red-400"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </section>
+
+            <div v-if="mostrarModalPaquete" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+                <div class="bg-white p-6 rounded-3xl w-full max-w-lg shadow-2xl">
+                    <h2 class="text-lg font-bold mb-4 text-purple-700 underline">Configurar Paquete</h2>
+                    <div class="space-y-4">
+                        <input type="text" v-model="paqueteNuevo.nombre" placeholder="Nombre del Paquete (Ej: Combo Fiesta)" class="w-full p-3 border rounded-xl">
+                        <input type="number" v-model="paqueteNuevo.precioVenta" placeholder="Precio Total del Paquete" class="w-full p-3 border rounded-xl font-bold text-purple-600">
+                        
+                        <p class="text-xs font-bold text-gray-400 uppercase">Selecciona los componentes:</p>
+                        <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-xl">
+                            <div v-for="p in productos.filter(x => !x.esPaquete)" 
+                                 @click="toggleProdEnPaquete(p)"
+                                 :class="paqueteSeleccionados.includes(p.id) ? 'bg-purple-600 text-white' : 'bg-gray-100'"
+                                 class="p-2 rounded-lg text-xs cursor-pointer transition text-center">
+                                {{ p.nombre }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-6">
+                        <button @click="guardarPaquete" class="flex-1 bg-purple-600 text-white p-3 rounded-xl font-bold">Crear Paquete</button>
+                        <button @click="mostrarModalPaquete = false" class="bg-gray-100 p-3 rounded-xl">Cerrar</button>
+                    </div>
+                </div>
             </div>
-            <button class="btn btn-cancel hidden" id="btn-cancel-edit" onclick="resetForm()">Cancelar Edición</button>
-            <button class="btn btn-warning" onclick="toggleModal(true)" style="background:var(--warning); color:white;">🎁 Armar Nuevo Paquete</button>
-        </div>
 
-        <div class="card" style="overflow-x: auto;">
-            <h3>Inventario Actual</h3>
-            <table>
-                <thead>
-                    <tr><th>Item</th><th>Cant.</th><th>Costo</th><th>Venta</th><th>Acción</th></tr>
-                </thead>
-                <tbody id="stock-body"></tbody>
-            </table>
-        </div>
-    </section>
+            <div v-if="mostrarModalDescuento" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+                <div class="bg-white p-6 rounded-3xl w-full max-w-xs shadow-2xl text-center">
+                    <i class="bi bi-cash-coin text-4xl text-green-500"></i>
+                    <h2 class="text-lg font-bold mt-2">Precio Final</h2>
+                    <p class="text-xs text-gray-500 mb-4">Ingresa cuánto vas a cobrar en total</p>
+                    <input type="number" v-model="nuevoPrecioFinal" class="w-full p-4 border-2 border-green-400 rounded-2xl text-2xl font-black text-center mb-4">
+                    <button @click="aplicarDescuento" class="w-full bg-green-600 text-white p-4 rounded-2xl font-bold">Confirmar Precio</button>
+                    <button @click="mostrarModalDescuento = false" class="mt-2 text-gray-400 text-sm">Cancelar</button>
+                </div>
+            </div>
 
-    <section id="tab-reports" class="hidden">
-        <div class="card" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div><small>Ventas Hoy</small><h3 id="rep-today">$0.00</h3></div>
-            <div><small>Ganancia Hoy</small><h3 id="rep-profit" style="color:var(--success)">$0.00</h3></div>
-            <div><small>Inversión en Stock</small><h3 id="rep-in-stock" style="color:var(--primary)">$0.00</h3></div>
-            <div><small>Inversión Vendida</small><h3 id="rep-in-sold" style="color:var(--danger)">$0.00</h3></div>
-        </div>
-        <div class="card">
-            <canvas id="chartSemanal"></canvas>
-        </div>
-    </section>
-</div>
-
-<div id="modal-pkg" class="modal-overlay hidden">
-    <div class="modal-content">
-        <h3>🎁 Crear Paquete</h3>
-        <input type="text" id="pkg-name" placeholder="Nombre del Paquete">
-        <p><small>Selecciona del stock:</small></p>
-        <div id="pkg-checklist" style="max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 10px; margin-bottom: 10px;"></div>
-        <input type="number" id="pkg-price" placeholder="Precio Final del Paquete">
-        <div style="display: flex; gap: 10px;">
-            <button class="btn btn-main" onclick="guardarPaquete()">Crear</button>
-            <button class="btn btn-outline" onclick="toggleModal(false)" style="background:#eee;">Cerrar</button>
-        </div>
+            </main>
     </div>
-</div>
 
-<nav>
-    <button onclick="navTo('tab-pos')" class="active" id="nav-pos">🛒 Ventas</button>
-    <button onclick="navTo('tab-stock')" id="nav-stock">📦 Stock</button>
-    <button onclick="navTo('tab-reports')" id="nav-reports">📊 Reportes</button>
-</nav>
+    <script type="module">
+         const FIREBASE_URL = "https://capricho-8db02-default-rtdb.firebaseio.com/"; 
 
-<script>
-    let db_p = JSON.parse(localStorage.getItem('p_v3')) || [];
-    let db_pkg = JSON.parse(localStorage.getItem('pkg_v3')) || [];
-    let db_sales = JSON.parse(localStorage.getItem('s_v3')) || [];
-    let carrito = [];
-    let chartObj = null;
-
-    function navTo(id) {
-        document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
-        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.remove('hidden');
-        document.getElementById('nav-' + id.replace('tab-', '')).classList.add('active');
-        if(id === 'tab-stock') renderStock();
-        if(id === 'tab-pos') renderPOS();
-        if(id === 'tab-reports') renderReportes();
-    }
-
-    // --- LÓGICA DE STOCK Y EDICIÓN ---
-    function verSugerencias() {
-        let c = parseFloat(document.getElementById('p-cost').value) || 0;
-        if(c > 0) {
-            document.getElementById('sug-box').innerHTML = 
-                `<span class="badge b-desc">Desc 50%: $${(c*1.5).toFixed(2)}</span> ` +
-                `<span class="badge b-sug">Sug 70%: $${(c*1.7).toFixed(2)}</span>`;
-        }
-    }
-
-    function guardarProducto() {
-        let id = document.getElementById('edit-id').value;
-        let n = document.getElementById('p-name').value;
-        let q = parseInt(document.getElementById('p-qty').value);
-        let c = parseFloat(document.getElementById('p-cost').value);
-        let pf = parseFloat(document.getElementById('p-final-price').value);
-
-        if(!n || isNaN(q) || isNaN(c) || isNaN(pf)) return alert("Completa todos los campos, incluyendo el precio final.");
-
-        if(id) {
-            // EDITAR
-            let index = db_p.findIndex(p => p.id == id);
-            db_p[index] = { id: parseInt(id), name: n, qty: q, cost: c, finalPrice: pf };
-            alert("Producto actualizado");
-        } else {
-            // NUEVO
-            db_p.push({ id: Date.now(), name: n, qty: q, cost: c, finalPrice: pf });
-        }
-
-        actualizarDB();
-        resetForm();
-        renderStock();
-    }
-
-    function editarProd(id) {
-        let p = db_p.find(prod => prod.id == id);
-        document.getElementById('edit-id').value = p.id;
-        document.getElementById('p-name').value = p.name;
-        document.getElementById('p-qty').value = p.qty;
-        document.getElementById('p-cost').value = p.cost;
-        document.getElementById('p-final-price').value = p.finalPrice;
-        
-        document.getElementById('form-title').innerText = "✎ Editando: " + p.name;
-        document.getElementById('btn-save-prod').innerText = "Actualizar Cambios";
-        document.getElementById('btn-save-prod').classList.replace('btn-main', 'btn-edit');
-        document.getElementById('btn-cancel-edit').classList.remove('hidden');
-        verSugerencias();
-        window.scrollTo(0,0);
-    }
-
-    function resetForm() {
-        document.getElementById('edit-id').value = "";
-        document.getElementById('p-name').value = "";
-        document.getElementById('p-qty').value = "";
-        document.getElementById('p-cost').value = "";
-        document.getElementById('p-final-price').value = "";
-        document.getElementById('form-title').innerText = "📦 Agregar Producto";
-        document.getElementById('btn-save-prod').innerText = "Guardar en Stock";
-        document.getElementById('btn-save-prod').classList.replace('btn-edit', 'btn-main');
-        document.getElementById('btn-cancel-edit').classList.add('hidden');
-        document.getElementById('sug-box').innerHTML = "";
-    }
-
-    function renderStock() {
-        let html = '';
-        db_p.forEach((p) => {
-            html += `<tr>
-                <td><b>${p.name}</b></td>
-                <td>${p.qty}</td>
-                <td>$${p.cost.toFixed(2)}</td>
-                <td style="color:var(--primary); font-weight:bold;">$${p.finalPrice.toFixed(2)}</td>
-                <td>
-                    <button onclick="editarProd(${p.id})" style="border:none; color:var(--primary); background:none; cursor:pointer; font-size:1.1rem;">✎</button>
-                    <button onclick="borrarProd(${p.id})" style="border:none; color:red; background:none; cursor:pointer; margin-left:10px;">✖</button>
-                </td>
-            </tr>`;
-        });
-        document.getElementById('stock-body').innerHTML = html || '<tr><td colspan="5">No hay productos</td></tr>';
-    }
-
-    function borrarProd(id) {
-        if(confirm("¿Eliminar este producto permanentemente?")) {
-            db_p = db_p.filter(p => p.id != id);
-            actualizarDB(); renderStock();
-        }
-    }
-
-    // --- POS CON BUSCADOR ---
-    function renderPOS() {
-        let grid = document.getElementById('pos-grid');
-        let search = document.getElementById('pos-search').value.toLowerCase();
-        let html = '';
-
-        // Filtrar Productos
-        db_p.filter(p => p.name.toLowerCase().includes(search)).forEach(p => {
-            if(p.qty > 0) {
-                html += `<div class="item-card" onclick="sumarAlCarro('${p.id}', false)">
-                    <b>${p.name}</b><br><span style="color:var(--primary)">$${p.finalPrice.toFixed(2)}</span><br><small>Stock: ${p.qty}</small>
-                </div>`;
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    vista: 'ventas',
+                    busqueda: '',
+                    cargando: true,
+                    productos: [],
+                    ventasDia: [],
+                    carrito: [],
+                    nuevoProd: { nombre: '', costo: 0, piezas: 0, precioVenta: 0 },
+                    // Lógica de Paquetes
+                    mostrarModalPaquete: false,
+                    paqueteNuevo: { nombre: '', precioVenta: 0 },
+                    paqueteSeleccionados: [],
+                    // Lógica de Descuento
+                    mostrarModalDescuento: false,
+                    nuevoPrecioFinal: 0,
+                    descuentoAplicado: 0,
+                    // Agenda
+                    mostrarModalAgenda: false,
+                    agenda: { cliente: '', fecha: '', lugar: '' }
+                }
+            },
+            computed: {
+                productosFiltrados() {
+                    return this.productos.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase()));
+                },
+                totalSinDescuento() {
+                    return this.carrito.reduce((acc, item) => acc + parseFloat(item.precioVenta), 0);
+                },
+                totalConDescuento() {
+                    return Math.max(0, this.totalSinDescuento - this.descuentoAplicado);
+                }
+            },
+            methods: {
+                async persistir() {
+                    try {
+                        const data = { productos: this.productos, ventas: this.ventasDia };
+                        await fetch(`${FIREBASE_URL}data.json`, { method: 'PUT', body: JSON.stringify(data) });
+                    } catch (e) { console.error(e); }
+                },
+                async cargarDatos() {
+                    try {
+                        const res = await fetch(`${FIREBASE_URL}data.json`);
+                        const data = await res.json();
+                        if (data) {
+                            this.productos = data.productos || [];
+                            this.ventasDia = data.ventas || [];
+                        }
+                    } finally { this.cargando = false; }
+                },
+                obtenerStockReal(prod) {
+                    if (!prod.esPaquete) return prod.piezas;
+                    const stocks = prod.componentesIds.map(id => {
+                        const comp = this.productos.find(p => p.id === id);
+                        return comp ? comp.piezas : 0;
+                    });
+                    return stocks.length ? Math.min(...stocks) : 0;
+                },
+                toggleProdEnPaquete(prod) {
+                    const idx = this.paqueteSeleccionados.indexOf(prod.id);
+                    if (idx > -1) this.paqueteSeleccionados.splice(idx, 1);
+                    else this.paqueteSeleccionados.push(prod.id);
+                },
+                guardarPaquete() {
+                    if (!this.paqueteNuevo.nombre || this.paqueteSeleccionados.length === 0) return alert("Faltan datos");
+                    this.productos.push({
+                        id: Date.now(),
+                        nombre: this.paqueteNuevo.nombre,
+                        precioVenta: this.paqueteNuevo.precioVenta,
+                        esPaquete: true,
+                        componentesIds: [...this.paqueteSeleccionados]
+                    });
+                    this.mostrarModalPaquete = false;
+                    this.paqueteSeleccionados = [];
+                    this.paqueteNuevo = { nombre: '', precioVenta: 0 };
+                    this.persistir();
+                },
+                abrirModalDescuento() {
+                    this.nuevoPrecioFinal = this.totalConDescuento;
+                    this.mostrarModalDescuento = true;
+                },
+                aplicarDescuento() {
+                    const diff = this.totalSinDescuento - this.nuevoPrecioFinal;
+                    this.descuentoAplicado = diff > 0 ? diff : 0;
+                    this.mostrarModalDescuento = false;
+                },
+                agregarAlCarrito(prod) {
+                    if (this.obtenerStockReal(prod) > 0) {
+                        this.carrito.push({...prod});
+                        if (prod.esPaquete) {
+                            prod.componentesIds.forEach(id => {
+                                const c = this.productos.find(p => p.id === id);
+                                if (c) c.piezas--;
+                            });
+                        } else {
+                            const p = this.productos.find(x => x.id === prod.id);
+                            if (p) p.piezas--;
+                        }
+                    }
+                },
+                quitarDelCarrito(idx) {
+                    const prod = this.carrito[idx];
+                    if (prod.esPaquete) {
+                        prod.componentesIds.forEach(id => {
+                            const c = this.productos.find(p => p.id === id);
+                            if (c) c.piezas++;
+                        });
+                    } else {
+                        const p = this.productos.find(x => x.id === prod.id);
+                        if (p) p.piezas++;
+                    }
+                    this.carrito.splice(idx, 1);
+                    if (this.carrito.length === 0) this.descuentoAplicado = 0;
+                },
+                guardarProducto() {
+                    this.productos.push({ ...this.nuevoProd, id: Date.now(), esPaquete: false });
+                    this.persistir();
+                    this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
+                },
+                eliminarProducto(id) {
+                    this.productos = this.productos.filter(p => p.id !== id);
+                    this.persistir();
+                },
+                registrarVenta(tipo) {
+                    this.ventasDia.push({
+                        id: Date.now(),
+                        total: this.totalConDescuento,
+                        descuento: this.descuentoAplicado,
+                        fechaReal: new Date(),
+                        tipo,
+                        productos: [...this.carrito],
+                        cliente: this.agenda.cliente || 'Publico Gral',
+                        completado: tipo === 'inmediata'
+                    });
+                    this.carrito = [];
+                    this.descuentoAplicado = 0;
+                    this.persistir();
+                },
+                finalizarVentaInmediata() { this.registrarVenta('inmediata'); }
+            },
+            mounted() {
+                this.cargarDatos();
+                setInterval(() => this.cargarDatos(), 15000); // Sincroniza cada 15 seg
             }
-        });
-
-        // Filtrar Paquetes
-        db_pkg.filter(k => k.name.toLowerCase().includes(search)).forEach(k => {
-            html += `<div class="item-card pkg" onclick="sumarAlCarro('${k.id}', true)">
-                <b>🎁 ${k.name}</b><br><span style="color:var(--warning)">$${k.price.toFixed(2)}</span><br><small>Paquete</small>
-            </div>`;
-        });
-
-        grid.innerHTML = html || '<p style="grid-column: 1/-1; text-align:center;">No se encontró nada.</p>';
-    }
-
-    // --- RESTO DE LÓGICA (MANTENIDA) ---
-    function sumarAlCarro(id, esPkg) {
-        let item;
-        if(esPkg) {
-            let k = db_pkg.find(x => x.id === id);
-            item = { id: k.id, name: k.name, price: k.price, esPkg: true, qty: 1, cost: 0 };
-        } else {
-            let p = db_p.find(x => x.id == id);
-            item = { id: p.id, name: p.name, price: p.finalPrice, esPkg: false, qty: 1, cost: p.cost };
-        }
-        let ya = carrito.find(c => c.id === id);
-        if(ya) ya.qty++; else carrito.push(item);
-        renderCarro();
-    }
-
-    function renderCarro() {
-        let html = ''; let t = 0;
-        carrito.forEach((c, i) => {
-            t += c.price * c.qty;
-            html += `<div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:5px;">
-                <span><b>${c.name}</b> x${c.qty}</span>
-                <span>$${(c.price * c.qty).toFixed(2)} <button onclick="quitar(${i})" style="border:none; color:red; background:none; cursor:pointer;">✖</button></span>
-            </div>`;
-        });
-        document.getElementById('cart-items').innerHTML = html;
-        document.getElementById('total-val').innerText = t.toFixed(2);
-    }
-
-    function quitar(i) { carrito.splice(i,1); renderCarro(); }
-
-    function confirmarVenta() {
-        if(carrito.length === 0) return;
-        let v_total = 0; let v_inv = 0;
-        carrito.forEach(c => {
-            v_total += c.price * c.qty;
-            if(c.esPkg) {
-                let pkg = db_pkg.find(x => x.id === c.id);
-                pkg.items.forEach(pid => {
-                    let prod = db_p.find(p => p.id == pid);
-                    if(prod) { prod.qty -= c.qty; v_inv += (prod.cost * c.qty); }
-                });
-            } else {
-                let prod = db_p.find(p => p.id == c.id);
-                if(prod) { prod.qty -= c.qty; v_inv += (prod.cost * c.qty); }
-            }
-        });
-        db_sales.push({ date: new Date().toISOString().split('T')[0], total: v_total, inv: v_inv });
-        carrito = []; actualizarDB(); renderCarro(); renderPOS();
-        alert("¡Venta finalizada!");
-    }
-
-    function renderReportes() {
-        let hoy = new Date().toISOString().split('T')[0];
-        let v_hoy = db_sales.filter(s => s.date === hoy);
-        let t_hoy = v_hoy.reduce((a,b) => a + b.total, 0);
-        let i_hoy = v_hoy.reduce((a,b) => a + b.inv, 0);
-        document.getElementById('rep-today').innerText = `$${t_hoy.toFixed(2)}`;
-        document.getElementById('rep-profit').innerText = `$${(t_hoy - i_hoy).toFixed(2)}`;
-        document.getElementById('rep-in-stock').innerText = `$${db_p.reduce((a,b) => a + (b.cost * b.qty), 0).toFixed(2)}`;
-        document.getElementById('rep-in-sold').innerText = `$${db_sales.reduce((a,b) => a + b.inv, 0).toFixed(2)}`;
-        
-        let labels = []; let valores = [];
-        for(let i=6; i>=0; i--) {
-            let d = new Date(); d.setDate(d.getDate() - i);
-            let ds = d.toISOString().split('T')[0];
-            labels.push(ds);
-            valores.push(db_sales.filter(s => s.date === ds).reduce((a,b) => a + b.total, 0));
-        }
-        if(chartObj) chartObj.destroy();
-        chartObj = new Chart(document.getElementById('chartSemanal'), {
-            type: 'line',
-            data: { labels, datasets: [{ label: 'Ventas Semanales', data: valores, borderColor: '#2563eb', tension:0.3 }] }
-        });
-    }
-
-    function toggleModal(show) {
-        document.getElementById('modal-pkg').classList.toggle('hidden', !show);
-        if(show) {
-            let list = '';
-            db_p.forEach(p => list += `<label style="display:block;"><input type="checkbox" class="pkg-check" value="${p.id}"> ${p.name}</label>`);
-            document.getElementById('pkg-checklist').innerHTML = list || 'No hay productos';
-        }
-    }
-
-    function guardarPaquete() {
-        let n = document.getElementById('pkg-name').value;
-        let pr = parseFloat(document.getElementById('pkg-price').value);
-        let sel = Array.from(document.querySelectorAll('.pkg-check:checked')).map(el => parseInt(el.value));
-        if(!n || isNaN(pr) || sel.length < 2) return alert("Completa el paquete");
-        db_pkg.push({ id: 'pkg-'+Date.now(), name: n, price: pr, items: sel });
-        actualizarDB(); toggleModal(false); alert("Paquete creado");
-    }
-
-    function actualizarDB() {
-        localStorage.setItem('p_v3', JSON.stringify(db_p));
-        localStorage.setItem('pkg_v3', JSON.stringify(db_pkg));
-        localStorage.setItem('s_v3', JSON.stringify(db_sales));
-    }
-
-    navTo('tab-pos');
-</script>
+        }).mount('#app');
+    </script>
 </body>
 </html>
