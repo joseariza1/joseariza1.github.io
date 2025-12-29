@@ -42,11 +42,22 @@
                     
                     <div v-if="carrito.length === 0" class="text-gray-400 py-6 text-center border-2 border-dashed rounded-xl italic">Selecciona productos para vender</div>
 
-                    <div class="flex flex-wrap gap-2 mb-6">
-                        <div v-for="(item, index) in carrito" :key="index" class="bg-indigo-50 border border-indigo-200 px-3 py-2 rounded-lg flex items-center shadow-sm text-sm">
-                            <span class="font-semibold mr-2">{{ item.nombre }}</span>
-                            <span class="text-indigo-600 font-bold">${{ item.precioVenta }}</span>
-                            <button @click="quitarDelCarrito(index)" class="ml-3 text-red-500"><i class="bi bi-x-circle-fill"></i></button>
+                    <div class="flex flex-col gap-2 mb-6">
+                        <div v-for="(item, index) in carrito" :key="index" class="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm text-sm">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-indigo-900">{{ item.nombre }}</span>
+                                <span class="text-[10px] uppercase font-bold text-gray-400">Precio base: ${{ item.precioVenta }}</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex flex-col items-end">
+                                    <label class="text-[9px] font-black text-red-400 uppercase">Desc.</label>
+                                    <input type="number" v-model.number="item.descuento" class="w-16 bg-white border border-red-200 rounded text-right px-1 font-bold text-red-500 outline-none" placeholder="0">
+                                </div>
+                                <div class="text-right min-w-[60px]">
+                                    <span class="text-indigo-600 font-black text-lg">${{ item.precioVenta - (item.descuento || 0) }}</span>
+                                </div>
+                                <button @click="quitarDelCarrito(index)" class="text-red-500 hover:scale-110 transition"><i class="bi bi-trash3-fill"></i></button>
+                            </div>
                         </div>
                     </div>
 
@@ -102,7 +113,7 @@
                         <div class="text-xs bg-gray-50 p-3 rounded-lg mb-4">
                             <div v-for="p in v.productos" class="flex justify-between border-b last:border-0 py-1">
                                 <span>{{ p.nombre }}</span>
-                                <span class="font-bold">${{ p.precioVenta }}</span>
+                                <span class="font-bold">${{ p.precioVenta - (p.descuento || 0) }}</span>
                             </div>
                         </div>
                         <button @click="v.completado = true; persistir()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Completar Entrega</button>
@@ -150,7 +161,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-md overflow-hidden">
+                <div class="bg-white rounded-2xl shadow-md overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 border-b">
                             <tr class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">
@@ -324,7 +335,6 @@
                     editandoId: null,
                     agenda: { cliente: '', fecha: '', lugar: '' },
                     mostrarModalAgenda: false,
-                    // Variables para Paquetes
                     mostrarModalPaquete: false,
                     paqueteNuevo: { nombre: '', precioVenta: null },
                     paqueteSeleccionadosIds: [],
@@ -340,7 +350,8 @@
                     return this.productos.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase()))
                                          .sort((a, b) => a.nombre.localeCompare(b.nombre));
                 },
-                totalVenta() { return this.carrito.reduce((acc, item) => acc + parseFloat(item.precioVenta), 0); },
+                // COMPUTED MODIFICADA: Calcula el total restando descuentos
+                totalVenta() { return this.carrito.reduce((acc, item) => acc + (parseFloat(item.precioVenta) - (item.descuento || 0)), 0); },
                 totalVendidoAcumulado() { return this.ventasDia.filter(v => !v.devuelta).reduce((acc, v) => acc + v.total, 0); },
                 inversionTotalActual() { 
                     return this.productos.filter(p => !p.esPaquete).reduce((acc, p) => acc + ( (p.costo || 0) * (p.piezas || 0) ), 0); 
@@ -378,7 +389,6 @@
                 obtenerStockReal(prod) {
                     if (!prod.esPaquete) return prod.piezas;
                     if (!prod.componentesIds || prod.componentesIds.length === 0) return 0;
-                    
                     const stocks = prod.componentesIds.map(id => {
                         const comp = this.productos.find(p => p.id === id);
                         return comp ? comp.piezas : 0;
@@ -409,13 +419,12 @@
                 },
 
                 eliminarProducto(id) { 
-                    if(confirm('¿Seguro? Si es un componente de un paquete, el stock del paquete se verá afectado.')) { 
+                    if(confirm('¿Seguro?')) { 
                         this.productos = this.productos.filter(p => p.id !== id); 
                         this.persistir(); 
                     } 
                 },
 
-                // LÓGICA DE PAQUETES
                 toggleProdEnPaquete(id) {
                     const index = this.paqueteSeleccionadosIds.indexOf(id);
                     if (index > -1) this.paqueteSeleccionadosIds.splice(index, 1);
@@ -439,8 +448,8 @@
 
                 agregarAlCarrito(prod) {
                     if (this.obtenerStockReal(prod) > 0) { 
-                        this.carrito.push({...prod}); 
-                        // Descontar stock inmediato (Localmente)
+                        // Se agrega la propiedad descuento inicializada en 0
+                        this.carrito.push({...prod, descuento: 0}); 
                         if (prod.esPaquete) {
                             prod.componentesIds.forEach(id => {
                                 const comp = this.productos.find(p => p.id === id);
@@ -493,7 +502,7 @@
                 },
 
                 procesarDevolucion(venta) {
-                    if(confirm("¿Devolver esta venta? El stock regresará al inventario.")) {
+                    if(confirm("¿Devolver esta venta?")) {
                         venta.productos.forEach(item => this.reintegrarStock(item));
                         venta.devuelta = true;
                         this.persistir();
@@ -501,7 +510,7 @@
                 },
 
                 eliminarPedidoAgendado(id) {
-                    if(confirm("¿Eliminar pedido? Se reintegrará stock.")) {
+                    if(confirm("¿Eliminar pedido?")) {
                         const idx = this.ventasDia.findIndex(v => v.id === id);
                         if (idx > -1) {
                             this.ventasDia[idx].productos.forEach(item => this.reintegrarStock(item));
@@ -512,32 +521,26 @@
                 },
 
                 generarGrafica() {
-                    const canvas = document.getElementById('graficaVentas');
-                    if(!canvas) return;
-                    const ctx = canvas.getContext('2d');
+                    const ctx = document.getElementById('graficaVentas').getContext('2d');
                     if(this.chartInstance) this.chartInstance.destroy();
-                    const ultimos7 = [...Array(7)].map((_, i) => {
-                        const d = new Date(); d.setDate(new Date().getDate() - (6-i));
-                        return d;
-                    });
-                    const data = ultimos7.map(dia => {
-                        return this.ventasDia.filter(v => !v.devuelta && new Date(v.fechaReal).toDateString() === dia.toDateString())
-                                           .reduce((acc, v) => acc + v.total, 0);
-                    });
                     this.chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: ['D','L','M','X','J','V','S'],
-                            datasets: [{ label:'Ventas ($)', data: data, borderColor:'#4f46e5', tension: 0.4, fill:true, backgroundColor:'rgba(79, 70, 229, 0.1)' }]
+                            labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+                            datasets: [{
+                                label: 'Ventas Semanales',
+                                data: [0, 0, 0, 0, 0, 0, this.totalSemanal],
+                                borderColor: '#6366f1',
+                                tension: 0.4,
+                                fill: true,
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                            }]
                         },
-                        options: { plugins: { legend: { display: false } } }
+                        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
                     });
                 }
             },
-            mounted() {
-                this.cargarDatos();
-                setInterval(() => this.cargarDatos(), 45000); // Sincronización automática cada 45 seg
-            }
+            mounted() { this.cargarDatos(); }
         }).mount('#app');
     </script>
 </body>
