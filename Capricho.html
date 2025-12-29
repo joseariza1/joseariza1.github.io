@@ -3,200 +3,364 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Cloud Pro - v7</title>
+    <title>Gestor Cloud Pro v6 - Paquetes Habilitados</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        .grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+        .grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
         [v-cloak] { display: none; }
-        .loading-overlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .loading-overlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: bold; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-    <div id="app" v-cloak>
+<body class="bg-gray-50 antialiased text-gray-800">
+    <div id="app" v-cloak class="min-h-screen">
         
-        <div v-if="cargando" class="loading-overlay font-bold flex-col">
-            <div class="animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
-            Sincronizando...
+        <div v-if="cargando" class="loading-overlay">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent mb-2"></div>
+                <p>Sincronizando con la nube...</p>
+            </div>
         </div>
 
-        <nav class="bg-indigo-800 text-white shadow-lg p-4 sticky top-0 z-50 flex justify-around">
-            <button @click="vista = 'ventas'"><i class="bi bi-cart"></i> Ventas</button>
-            <button @click="vista = 'agendados'"><i class="bi bi-calendar"></i> Agenda</button>
-            <button @click="vista = 'stock'"><i class="bi bi-box"></i> Stock</button>
-            <button @click="vista = 'reportes'"><i class="bi bi-graph-up"></i> Reportes</button>
+        <nav class="bg-indigo-700 text-white shadow-lg p-4 sticky top-0 z-50 flex justify-around items-center text-sm md:text-base">
+            <button @click="vista = 'ventas'" :class="{'underline font-bold': vista === 'ventas'}"><i class="bi bi-cash-stack"></i> Ventas</button>
+            <button @click="vista = 'agendados'" :class="{'underline font-bold': vista === 'agendados'}"><i class="bi bi-calendar-check"></i> Agendados</button>
+            <button @click="vista = 'stock'" :class="{'underline font-bold': vista === 'stock'}"><i class="bi bi-box-seam"></i> Stock</button>
+            <button @click="vista = 'reportes'" :class="{'underline font-bold': vista === 'reportes'}"><i class="bi bi-graph-up"></i> Reportes</button>
         </nav>
 
-        <main class="p-4 max-w-5xl mx-auto">
+        <main class="p-4 md:p-8 max-w-6xl mx-auto">
             
             <section v-if="vista === 'ventas'">
-                <div class="bg-white p-6 rounded-2xl shadow-lg mb-6 border-l-8 border-indigo-500">
-                    <div class="flex justify-between mb-4">
-                        <h2 class="font-bold text-xl text-indigo-900">Carrito</h2>
-                        <button v-if="carrito.length > 0" @click="abrirModalDescuento" class="text-xs bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold">
-                            <i class="bi bi-percent"></i> Aplicar Descuento
-                        </button>
+                <div class="bg-white p-6 rounded-2xl shadow-xl mb-8 border-t-4 border-indigo-500">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold"><i class="bi bi-cart4 text-indigo-600"></i> Cesta Actual</h2>
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">{{ carrito.length }} ítems</span>
                     </div>
+                    
+                    <div v-if="carrito.length === 0" class="text-gray-400 py-6 text-center border-2 border-dashed rounded-xl italic">Selecciona productos para vender</div>
 
-                    <div v-for="(item, i) in carrito" :key="i" class="flex justify-between items-center text-sm border-b py-2">
-                        <span>{{ item.nombre }}</span>
-                        <div class="flex items-center gap-3">
-                            <span class="font-bold">${{ item.precioVenta }}</span>
-                            <button @click="quitarDelCarrito(i)" class="text-red-400"><i class="bi bi-trash"></i></button>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <div v-for="(item, index) in carrito" :key="index" class="bg-indigo-50 border border-indigo-200 px-3 py-2 rounded-lg flex items-center shadow-sm text-sm">
+                            <span class="font-semibold mr-2">{{ item.nombre }}</span>
+                            <span class="text-indigo-600 font-bold">${{ item.precioVenta }}</span>
+                            <button @click="quitarDelCarrito(index)" class="ml-3 text-red-500"><i class="bi bi-x-circle-fill"></i></button>
                         </div>
                     </div>
 
-                    <div class="mt-4 flex flex-col items-end">
-                        <div v-if="descuentoAplicado > 0" class="text-red-500 text-xs font-bold">
-                            Descuento: -${{ descuentoAplicado }}
+                    <div class="flex flex-col md:flex-row justify-between items-center border-t pt-4 gap-4">
+                        <span class="text-3xl font-black text-gray-900">Total: ${{ totalVenta }}</span>
+                        <div class="flex gap-2 w-full md:w-auto font-bold">
+                            <button @click="finalizarVentaInmediata" :disabled="carrito.length === 0" class="flex-1 bg-green-500 text-white px-6 py-3 rounded-xl hover:bg-green-600 disabled:opacity-50 transition">Vender Ya</button>
+                            <button @click="mostrarModalAgenda = true" :disabled="carrito.length === 0" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">Agendar</button>
                         </div>
-                        <div class="text-3xl font-black">${{ totalConDescuento }}</div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 mt-4">
-                        <button @click="finalizarVentaInmediata" :disabled="carrito.length === 0" class="bg-green-600 text-white p-3 rounded-xl font-bold disabled:opacity-30">Vender</button>
-                        <button @click="mostrarModalAgenda = true" :disabled="carrito.length === 0" class="bg-indigo-600 text-white p-3 rounded-xl font-bold disabled:opacity-30">Agendar</button>
                     </div>
                 </div>
 
-                <input type="text" v-model="busqueda" placeholder="Buscar producto..." class="w-full p-4 rounded-xl mb-6 shadow-sm border-none focus:ring-2 focus:ring-indigo-400">
+                <div class="mb-6 relative">
+                    <i class="bi bi-search absolute left-4 top-3.5 text-gray-400"></i>
+                    <input type="text" v-model="busqueda" placeholder="Buscar por nombre..." class="w-full pl-12 pr-4 py-3 rounded-xl shadow-md border-none focus:ring-2 focus:ring-indigo-500">
+                </div>
 
                 <div class="grid-products">
-                    <div v-for="p in productosFiltrados" @click="agregarAlCarrito(p)" 
-                         :class="{'opacity-40': obtenerStockReal(p) <= 0}"
-                         class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 text-center cursor-pointer active:scale-95 transition">
-                        <i v-if="p.esPaquete" class="bi bi-box-seam-fill text-purple-500 text-2xl"></i>
-                        <i v-else class="bi bi-tag text-indigo-400 text-2xl"></i>
-                        <h3 class="text-xs font-bold mt-2 h-8 overflow-hidden">{{ p.nombre }}</h3>
-                        <p class="font-black text-lg">${{ p.precioVenta }}</p>
-                        <p class="text-[10px] text-gray-500 font-bold uppercase">Stock: {{ obtenerStockReal(p) }}</p>
+                    <div v-for="prod in productosFiltrados" :key="prod.id" 
+                         @click="agregarAlCarrito(prod)" 
+                         :class="{'opacity-50 grayscale cursor-not-allowed': obtenerStockReal(prod) <= 0}"
+                         class="bg-white p-4 rounded-2xl shadow hover:shadow-xl transition-all cursor-pointer border border-transparent hover:border-indigo-200 relative">
+                        
+                        <div v-if="prod.esPaquete" class="absolute top-2 right-2 bg-purple-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">PACK</div>
+                        
+                        <div class="text-center">
+                            <i v-if="prod.esPaquete" class="bi bi-boxes text-3xl text-purple-500 mb-2 block"></i>
+                            <i v-else class="bi bi-tag text-3xl text-indigo-400 mb-2 block"></i>
+                            <h3 class="font-bold text-sm h-10 overflow-hidden leading-tight mb-1">{{ prod.nombre }}</h3>
+                            <p class="text-indigo-600 font-black text-xl">${{ prod.precioVenta }}</p>
+                            <span :class="obtenerStockReal(prod) > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] px-2 py-0.5 rounded font-bold uppercase">
+                                Stock: {{ obtenerStockReal(prod) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="vista === 'agendados'">
+                <h2 class="text-2xl font-black mb-6 text-indigo-800">📦 Pedidos por Entregar</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="v in ventasDia.filter(x => x.tipo === 'agendado' && !x.completado)" :key="v.id" class="bg-white p-5 rounded-2xl shadow border-l-8 border-blue-500">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-black text-lg uppercase text-blue-700">{{ v.cliente }}</h3>
+                                <p class="text-xs text-gray-600 font-bold mt-1"><i class="bi bi-calendar-event"></i> {{ formatearFecha(v.fechaEntrega) }}</p>
+                                <p class="text-xs text-gray-500"><i class="bi bi-geo-alt"></i> {{ v.lugar }}</p>
+                            </div>
+                            <button @click="eliminarPedidoAgendado(v.id)" class="text-red-400 hover:text-red-600 p-2 transition">
+                                <i class="bi bi-trash3-fill text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="text-xs bg-gray-50 p-3 rounded-lg mb-4">
+                            <div v-for="p in v.productos" class="flex justify-between border-b last:border-0 py-1">
+                                <span>{{ p.nombre }}</span>
+                                <span class="font-bold">${{ p.precioVenta }}</span>
+                            </div>
+                        </div>
+                        <button @click="v.completado = true; persistir()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Completar Entrega</button>
                     </div>
                 </div>
             </section>
 
             <section v-if="vista === 'stock'">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">Inventario</h2>
-                    <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">
-                        <i class="bi bi-boxes"></i> Crear Paquete
+                    <h2 class="text-2xl font-black italic">Inventario</h2>
+                    <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-purple-700 transition">
+                        <i class="bi bi-plus-circle mr-1"></i> Armar Paquete
                     </button>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow mb-6">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" v-model="nuevoProd.nombre" placeholder="Nombre" class="p-2 border rounded-lg col-span-2">
-                        <input type="number" v-model="nuevoProd.costo" placeholder="Costo Unit" class="p-2 border rounded-lg">
-                        <input type="number" v-model="nuevoProd.piezas" placeholder="Cantidad" class="p-2 border rounded-lg">
-                        <input type="number" v-model="nuevoProd.precioVenta" placeholder="Precio Venta" class="p-2 border rounded-lg col-span-2 font-bold text-indigo-600 bg-indigo-50">
+                <div class="bg-white p-6 rounded-2xl shadow-md mb-8 border-t-4 border-indigo-400">
+                    <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-4">{{ editandoId ? 'Modificar Producto' : 'Nuevo Producto' }}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold ml-2 text-gray-500 uppercase">Nombre</label>
+                            <input type="text" v-model="nuevoProd.nombre" class="border p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold ml-2 text-gray-500 uppercase">Costo Unitario ($)</label>
+                            <input type="number" v-model="nuevoProd.costo" class="border p-3 rounded-xl outline-none">
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-[10px] font-bold ml-2 text-gray-500 uppercase">Cantidad Inicial</label>
+                            <input type="number" v-model="nuevoProd.piezas" class="border p-3 rounded-xl outline-none">
+                        </div>
                     </div>
-                    <button @click="guardarProducto" class="w-full mt-4 bg-indigo-600 text-white p-3 rounded-xl font-bold shadow-lg">Registrar Producto</button>
+                    
+                    <div v-if="nuevoProd.costo > 0" class="bg-indigo-50 p-4 rounded-xl flex flex-wrap gap-6 items-center">
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Sug. 50%</p><p class="font-black text-indigo-600">${{ (nuevoProd.costo * 1.5).toFixed(2) }}</p></div>
+                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Sug. 70%</p><p class="font-black text-indigo-600">${{ (nuevoProd.costo * 1.7).toFixed(2) }}</p></div>
+                        <div class="flex-1">
+                            <label class="text-[10px] font-bold text-indigo-500 uppercase">Precio de Venta Final:</label>
+                            <input type="number" v-model="nuevoProd.precioVenta" class="w-full border-2 border-indigo-300 p-2 rounded-lg font-black text-lg">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex gap-2 font-bold">
+                        <button @click="guardarProducto" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition">{{ editandoId ? 'Actualizar Producto' : 'Registrar en Inventario' }}</button>
+                        <button v-if="editandoId" @click="cancelarEdicion" class="px-6 bg-gray-200 text-gray-600 py-3 rounded-xl hover:bg-gray-300 transition text-sm">Cancelar</button>
+                    </div>
                 </div>
 
-                <div class="bg-white rounded-xl overflow-hidden shadow">
-                    <table class="w-full text-left text-sm">
-                        <tr class="bg-gray-100 text-[10px] uppercase text-gray-400">
-                            <th class="p-3">Producto</th>
-                            <th class="p-3">Stock</th>
-                            <th class="p-3">Venta</th>
-                            <th class="p-3">Acción</th>
-                        </tr>
-                        <tr v-for="p in productos" class="border-b">
-                            <td class="p-3 font-bold">{{ p.nombre }}</td>
-                            <td class="p-3">{{ obtenerStockReal(p) }}</td>
-                            <td class="p-3 font-bold text-green-600">${{ p.precioVenta }}</td>
-                            <td class="p-3">
-                                <button @click="eliminarProducto(p.id)" class="text-red-400"><i class="bi bi-trash"></i></button>
-                            </td>
-                        </tr>
+                <div class="bg-white rounded-2xl shadow-md overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 border-b">
+                            <tr class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">
+                                <th class="p-4 text-left">Producto</th>
+                                <th class="p-4 text-center">Tipo</th>
+                                <th class="p-4 text-center">Stock</th>
+                                <th class="p-4 text-center">Venta</th>
+                                <th class="p-4 text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr v-for="p in productos" :key="p.id" class="hover:bg-gray-50 transition">
+                                <td class="p-4 font-bold">{{ p.nombre }}</td>
+                                <td class="p-4 text-center">
+                                    <span v-if="p.esPaquete" class="text-[9px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded font-black">PAQUETE</span>
+                                    <span v-else class="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-black">INDIVIDUAL</span>
+                                </td>
+                                <td class="p-4 text-center font-black">
+                                    <span :class="p.esPaquete ? 'text-purple-600' : ''">{{ obtenerStockReal(p) }}</span>
+                                </td>
+                                <td class="p-4 text-center font-black text-green-600">${{ p.precioVenta }}</td>
+                                <td class="p-4 text-right">
+                                    <button v-if="!p.esPaquete" @click="editarProducto(p)" class="text-blue-500 mx-2 hover:scale-110 transition"><i class="bi bi-pencil-square"></i></button>
+                                    <button @click="eliminarProducto(p.id)" class="text-red-400 hover:text-red-600 transition"><i class="bi bi-trash-fill"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </section>
 
-            <div v-if="mostrarModalPaquete" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-                <div class="bg-white p-6 rounded-3xl w-full max-w-lg shadow-2xl">
-                    <h2 class="text-lg font-bold mb-4 text-purple-700 underline">Configurar Paquete</h2>
-                    <div class="space-y-4">
-                        <input type="text" v-model="paqueteNuevo.nombre" placeholder="Nombre del Paquete (Ej: Combo Fiesta)" class="w-full p-3 border rounded-xl">
-                        <input type="number" v-model="paqueteNuevo.precioVenta" placeholder="Precio Total del Paquete" class="w-full p-3 border rounded-xl font-bold text-purple-600">
-                        
-                        <p class="text-xs font-bold text-gray-400 uppercase">Selecciona los componentes:</p>
-                        <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-xl">
-                            <div v-for="p in productos.filter(x => !x.esPaquete)" 
-                                 @click="toggleProdEnPaquete(p)"
-                                 :class="paqueteSeleccionados.includes(p.id) ? 'bg-purple-600 text-white' : 'bg-gray-100'"
-                                 class="p-2 rounded-lg text-xs cursor-pointer transition text-center">
-                                {{ p.nombre }}
-                            </div>
-                        </div>
+            <section v-if="vista === 'reportes'">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-green-500">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Ingresos Totales</h4>
+                        <p class="text-2xl font-black text-gray-900">${{ totalVendidoAcumulado }}</p>
                     </div>
-                    <div class="flex gap-2 mt-6">
-                        <button @click="guardarPaquete" class="flex-1 bg-purple-600 text-white p-3 rounded-xl font-bold">Crear Paquete</button>
-                        <button @click="mostrarModalPaquete = false" class="bg-gray-100 p-3 rounded-xl">Cerrar</button>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-red-500">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Inversión Individual</h4>
+                        <p class="text-2xl font-black text-red-600">${{ inversionTotalActual }}</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-indigo-500 text-center">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Ventas 7 Días</h4>
+                        <p class="text-2xl font-black text-gray-900">${{ totalSemanal }}</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-blue-400 text-center">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Pedidos Pendientes</h4>
+                        <p class="text-2xl font-black text-blue-600">{{ ventasDia.filter(v => v.tipo === 'agendado' && !v.completado).length }}</p>
                     </div>
                 </div>
-            </div>
 
-            <div v-if="mostrarModalDescuento" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-                <div class="bg-white p-6 rounded-3xl w-full max-w-xs shadow-2xl text-center">
-                    <i class="bi bi-cash-coin text-4xl text-green-500"></i>
-                    <h2 class="text-lg font-bold mt-2">Precio Final</h2>
-                    <p class="text-xs text-gray-500 mb-4">Ingresa cuánto vas a cobrar en total</p>
-                    <input type="number" v-model="nuevoPrecioFinal" class="w-full p-4 border-2 border-green-400 rounded-2xl text-2xl font-black text-center mb-4">
-                    <button @click="aplicarDescuento" class="w-full bg-green-600 text-white p-4 rounded-2xl font-bold">Confirmar Precio</button>
-                    <button @click="mostrarModalDescuento = false" class="mt-2 text-gray-400 text-sm">Cancelar</button>
+                <div class="bg-white p-6 rounded-2xl shadow-md mb-8">
+                    <h3 class="font-bold text-gray-500 text-sm mb-4 uppercase tracking-wider">Flujo de Ventas (Semana)</h3>
+                    <canvas id="graficaVentas" height="120"></canvas>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-md overflow-hidden">
+                    <h3 class="p-5 font-bold text-gray-800 border-b">Detalle de Transacciones</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-gray-50 text-gray-400 font-bold uppercase">
+                                <tr>
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Cliente</th>
+                                    <th class="p-4">Artículos</th>
+                                    <th class="p-4 text-right">Total</th>
+                                    <th class="p-4 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 italic">
+                                <tr v-for="v in ventasDia.slice().reverse()" :key="v.id" :class="{'bg-red-50 opacity-70': v.devuelta}">
+                                    <td class="p-4 whitespace-nowrap">{{ formatearFecha(v.fechaReal) }}</td>
+                                    <td class="p-4 uppercase font-bold text-indigo-600">
+                                        {{ v.cliente }} 
+                                        <span v-if="v.devuelta" class="block text-[8px] text-red-600 font-black">DEVUELTO</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div v-for="p in v.productos" class="font-semibold text-gray-600 tracking-tight">• {{ p.nombre }}</div>
+                                    </td>
+                                    <td class="p-4 text-right font-black text-sm" :class="v.devuelta ? 'text-gray-400 line-through' : 'text-gray-900'">
+                                        ${{ v.total }}
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <button v-if="!v.devuelta" @click="procesarDevolucion(v)" class="bg-red-100 text-red-600 px-3 py-1 rounded-full font-black text-[9px] hover:bg-red-600 hover:text-white transition">
+                                            DEVOLUCIÓN
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div v-if="mostrarModalAgenda" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+            <div class="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl">
+                <h2 class="text-xl font-bold mb-6 text-indigo-700 underline decoration-indigo-200">Datos para Agendar</h2>
+                <div class="space-y-4 text-sm font-semibold">
+                    <div>
+                        <label class="text-xs text-gray-400 uppercase">Nombre del Cliente</label>
+                        <input type="text" v-model="agenda.cliente" class="w-full border p-3 rounded-xl mt-1 focus:border-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 uppercase">Fecha/Hora Entrega</label>
+                        <input type="datetime-local" v-model="agenda.fecha" class="w-full border p-3 rounded-xl mt-1 focus:border-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 uppercase">Lugar de Entrega</label>
+                        <input type="text" v-model="agenda.lugar" class="w-full border p-3 rounded-xl mt-1 focus:border-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-8 font-black">
+                    <button @click="finalizarVentaAgendada" class="flex-[2] bg-indigo-600 text-white py-4 rounded-xl shadow-lg hover:bg-indigo-700 transition">CONFIRMAR AGENDA</button>
+                    <button @click="mostrarModalAgenda = false" class="flex-1 bg-gray-100 py-4 rounded-xl text-gray-400">CERRAR</button>
                 </div>
             </div>
+        </div>
 
-            </main>
+        <div v-if="mostrarModalPaquete" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+            <div class="bg-white p-8 rounded-3xl w-full max-w-2xl shadow-2xl">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-black text-purple-700">Diseñador de Paquetes</h2>
+                    <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Paso 1: Elige componentes</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Nombre del Pack</label>
+                        <input type="text" v-model="paqueteNuevo.nombre" placeholder="Ej: Kit Regalo 1" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-purple-400">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Precio de Venta Pack</label>
+                        <input type="number" v-model="paqueteNuevo.precioVenta" placeholder="0.00" class="w-full border-2 border-purple-200 bg-purple-50 p-3 rounded-xl outline-none font-bold text-purple-700">
+                    </div>
+                </div>
+
+                <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Selecciona los productos que incluye:</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8 max-h-48 overflow-y-auto p-2 border rounded-2xl bg-gray-50">
+                    <div v-for="p in productos.filter(x => !x.esPaquete)" 
+                         @click="toggleProdEnPaquete(p.id)" 
+                         :class="paqueteSeleccionadosIds.includes(p.id) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-500 border-gray-100'"
+                         class="border p-3 rounded-xl text-[11px] font-bold cursor-pointer text-center transition shadow-sm truncate">
+                        {{ p.nombre }}
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button @click="guardarPaquete" :disabled="!paqueteNuevo.nombre || paqueteSeleccionadosIds.length === 0" class="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold shadow-lg disabled:opacity-30 hover:bg-purple-700 transition">CREAR PAQUETE DINÁMICO</button>
+                    <button @click="mostrarModalPaquete = false; paqueteSeleccionadosIds = []" class="px-8 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold">CANCELAR</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script type="module">
-         const FIREBASE_URL = "https://capricho-8db02-default-rtdb.firebaseio.com/"; 
+        const FIREBASE_URL = "https://capricho-8db02-default-rtdb.firebaseio.com/"; 
 
         const { createApp } = Vue;
+
         createApp({
             data() {
                 return {
                     vista: 'ventas',
                     busqueda: '',
-                    cargando: true,
-                    productos: [],
-                    ventasDia: [],
+                    productos: [], 
                     carrito: [],
+                    ventasDia: [],
                     nuevoProd: { nombre: '', costo: 0, piezas: 0, precioVenta: 0 },
-                    // Lógica de Paquetes
-                    mostrarModalPaquete: false,
-                    paqueteNuevo: { nombre: '', precioVenta: 0 },
-                    paqueteSeleccionados: [],
-                    // Lógica de Descuento
-                    mostrarModalDescuento: false,
-                    nuevoPrecioFinal: 0,
-                    descuentoAplicado: 0,
-                    // Agenda
+                    editandoId: null,
+                    agenda: { cliente: '', fecha: '', lugar: '' },
                     mostrarModalAgenda: false,
-                    agenda: { cliente: '', fecha: '', lugar: '' }
+                    // Variables para Paquetes
+                    mostrarModalPaquete: false,
+                    paqueteNuevo: { nombre: '', precioVenta: null },
+                    paqueteSeleccionadosIds: [],
+                    chartInstance: null,
+                    cargando: true
                 }
+            },
+            watch: {
+                vista(nueva) { if (nueva === 'reportes') this.$nextTick(() => this.generarGrafica()); }
             },
             computed: {
                 productosFiltrados() {
-                    return this.productos.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase()));
+                    return this.productos.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase()))
+                                         .sort((a, b) => a.nombre.localeCompare(b.nombre));
                 },
-                totalSinDescuento() {
-                    return this.carrito.reduce((acc, item) => acc + parseFloat(item.precioVenta), 0);
+                totalVenta() { return this.carrito.reduce((acc, item) => acc + parseFloat(item.precioVenta), 0); },
+                totalVendidoAcumulado() { return this.ventasDia.filter(v => !v.devuelta).reduce((acc, v) => acc + v.total, 0); },
+                inversionTotalActual() { 
+                    return this.productos.filter(p => !p.esPaquete).reduce((acc, p) => acc + ( (p.costo || 0) * (p.piezas || 0) ), 0); 
                 },
-                totalConDescuento() {
-                    return Math.max(0, this.totalSinDescuento - this.descuentoAplicado);
+                totalSemanal() {
+                    const sieteDias = new Date(); sieteDias.setDate(sieteDias.getDate() - 7);
+                    return this.ventasDia.filter(v => !v.devuelta && new Date(v.fechaReal) >= sieteDias).reduce((acc, v) => acc + v.total, 0);
                 }
             },
             methods: {
                 async persistir() {
                     try {
                         const data = { productos: this.productos, ventas: this.ventasDia };
-                        await fetch(`${FIREBASE_URL}data.json`, { method: 'PUT', body: JSON.stringify(data) });
-                    } catch (e) { console.error(e); }
+                        await fetch(`${FIREBASE_URL}data.json`, {
+                            method: 'PUT',
+                            body: JSON.stringify(data)
+                        });
+                    } catch (e) { console.error("Error sincronizando:", e); }
                 },
+
                 async cargarDatos() {
                     try {
                         const res = await fetch(`${FIREBASE_URL}data.json`);
@@ -205,101 +369,174 @@
                             this.productos = data.productos || [];
                             this.ventasDia = data.ventas || [];
                         }
-                    } finally { this.cargando = false; }
+                    } catch (e) { console.error("Error al cargar:", e); }
+                    finally { this.cargando = false; }
                 },
+
+                formatearFecha(f) { return new Date(f).toLocaleString('es-MX', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}); },
+                
                 obtenerStockReal(prod) {
                     if (!prod.esPaquete) return prod.piezas;
+                    if (!prod.componentesIds || prod.componentesIds.length === 0) return 0;
+                    
                     const stocks = prod.componentesIds.map(id => {
                         const comp = this.productos.find(p => p.id === id);
                         return comp ? comp.piezas : 0;
                     });
-                    return stocks.length ? Math.min(...stocks) : 0;
+                    return Math.min(...stocks);
                 },
-                toggleProdEnPaquete(prod) {
-                    const idx = this.paqueteSeleccionados.indexOf(prod.id);
-                    if (idx > -1) this.paqueteSeleccionados.splice(idx, 1);
-                    else this.paqueteSeleccionados.push(prod.id);
+
+                guardarProducto() {
+                    if (this.editandoId) {
+                        const idx = this.productos.findIndex(p => p.id === this.editandoId);
+                        this.productos[idx] = { ...this.nuevoProd, id: this.editandoId, esPaquete: false };
+                        this.editandoId = null;
+                    } else {
+                        this.productos.push({ ...this.nuevoProd, id: Date.now(), esPaquete: false });
+                    }
+                    this.persistir();
+                    this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
                 },
+
+                editarProducto(p) {
+                    this.editandoId = p.id;
+                    this.nuevoProd = { ...p };
+                },
+
+                cancelarEdicion() {
+                    this.editandoId = null;
+                    this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
+                },
+
+                eliminarProducto(id) { 
+                    if(confirm('¿Seguro? Si es un componente de un paquete, el stock del paquete se verá afectado.')) { 
+                        this.productos = this.productos.filter(p => p.id !== id); 
+                        this.persistir(); 
+                    } 
+                },
+
+                // LÓGICA DE PAQUETES
+                toggleProdEnPaquete(id) {
+                    const index = this.paqueteSeleccionadosIds.indexOf(id);
+                    if (index > -1) this.paqueteSeleccionadosIds.splice(index, 1);
+                    else this.paqueteSeleccionadosIds.push(id);
+                },
+
                 guardarPaquete() {
-                    if (!this.paqueteNuevo.nombre || this.paqueteSeleccionados.length === 0) return alert("Faltan datos");
-                    this.productos.push({
+                    const nuevoPack = {
                         id: Date.now(),
                         nombre: this.paqueteNuevo.nombre,
                         precioVenta: this.paqueteNuevo.precioVenta,
                         esPaquete: true,
-                        componentesIds: [...this.paqueteSeleccionados]
-                    });
-                    this.mostrarModalPaquete = false;
-                    this.paqueteSeleccionados = [];
-                    this.paqueteNuevo = { nombre: '', precioVenta: 0 };
+                        componentesIds: [...this.paqueteSeleccionadosIds]
+                    };
+                    this.productos.push(nuevoPack);
                     this.persistir();
+                    this.mostrarModalPaquete = false;
+                    this.paqueteNuevo = { nombre: '', precioVenta: null };
+                    this.paqueteSeleccionadosIds = [];
                 },
-                abrirModalDescuento() {
-                    this.nuevoPrecioFinal = this.totalConDescuento;
-                    this.mostrarModalDescuento = true;
-                },
-                aplicarDescuento() {
-                    const diff = this.totalSinDescuento - this.nuevoPrecioFinal;
-                    this.descuentoAplicado = diff > 0 ? diff : 0;
-                    this.mostrarModalDescuento = false;
-                },
+
                 agregarAlCarrito(prod) {
-                    if (this.obtenerStockReal(prod) > 0) {
-                        this.carrito.push({...prod});
+                    if (this.obtenerStockReal(prod) > 0) { 
+                        this.carrito.push({...prod}); 
+                        // Descontar stock inmediato (Localmente)
                         if (prod.esPaquete) {
                             prod.componentesIds.forEach(id => {
-                                const c = this.productos.find(p => p.id === id);
-                                if (c) c.piezas--;
+                                const comp = this.productos.find(p => p.id === id);
+                                if (comp) comp.piezas--;
                             });
                         } else {
                             const p = this.productos.find(x => x.id === prod.id);
                             if (p) p.piezas--;
                         }
+                    } else {
+                        alert("Sin stock disponible");
                     }
                 },
-                quitarDelCarrito(idx) {
-                    const prod = this.carrito[idx];
-                    if (prod.esPaquete) {
-                        prod.componentesIds.forEach(id => {
-                            const c = this.productos.find(p => p.id === id);
-                            if (c) c.piezas++;
+
+                reintegrarStock(item) {
+                    if (item.esPaquete) {
+                        item.componentesIds.forEach(id => {
+                            const comp = this.productos.find(p => p.id === id);
+                            if (comp) comp.piezas++;
                         });
                     } else {
-                        const p = this.productos.find(x => x.id === prod.id);
+                        const p = this.productos.find(x => x.id === item.id);
                         if (p) p.piezas++;
                     }
-                    this.carrito.splice(idx, 1);
-                    if (this.carrito.length === 0) this.descuentoAplicado = 0;
                 },
-                guardarProducto() {
-                    this.productos.push({ ...this.nuevoProd, id: Date.now(), esPaquete: false });
-                    this.persistir();
-                    this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
+
+                quitarDelCarrito(index) {
+                    this.reintegrarStock(this.carrito[index]);
+                    this.carrito.splice(index, 1);
                 },
-                eliminarProducto(id) {
-                    this.productos = this.productos.filter(p => p.id !== id);
-                    this.persistir();
-                },
+
                 registrarVenta(tipo) {
                     this.ventasDia.push({
-                        id: Date.now(),
-                        total: this.totalConDescuento,
-                        descuento: this.descuentoAplicado,
-                        fechaReal: new Date(),
-                        tipo,
-                        productos: [...this.carrito],
-                        cliente: this.agenda.cliente || 'Publico Gral',
-                        completado: tipo === 'inmediata'
+                        id: Date.now(), total: this.totalVenta,
+                        fechaReal: new Date(), fechaEntrega: this.agenda.fecha || new Date(),
+                        tipo, cliente: this.agenda.cliente || 'Venta Mostrador',
+                        lugar: this.agenda.lugar || 'Local', productos: [...this.carrito],
+                        completado: tipo === 'inmediata', devuelta: false
                     });
                     this.carrito = [];
-                    this.descuentoAplicado = 0;
+                    this.agenda = { cliente: '', fecha: '', lugar: '' };
                     this.persistir();
                 },
-                finalizarVentaInmediata() { this.registrarVenta('inmediata'); }
+
+                finalizarVentaInmediata() { this.registrarVenta('inmediata'); },
+                finalizarVentaAgendada() {
+                    if(!this.agenda.cliente || !this.agenda.fecha) return alert("Faltan datos");
+                    this.registrarVenta('agendado');
+                    this.mostrarModalAgenda = false;
+                },
+
+                procesarDevolucion(venta) {
+                    if(confirm("¿Devolver esta venta? El stock regresará al inventario.")) {
+                        venta.productos.forEach(item => this.reintegrarStock(item));
+                        venta.devuelta = true;
+                        this.persistir();
+                    }
+                },
+
+                eliminarPedidoAgendado(id) {
+                    if(confirm("¿Eliminar pedido? Se reintegrará stock.")) {
+                        const idx = this.ventasDia.findIndex(v => v.id === id);
+                        if (idx > -1) {
+                            this.ventasDia[idx].productos.forEach(item => this.reintegrarStock(item));
+                            this.ventasDia.splice(idx, 1);
+                            this.persistir();
+                        }
+                    }
+                },
+
+                generarGrafica() {
+                    const canvas = document.getElementById('graficaVentas');
+                    if(!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    if(this.chartInstance) this.chartInstance.destroy();
+                    const ultimos7 = [...Array(7)].map((_, i) => {
+                        const d = new Date(); d.setDate(new Date().getDate() - (6-i));
+                        return d;
+                    });
+                    const data = ultimos7.map(dia => {
+                        return this.ventasDia.filter(v => !v.devuelta && new Date(v.fechaReal).toDateString() === dia.toDateString())
+                                           .reduce((acc, v) => acc + v.total, 0);
+                    });
+                    this.chartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['D','L','M','X','J','V','S'],
+                            datasets: [{ label:'Ventas ($)', data: data, borderColor:'#4f46e5', tension: 0.4, fill:true, backgroundColor:'rgba(79, 70, 229, 0.1)' }]
+                        },
+                        options: { plugins: { legend: { display: false } } }
+                    });
+                }
             },
             mounted() {
                 this.cargarDatos();
-                setInterval(() => this.cargarDatos(), 15000); // Sincroniza cada 15 seg
+                setInterval(() => this.cargarDatos(), 45000); // Sincronización automática cada 45 seg
             }
         }).mount('#app');
     </script>
