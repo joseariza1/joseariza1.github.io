@@ -2,759 +2,341 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finanzas Personales PWA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanzas Pro v3.1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        /* ESTILOS (CSS) */
-        :root { 
-            --primary: #2563eb; 
-            --success: #16a34a; 
-            --danger: #dc2626; 
-            --warning: #f59e0b; 
-            --bg: #f3f4f6; 
-            --card: #ffffff; 
-            --cash: #1e3a8a; /* Azul Oscuro para Efectivo */
-            --bank: #facc15; /* Amarillo para Banco */
-            --transfer: #8b5cf6; /* Morado para Transferencia */
-            --adjust-add: #22c55e; /* Verde para Sumar Adeudo */
-            --adjust-sub: #f97316; /* Naranja para Restar Adeudo */
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; color: #333; }
-        
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h1 { margin: 0; font-size: 1.2rem; }
-
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; display: none; }
-        .container.active { display: block; }
-
-        /* Tarjetas y Inputs */
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .flex-row { display: flex; justify-content: space-between; align-items: center; }
-        
-        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        .input-group { display: flex; gap: 10px; }
-
-        /* Saldo Principal */
-        .balance-card { text-align: center; padding: 25px; background: var(--primary); color: white; border-radius: 12px; position: relative;}
-        .balance-amount { font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; }
-        .balance-label { opacity: 0.8; }
-        
-        /* Controles de Saldo Detallado */
-        .balance-detail { 
-            font-size:0.9rem; 
-            opacity:0.9; 
-            margin:10px 0 0 0; 
-            display: flex; 
-            justify-content: center;
-            gap: 15px;
-        }
-        .balance-item { 
-            display: inline-block; 
-            cursor: pointer;
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.5);
-        }
-
-        /* Tarjetas de Resumen */
-        .summary-card { padding: 15px; border-radius: 10px; color: white; flex: 1; text-align: center; margin: 0 5px; }
-        .income { background: var(--success); }
-        .expense { background: var(--danger); }
-        .summary-value { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
-
-        /* Botones de Acción */
-        .btn { border: none; padding: 12px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.2s; }
-        .btn-income { background: var(--success); color: white; }
-        .btn-expense { background: var(--danger); color: white; }
-        .btn-primary { background: var(--primary); color: white; }
-        
-        /* Modal General */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            visibility: hidden;
-            opacity: 0;
-            transition: visibility 0s, opacity 0.3s;
-        }
-        .modal-overlay.visible {
-            visibility: visible;
-            opacity: 1;
-        }
-        .modal-content {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        #payment-buttons .btn, #adjust-buttons .btn {
-            width: 48%;
-            margin-left: 2%;
-            margin-right: 2%;
-            padding: 10px;
-        }
-        
-        /* Navegación */
-        nav { position: fixed; bottom: 0; width: 100%; background: white; border-top: 1px solid #ddd; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
-        nav button { background: none; color: #999; border: none; display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; padding: 5px; cursor: pointer; }
-        nav button.active { color: var(--primary); }
-        nav button span { font-size: 1.4rem; margin-bottom: 3px; }
-
-        /* Etiquetas */
-        .debt-card { border-left: 5px solid var(--danger); }
-        .tag { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-left: 8px; }
-        .tag-cash { background: var(--cash); color: white; }
-        .tag-bank { background: var(--bank); color: black; }
+        .glass-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        [x-cloak] { display: none !important; }
+        .active-tab { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 pb-24" x-data="financeApp()" x-init="init()">
 
-    <header>
-        <h1 id="page-title">Resumen Financiero</h1>
-    </header>
-
-    <div id="tab-home" class="container active">
-        
-        <div class="balance-card">
-            <div class="balance-label">SALDO TOTAL DISPONIBLE</div>
-            <div class="balance-amount">$<span id="total-balance">0.00</span></div>
-            <p class="balance-detail">
-                <span class="balance-item" onclick="promptEditBalance('cash')">Efectivo: $<span id="cash-balance">0.00</span> ✏️</span>
-                |
-                <span class="balance-item" onclick="promptEditBalance('bank')">Banco: $<span id="bank-balance">0.00</span> ✏️</span>
-            </p>
-        </div>
-
-        <div class="flex-row" style="margin-bottom:15px;">
-            <div class="summary-card income">
-                <div>💰 Ganado</div>
-                <div class="summary-value">$<span id="total-income">0.00</span></div>
-            </div>
-            <div class="summary-card expense">
-                <div>💸 Gastado</div>
-                <div class="summary-value">$<span id="total-expense">0.00</span></div>
-            </div>
-        </div>
-
-        <h3 style="margin-bottom:5px;">📋 Deudas y Pagos Pendientes</h3>
-        <div id="debt-list">
-            <p style="text-align:center; color:#666;">No hay deudas activas registradas.</p>
-        </div>
-    </div>
-
-    <div id="tab-register" class="container">
-        <div class="card">
-            <h3>📈 Registrar Movimiento</h3>
-
-            <select id="movement-type" onchange="toggleFormFields()">
-                <option value="income">Ganancia (Ingreso)</option>
-                <option value="expense">Gasto (Egreso)</option>
-                <option value="transfer">Transferencia Interna</option>
-                <option value="register-debt">Registrar Nueva Deuda/Préstamo</option>
-            </select>
-            
-            <div id="standard-fields">
-                <input type="number" id="mov-amount" placeholder="Monto ($)" min="0">
-                
-                <div id="account-selector">
-                    <select id="mov-account">
-                        <option value="cash">Efectivo</option>
-                        <option value="bank">Cuenta Bancaria</option>
-                    </select>
-                </div>
-                
-                <div id="transfer-selectors" style="display:none;">
-                    <label style="font-size:0.9rem; display:block; margin-bottom:5px;">De:</label>
-                    <select id="transfer-from">
-                        <option value="cash">Efectivo</option>
-                        <option value="bank">Cuenta Bancaria</option>
-                    </select>
-
-                    <label style="font-size:0.9rem; display:block; margin-bottom:5px;">A:</label>
-                    <select id="transfer-to">
-                        <option value="bank">Cuenta Bancaria</option>
-                        <option value="cash">Efectivo</option>
-                    </select>
-                </div>
-
-                <input type="text" id="mov-description" placeholder="Descripción (ej. Venta, Alquiler, Depósito)">
-            </div>
-            
-            <div id="debt-fields" style="display:none; border-top:1px dashed #ddd; margin-top:10px; padding-top:10px;">
-                <h4 style="margin-top:0;">Detalles de Deuda/Préstamo</h4>
-                
-                <input type="text" id="debt-name" placeholder="Nombre de la Deuda/Préstamo">
-                
-                <select id="debt-status">
-                    <option value="loan-active">Préstamo Activo (Me deben)</option>
-                    <option value="debt-due">Deuda/Tarjeta de Crédito (Debo)</option>
-                </select>
-
-                <input type="number" id="debt-original-amount" placeholder="Monto Original de la Deuda/Préstamo ($)">
-
-                <button onclick="addDebt()" class="btn btn-primary">✅ Registrar Deuda</button>
-            </div>
-
-            <button onclick="handleMovement()" class="btn btn-primary" id="mov-btn">💾 Registrar Movimiento</button>
-
-            <h4 style="margin-top:20px;">Historial de Movimientos (Últimos 5)</h4>
-            <div id="history-list">
-                <p style="font-size:0.9rem; color:#666;">No hay movimientos recientes.</p>
-            </div>
-        </div>
-    </div>
-
-    <div id="tab-debts" class="container">
-        <h3>🏦 Gestión de Préstamos y Deudas</h3>
-        <p style="font-size:0.9rem; color:#666;">**Pago/Cobro:** Afecta tu saldo de efectivo/banco.<br>**Ajustar Saldo:** Modifica solo el saldo pendiente de la deuda.</p>
-        <div id="debt-management-list">
-            <p style="text-align:center; color:#666;">Aquí aparecerán las deudas para pagar o los préstamos para cobrar.</p>
-        </div>
-    </div>
-
-    <div id="debt-payment-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h4 id="modal-title">Registrar Pago</h4>
-            <p style="font-size: 0.9rem; color: #666;" id="modal-debt-info-payment"></p>
-            
-            <label style="font-size:0.9rem; display:block; margin-bottom:5px;">Monto de la Transacción ($):</label>
-            <input type="number" id="debt-payment-amount" placeholder="Monto">
-            
-            <div id="payment-buttons" class="flex-row">
-                </div>
-            
-            <button onclick="closeModal('debt-payment-modal')" class="btn btn-expense" style="background: #ccc; color: #333;">Cancelar</button>
-        </div>
-    </div>
-    
-    <div id="debt-adjust-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h4 id="adjust-modal-title">Ajustar Saldo Pendiente</h4>
-            <p style="font-size: 0.9rem; color: #666;" id="modal-debt-info-adjust"></p>
-            
-            <label style="font-size:0.9rem; display:block; margin-bottom:5px;">Monto a Sumar o Restar ($):</label>
-            <input type="number" id="debt-adjust-amount-input" placeholder="Ej: 50.00" value="0.00">
-            
-            <div id="adjust-buttons" class="flex-row">
-                <button class="btn" style="background: var(--adjust-add);" onclick="finalizeDebtAdjustment('add')">➕ Sumar al Adeudo</button>
-                <button class="btn" style="background: var(--adjust-sub);" onclick="finalizeDebtAdjustment('sub')">➖ Restar del Adeudo</button>
-            </div>
-            
-            <button onclick="closeModal('debt-adjust-modal')" class="btn btn-expense" style="background: #ccc; color: #333;">Cancelar</button>
-        </div>
-    </div>
-
-    <nav>
-        <button onclick="switchTab('home')" id="nav-home" class="nav-btn active">
-            <span>🏠</span>Inicio
-        </button>
-        <button onclick="switchTab('register')" id="nav-register" class="nav-btn">
-            <span>➕</span>Registrar
-        </button>
-        <button onclick="switchTab('debts')" id="nav-debts" class="nav-btn">
-            <span>💳</span>Deudas
-        </button>
-    </nav>
-
-    <script>
-        // Almacenar temporalmente la deuda que se está pagando/ajustando
-        let currentDebtId = null;
-
-        // --- BASE DE DATOS LOCAL ---
-        let balances = JSON.parse(localStorage.getItem('financesBalances')) || {
-            cash: 0,
-            bank: 0,
-            totalIncome: 0,
-            totalExpense: 0
-        };
-        let movements = JSON.parse(localStorage.getItem('financesMovements')) || [];
-        let debts = JSON.parse(localStorage.getItem('financesDebts')) || [];
-
-        function saveLocal() {
-            localStorage.setItem('financesBalances', JSON.stringify(balances));
-            localStorage.setItem('financesMovements', JSON.stringify(movements));
-            localStorage.setItem('financesDebts', JSON.stringify(debts));
-            render();
-        }
-        
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('visible');
-        }
-
-        // --- RENDERIZADO (DIBUJAR PANTALLA) ---
-        function render() {
-            updateHomeUI();
-            updateHistoryList();
-            renderDebtLists();
-        }
-
-        function updateHomeUI() {
-            const total = balances.cash + balances.bank;
-            document.getElementById('total-balance').innerText = total.toFixed(2);
-            document.getElementById('cash-balance').innerText = balances.cash.toFixed(2);
-            document.getElementById('bank-balance').innerText = balances.bank.toFixed(2);
-            document.getElementById('total-income').innerText = balances.totalIncome.toFixed(2);
-            document.getElementById('total-expense').innerText = balances.totalExpense.toFixed(2);
-        }
-
-        function updateHistoryList() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
-            
-            const recentMovements = movements.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-
-            if (recentMovements.length === 0) {
-                list.innerHTML = '<p style="font-size:0.9rem; color:#666;">No hay movimientos recientes.</p>';
-                return;
-            }
-
-            recentMovements.forEach(mov => {
-                let color = 'var(--danger)';
-                let sign = '-';
-                let movType = 'Gasto';
-                let description = mov.description;
-                let accountTag = '';
-                
-                if (mov.type === 'income') {
-                    color = 'var(--success)';
-                    sign = '+';
-                    movType = 'Ingreso';
-                    accountTag = `<span class="tag ${mov.account === 'cash' ? 'tag-cash' : 'tag-bank'}">${mov.account === 'cash' ? 'Efectivo' : 'Banco'}</span>`;
-                } else if (mov.type === 'debt-payment') {
-                    color = 'var(--warning)';
-                    movType = 'Pago/Cobro Deuda';
-                    sign = mov.isDebtPaymentOut ? '-' : '+';
-                    accountTag = `<span class="tag ${mov.account === 'cash' ? 'tag-cash' : 'tag-bank'}">${mov.account === 'cash' ? 'Efectivo' : 'Banco'}</span>`;
-                } else if (mov.type === 'transfer') {
-                    color = 'var(--transfer)';
-                    movType = 'Transferencia';
-                    const fromAccount = mov.fromAccount === 'cash' ? 'Efectivo' : 'Banco';
-                    const toAccount = mov.toAccount === 'cash' ? 'Efectivo' : 'Banco';
-                    description = `De ${fromAccount} a ${toAccount}`;
-                    
-                    if (mov.fromAccount !== 'cash' && mov.fromAccount !== 'bank') return;
-                    mov.account = mov.fromAccount;
-                    accountTag = `<span class="tag ${mov.account === 'cash' ? 'tag-cash' : 'tag-bank'}">Origen: ${mov.account === 'cash' ? 'Efectivo' : 'Banco'}</span>`;
-                    sign = '-'; 
-                } else if (mov.type === 'debt-adjust') {
-                    color = mov.adjustment > 0 ? 'var(--adjust-add)' : 'var(--adjust-sub)';
-                    movType = 'Ajuste Deuda';
-                    sign = mov.adjustment > 0 ? '+' : '-';
-                }
-
-
-                list.innerHTML += `
-                    <div class="card flex-row" style="border-left: 5px solid ${color}; padding:10px;">
-                        <div style="flex:1;">
-                            <p style="margin:0; font-weight:bold;">${description} ${accountTag}</p>
-                            <p style="margin:0; font-size:0.8rem; color:#666;">${movType} - ${new Date(mov.date).toLocaleDateString()}</p>
-                        </div>
-                        <span style="font-weight:bold; color:${color};">${sign}$${mov.amount.toFixed(2)}</span>
-                    </div>
-                `;
-            });
-        }
-
-        function renderDebtLists() {
-            const homeList = document.getElementById('debt-list');
-            const managementList = document.getElementById('debt-management-list');
-            
-            homeList.innerHTML = '';
-            managementList.innerHTML = '';
-
-            const activeDebts = debts.filter(d => d.pendingAmount > 0.01);
-
-            if (activeDebts.length === 0) {
-                homeList.innerHTML = '<p style="text-align:center; color:#666;">No hay deudas activas registradas.</p>';
-                managementList.innerHTML = '<p style="text-align:center; color:#666;">No hay deudas o préstamos pendientes.</p>';
-                return;
-            }
-
-            activeDebts.forEach(d => {
-                const isDebt = d.status === 'debt-due';
-                const color = isDebt ? 'var(--danger)' : 'var(--success)';
-                const tagText = isDebt ? 'DEUDA' : 'PRÉSTAMO';
-                const actionText = isDebt ? 'Pagar' : 'Cobrar';
-                
-                const cardHtml = `
-                    <div class="card ${isDebt ? 'debt-card' : ''}" style="border-left-color: ${color};">
-                        <div class="flex-row" style="align-items:flex-start;">
-                            <div style="flex-grow:1;">
-                                <h4 style="margin:0;">${d.name} <span class="tag" style="background:${color}; color:white;">${tagText}</span></h4>
-                                <p style="margin:5px 0; font-size:0.9rem;">Total Original: $${d.originalAmount.toFixed(2)}</p>
-                                <p style="margin:0; font-weight:bold; color:${isDebt ? 'var(--danger)' : 'var(--success)'};">Pendiente: $${d.pendingAmount.toFixed(2)}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                homeList.innerHTML += cardHtml; 
-
-                // Lista de gestión de deudas
-                managementList.innerHTML += `
-                    <div class="card ${isDebt ? 'debt-card' : ''}" style="border-left-color: ${color};">
-                        <div style="margin-bottom: 10px;">
-                            <h4 style="margin:0 0 5px 0;">${d.name}</h4>
-                            <p style="margin:0; font-weight:bold; color:${isDebt ? 'var(--danger)' : 'var(--success)'};">Pendiente: $${d.pendingAmount.toFixed(2)}</p>
-                            <p style="margin:5px 0 10px 0; font-size:0.8rem; color:#999;">Original: $${d.originalAmount.toFixed(2)}</p>
+    <div x-show="currentView === 'main'" x-transition>
+        <header class="p-6">
+            <div class="glass-card text-white rounded-3xl p-6 relative overflow-hidden shadow-xl">
+                <div class="relative z-10">
+                    <p class="text-xs opacity-70 uppercase tracking-tighter">Saldo Total</p>
+                    <h1 class="text-4xl font-bold mt-1" x-text="formatCurrency(getTotalBalance())"></h1>
+                    <div class="mt-8 flex justify-between items-center">
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-blue-400 opacity-80 border-2 border-slate-800"></div>
+                            <div class="w-8 h-8 rounded-full bg-indigo-400 opacity-80 border-2 border-slate-800"></div>
                         </div>
                         
-                        <div class="flex-row" style="margin-bottom: 5px; flex-wrap: wrap;">
-                            <button onclick="openDebtPaymentModal(${d.id})" class="btn-primary" style="background:${color}; width:100%; padding:10px; margin-top:0; margin-bottom: 5px;">${actionText} (Afecta Saldo Cuentas)</button>
-                            <button onclick="openDebtAdjustModal(${d.id})" class="btn-primary" style="background: ${isDebt ? 'var(--adjust-sub)' : 'var(--adjust-add)'}; width:100%; padding:10px; margin-top:0;">+/- Ajuste Manual</button>
-                        </div>
                     </div>
-                `;
-            });
-        }
-        
-        // --- MODIFICACIÓN DE SALDOS EN LÍNEA ---
-        function promptEditBalance(account) {
-            const currentBalance = balances[account];
-            const accountName = account === 'cash' ? 'Efectivo' : 'Banco';
+                </div>
+            </div>
+        </header>
+
+        <main class="px-6 space-y-6">
+            <section>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold text-gray-800">Cuentas</h2>
+                    <button @click="openModal('account')" class="text-blue-600 text-sm font-bold">+ Nueva</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <template x-for="(acc, index) in accounts" :key="index">
+                        <div @click="prepEditAccount(index)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer active:scale-95 transition">
+                            <p class="text-[10px] text-gray-400 uppercase font-black" x-text="acc.type"></p>
+                            <p class="font-bold text-gray-700 truncate" x-text="acc.name"></p>
+                            <p class="text-blue-600 font-bold" x-text="formatCurrency(acc.balance)"></p>
+                        </div>
+                    </template>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-bold text-gray-800 mb-3">Movimientos Recientes</h2>
+                <div class="bg-white rounded-2xl shadow-sm divide-y divide-gray-50 overflow-hidden">
+                    <template x-for="tx in transactions.slice().reverse().slice(0, 10)" :key="tx.id">
+                        <div @click="prepEditTx(tx)" class="p-4 flex justify-between items-center active:bg-gray-50 cursor-pointer">
+                            <div>
+                                <p class="font-bold text-gray-800 text-sm" x-text="tx.desc"></p>
+                                <p class="text-[10px] text-gray-400" x-text="tx.date + ' • ' + tx.account"></p>
+                            </div>
+                            <p class="font-bold text-sm" :class="tx.type === 'ingreso' ? 'text-green-500' : (tx.type === 'transferencia' ? 'text-blue-500' : 'text-red-500')" 
+                               x-text="(tx.type === 'egreso' ? '-' : '+') + formatCurrency(tx.amount)"></p>
+                        </div>
+                    </template>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div x-show="currentView === 'debts'" x-transition class="p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-black text-gray-800">Deudas y Pagos</h1>
+            <button @click="openModal('newDebt')" class="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg">+ Nuevo Adeudo</button>
+        </div>
+        <div class="space-y-3">
+            <template x-for="(debt, index) in debts" :key="index">
+                <div @click="prepManageDebt(index)" class="bg-white p-4 rounded-2xl shadow-sm border-l-4 flex justify-between items-center" 
+                     :class="debt.type === 'deuda' ? 'border-red-500' : 'border-green-500'">
+                    <div>
+                        <p class="font-bold text-gray-800" x-text="debt.description"></p>
+                        <p class="text-[10px] uppercase text-gray-400" x-text="debt.type === 'deuda' ? 'Por Pagar' : 'Por Cobrar'"></p>
+                    </div>
+                    <p class="font-black text-lg" :class="debt.type === 'deuda' ? 'text-red-500' : 'text-green-500'" x-text="formatCurrency(debt.amount)"></p>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-10 py-4 flex justify-between items-center z-40">
+        <button @click="currentView = 'main'" :class="currentView === 'main' ? 'text-blue-600' : 'text-gray-300'"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg></button>
+        <button @click="openModal('movement')" class="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl -mt-12 border-4 border-white active:scale-95 transition"><span class="text-2xl font-bold">+</span></button>
+        <button @click="currentView = 'debts'" :class="currentView === 'debts' ? 'text-blue-600' : 'text-gray-300'"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
+    </nav>
+
+    <div x-show="modal" x-cloak class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div @click.away="modal = false" class="bg-white w-full max-w-md rounded-t-[2.5rem] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
             
-            const newBalanceInput = prompt(`Ingresa el saldo ACTUAL CORRECTO para ${accountName}. Saldo actual: $${currentBalance.toFixed(2)}`);
-            
-            if (newBalanceInput === null) return;
-            
-            const newBalance = parseFloat(newBalanceInput);
+            <div x-show="modalType === 'account'">
+                <h3 class="text-xl font-black mb-4" x-text="form.index !== undefined ? 'Configurar Cuenta' : 'Nueva Cuenta'"></h3>
+                <input x-model="form.name" type="text" placeholder="Nombre (ej. Nómina)" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200">
+                <input x-model.number="form.balance" type="number" placeholder="Saldo" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200 font-bold text-blue-600">
+                <select x-model="form.type" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200 uppercase text-xs font-bold">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="banco">Banco / Débito</option>
+                    <option value="tarjeta">Tarjeta de Crédito</option>
+                </select>
+                <div class="flex flex-col gap-2">
+                    <button @click="saveAccount" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">Guardar</button>
+                    <button x-show="form.index !== undefined" @click="deleteAccount" class="w-full bg-red-100 text-red-600 py-3 rounded-2xl font-bold text-sm">Eliminar Cuenta</button>
+                </div>
+            </div>
 
-            if (!isNaN(newBalance) && newBalance >= 0) {
-                balances[account] = newBalance;
-                saveLocal();
-                alert(`Saldo de ${accountName} actualizado a $${newBalance.toFixed(2)}.`);
-            } else {
-                alert('Monto no válido. El saldo debe ser un número positivo.');
-            }
-        }
-        
-        // --- PAGOS DE DEUDAS (MODAL Y BOTONES) ---
+            <div x-show="modalType === 'movement' || modalType === 'editTx'">
+                <div class="flex justify-around mb-6 border-b border-gray-100">
+                    <button @click="form.txType = 'egreso'" :class="form.txType === 'egreso' && 'active-tab'" class="pb-2 px-2 font-bold text-sm">Gasto</button>
+                    <button @click="form.txType = 'ingreso'" :class="form.txType === 'ingreso' && 'active-tab'" class="pb-2 px-2 font-bold text-sm">Ingreso</button>
+                    <button @click="form.txType = 'transferencia'" :class="form.txType === 'transferencia' && 'active-tab'" class="pb-2 px-2 font-bold text-sm">Transferir</button>
+                </div>
+                <input x-model="form.txDesc" type="text" placeholder="Concepto" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200">
+                <input x-model.number="form.txAmount" type="number" placeholder="0.00" class="w-full p-4 bg-gray-50 rounded-2xl mb-4 border-none ring-1 ring-gray-200 font-bold text-xl text-center">
 
-        function openDebtPaymentModal(debtId) {
-            const debt = debts.find(d => d.id === debtId);
-            if (!debt) return;
+                <div x-show="form.txType !== 'transferencia'">
+                    <select x-model="form.txAccount" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200">
+                        <option value="">Seleccionar Cuenta...</option>
+                        <template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template>
+                    </select>
+                </div>
 
-            currentDebtId = debtId;
-            const isDebt = debt.status === 'debt-due';
-            const action = isDebt ? 'Pagar' : 'Cobrar';
-            const buttonColor = isDebt ? 'var(--danger)' : 'var(--success)';
+                <div x-show="form.txType === 'transferencia'" class="space-y-3 mb-6">
+                    <select x-model="form.fromAcc" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200"><option value="">Desde...</option><template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template></select>
+                    <select x-model="form.toAcc" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200"><option value="">Hacia...</option><template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template></select>
+                </div>
 
-            document.getElementById('modal-title').innerText = `Registrar ${action}`;
-            document.getElementById('modal-debt-info-payment').innerText = `${debt.name} - Pendiente: $${debt.pendingAmount.toFixed(2)}`;
-            document.getElementById('debt-payment-amount').value = '';
-            
-            // Configurar botones de pago/cobro
-            const paymentButtons = document.getElementById('payment-buttons');
-            paymentButtons.innerHTML = `
-                <button class="btn" style="background: ${buttonColor};" onclick="finalizeDebtPayment('cash')">${action} con Efectivo ($${balances.cash.toFixed(2)})</button>
-                <button class="btn" style="background: ${buttonColor};" onclick="finalizeDebtPayment('bank')">${action} con Banco ($${balances.bank.toFixed(2)})</button>
-            `;
+                <button @click="modalType === 'editTx' ? updateTransaction() : saveTransaction()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">Confirmar</button>
+            </div>
 
-            document.getElementById('debt-payment-modal').classList.add('visible');
-        }
+            <div x-show="modalType === 'newDebt'">
+                <h3 class="text-xl font-black mb-6">Nuevo Adeudo</h3>
+                <input x-model="form.debtDesc" type="text" placeholder="Descripción (ej. Préstamo Juan)" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200">
+                <input x-model.number="form.debtAmount" type="number" placeholder="Monto" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200 font-bold">
+                <select x-model="form.debtType" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200">
+                    <option value="deuda">Yo debo (Deuda)</option>
+                    <option value="pago">Me deben (Cobro)</option>
+                </select>
+                <button @click="saveDebt" class="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-lg">Guardar Adeudo</button>
+            </div>
 
-        function finalizeDebtPayment(account) {
-            if (currentDebtId === null) return;
+            <div x-show="modalType === 'manageDebt'">
+                <h3 class="text-xl font-black mb-2" x-text="selectedDebt?.description"></h3>
+                <p class="text-3xl font-black text-center my-6" :class="selectedDebt?.type === 'deuda' ? 'text-red-500' : 'text-green-500'" x-text="formatCurrency(selectedDebt?.amount)"></p>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <button @click="form.action = 'abono'" :class="form.action === 'abono' ? 'bg-green-500 text-white' : 'bg-gray-100'" class="py-3 rounded-xl font-bold text-xs">Abonar</button>
+                    <button @click="form.action = 'aumento'" :class="form.action === 'aumento' ? 'bg-red-500 text-white' : 'bg-gray-100'" class="py-3 rounded-xl font-bold text-xs">Aumentar</button>
+                </div>
+                <input x-model.number="form.changeAmount" type="number" placeholder="Monto" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200 font-bold">
+                <select x-model="form.targetAcc" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200">
+                    <option value="">Cuenta que afecta el saldo...</option>
+                    <template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template>
+                </select>
+                <button @click="executeDebtChange" class="w-full bg-black text-white py-4 rounded-2xl font-bold">Procesar</button>
+            </div>
 
-            const debtIndex = debts.findIndex(d => d.id === currentDebtId);
-            const debt = debts[debtIndex];
-            
-            const amountInput = document.getElementById('debt-payment-amount').value;
-            const paymentAmount = parseFloat(amountInput);
+            <button @click="modal = false" class="w-full mt-6 text-gray-400 font-bold text-xs uppercase tracking-widest">Cerrar</button>
+        </div>
+    </div>
 
-            closeModal('debt-payment-modal');
-            currentDebtId = null; 
+    <script>
+        function financeApp() {
+            return {
+                currentView: 'main',
+                modal: false,
+                modalType: '',
+                accounts: [],
+                transactions: [],
+                debts: [],
+                form: {},
+                selectedDebt: null,
+                selectedDebtIndex: null,
 
-            if (isNaN(paymentAmount) || paymentAmount <= 0) {
-                alert('Monto de pago inválido. Por favor, inténtalo de nuevo.');
-                return;
-            }
-            if (paymentAmount > debt.pendingAmount) {
-                alert(`El monto ($${paymentAmount.toFixed(2)}) excede el saldo pendiente ($${debt.pendingAmount.toFixed(2)}).`);
-                return;
-            }
+                init() {
+                    const saved = localStorage.getItem('finanzas_v3_1');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        this.accounts = data.accounts || [];
+                        this.transactions = data.transactions || [];
+                        this.debts = data.debts || [];
+                    }
+                },
 
-            const isDebt = debt.status === 'debt-due';
-            const action = isDebt ? 'Pagar' : 'Cobrar';
-            let isDebtPaymentOut = false; 
+                save() {
+                    localStorage.setItem('finanzas_v3_1', JSON.stringify({
+                        accounts: this.accounts,
+                        transactions: this.transactions,
+                        debts: this.debts
+                    }));
+                },
 
-            // Lógica de saldo:
-            if (isDebt) { // Es DEUDA: Sale dinero de tu cuenta (Gasto)
-                if (balances[account] < paymentAmount) {
-                    alert(`¡Saldo insuficiente en ${account === 'cash' ? 'Efectivo' : 'Banco'} para el pago! Saldo: $${balances[account].toFixed(2)}`);
-                    return;
+                formatCurrency(val) {
+                    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val || 0);
+                },
+
+                getTotalBalance() {
+                    return this.accounts.reduce((sum, a) => sum + a.balance, 0);
+                },
+
+                openModal(type) {
+                    this.modalType = type;
+                    this.form = { txType: 'egreso', action: 'abono', debtType: 'deuda', txAmount: 0 };
+                    this.modal = true;
+                },
+
+                // GESTIÓN DE CUENTAS
+                prepEditAccount(index) {
+                    this.form = { ...this.accounts[index], index };
+                    this.modalType = 'account';
+                    this.modal = true;
+                },
+
+                saveAccount() {
+                    if (this.form.index !== undefined) {
+                        this.accounts[this.form.index] = { name: this.form.name, balance: this.form.balance, type: this.form.type };
+                    } else {
+                        this.accounts.push({ name: this.form.name, balance: this.form.balance, type: this.form.type });
+                    }
+                    this.save();
+                    this.modal = false;
+                },
+
+                deleteAccount() {
+                    if (confirm('¿Seguro que deseas eliminar esta cuenta? Los movimientos previos no se borrarán pero quedarán sin cuenta vinculada.')) {
+                        this.accounts.splice(this.form.index, 1);
+                        this.save();
+                        this.modal = false;
+                    }
+                },
+
+                // GESTIÓN DE MOVIMIENTOS
+                saveTransaction() {
+                    const amount = parseFloat(this.form.txAmount);
+                    if (isNaN(amount) || amount <= 0) return alert("Ingresa un monto válido");
+
+                    if (this.form.txType === 'transferencia') {
+                        const from = this.accounts.find(a => a.name === this.form.fromAcc);
+                        const to = this.accounts.find(a => a.name === this.form.toAcc);
+                        if (!from || !to || from === to) return alert("Selecciona cuentas distintas");
+                        from.balance -= amount;
+                        to.balance += amount;
+                    } else {
+                        const acc = this.accounts.find(a => a.name === this.form.txAccount);
+                        if (!acc) return alert("Selecciona una cuenta");
+                        if (this.form.txType === 'egreso') acc.balance -= amount;
+                        else acc.balance += amount;
+                    }
+
+                    this.transactions.push({
+                        id: Date.now(),
+                        desc: this.form.txDesc || (this.form.txType === 'transferencia' ? 'Transferencia' : 'Movimiento'),
+                        amount,
+                        type: this.form.txType,
+                        account: this.form.txType === 'transferencia' ? `${this.form.fromAcc} → ${this.form.toAcc}` : this.form.txAccount,
+                        date: new Date().toLocaleDateString()
+                    });
+                    this.save();
+                    this.modal = false;
+                },
+
+                prepEditTx(tx) {
+                    this.form = { ...tx, txAmount: tx.amount, txDesc: tx.desc, txType: tx.type, txAccount: tx.account };
+                    this.modalType = 'editTx';
+                    this.modal = true;
+                },
+
+                updateTransaction() {
+                    const tx = this.transactions.find(t => t.id === this.form.id);
+                    const oldAcc = this.accounts.find(a => a.name === tx.account);
+                    
+                    // Deshacer anterior
+                    if (oldAcc) {
+                        if (tx.type === 'egreso') oldAcc.balance += tx.amount;
+                        else if (tx.type === 'ingreso') oldAcc.balance -= tx.amount;
+                    }
+
+                    // Aplicar nuevo
+                    const newAcc = this.accounts.find(a => a.name === this.form.txAccount);
+                    const newAmt = parseFloat(this.form.txAmount);
+                    if (newAcc) {
+                        if (this.form.txType === 'egreso') newAcc.balance -= newAmt;
+                        else if (this.form.txType === 'ingreso') newAcc.balance += newAmt;
+                    }
+
+                    tx.desc = this.form.txDesc;
+                    tx.amount = newAmt;
+                    tx.type = this.form.txType;
+                    tx.account = this.form.txAccount;
+
+                    this.save();
+                    this.modal = false;
+                },
+
+                // DEUDAS (CORREGIDO)
+                saveDebt() {
+                    if (!this.form.debtDesc || !this.form.debtAmount) return alert("Completa los datos");
+                    this.debts.push({
+                        description: this.form.debtDesc,
+                        amount: parseFloat(this.form.debtAmount),
+                        type: this.form.debtType
+                    });
+                    this.save();
+                    this.modal = false;
+                },
+
+                prepManageDebt(index) {
+                    this.selectedDebtIndex = index;
+                    this.selectedDebt = this.debts[index];
+                    this.form = { action: 'abono', changeAmount: 0 };
+                    this.modalType = 'manageDebt';
+                    this.modal = true;
+                },
+
+                executeDebtChange() {
+                    const amount = parseFloat(this.form.changeAmount);
+                    const acc = this.accounts.find(a => a.name === this.form.targetAcc);
+                    if (!acc || isNaN(amount)) return alert("Selecciona cuenta y monto");
+
+                    if (this.form.action === 'abono') {
+                        this.selectedDebt.amount -= amount;
+                        if (this.selectedDebt.type === 'deuda') acc.balance -= amount;
+                        else acc.balance += amount;
+                    } else {
+                        this.selectedDebt.amount += amount;
+                        if (this.selectedDebt.type === 'deuda') acc.balance += amount;
+                        else acc.balance -= amount;
+                    }
+
+                    if (this.selectedDebt.amount <= 0) this.debts.splice(this.selectedDebtIndex, 1);
+                    this.save();
+                    this.modal = false;
                 }
-                balances[account] -= paymentAmount;
-                isDebtPaymentOut = true;
-                balances.totalExpense += paymentAmount; // Contabilizar como gasto
-            } else { // Es PRÉSTAMO: Entra dinero a tu cuenta (Ingreso)
-                balances[account] += paymentAmount;
-                isDebtPaymentOut = false;
-                balances.totalIncome += paymentAmount; // Contabilizar como ingreso
-            }
-            
-            // Actualizar deuda
-            debt.pendingAmount -= paymentAmount;
-            if (debt.pendingAmount < 0.01) {
-                 debt.pendingAmount = 0; 
-            }
-
-            // Registrar movimiento
-            movements.push({
-                date: new Date().toISOString(),
-                type: 'debt-payment',
-                amount: paymentAmount,
-                account: account,
-                description: `${action} de ${debt.name}`,
-                isDebtPaymentOut: isDebtPaymentOut
-            });
-
-            saveLocal();
-            alert(`${action} de $${paymentAmount.toFixed(2)} con ${account === 'cash' ? 'Efectivo' : 'Banco'} registrado con éxito.`);
-        }
-
-
-        // --- AJUSTE DE ADEUDOS (MODAL Y BOTONES) ---
-        
-        function openDebtAdjustModal(debtId) {
-            const debt = debts.find(d => d.id === debtId);
-            if (!debt) return;
-
-            currentDebtId = debtId;
-
-            document.getElementById('adjust-modal-title').innerText = `Ajustar Saldo: ${debt.name}`;
-            document.getElementById('modal-debt-info-adjust').innerText = `Saldo Pendiente Actual: $${debt.pendingAmount.toFixed(2)}`;
-            document.getElementById('debt-adjust-amount-input').value = '0.00'; 
-            
-            document.getElementById('debt-adjust-modal').classList.add('visible');
-        }
-
-        function finalizeDebtAdjustment(operation) {
-            if (currentDebtId === null) return;
-            
-            const debtIndex = debts.findIndex(d => d.id === currentDebtId);
-            const debt = debts[debtIndex];
-            
-            const inputElement = document.getElementById('debt-adjust-amount-input');
-            const inputAmount = parseFloat(inputElement.value);
-
-            closeModal('debt-adjust-modal');
-            currentDebtId = null;
-
-            if (isNaN(inputAmount) || inputAmount <= 0) {
-                alert('Ingresa un monto positivo válido para el ajuste.');
-                return;
-            }
-
-            let adjustment = inputAmount;
-            
-            if (operation === 'sub') {
-                adjustment = -adjustment;
-            }
-
-            const newPendingAmount = debt.pendingAmount + adjustment;
-            
-            // VALIDACIÓN CORREGIDA: Solo impide saldo pendiente negativo.
-            if (newPendingAmount < 0) {
-                alert('El ajuste resultaría en un saldo pendiente negativo. Se limitó el ajuste para dejar el saldo en $0.');
-                adjustment = -debt.pendingAmount; // Calcula el ajuste real para llegar a 0
-                debt.pendingAmount = 0;
-            } else {
-                // AHORA PERMITE QUE EL SALDO PENDIENTE EXCEDA EL MONTO ORIGINAL
-                debt.pendingAmount = newPendingAmount;
-            }
-            
-            if (adjustment === 0) {
-                 alert('No se realizó ningún cambio.');
-                 return;
-            }
-            
-            // Registrar movimiento
-            movements.push({
-                date: new Date().toISOString(),
-                type: 'debt-adjust',
-                amount: Math.abs(adjustment),
-                adjustment: adjustment,
-                debtId: debt.id,
-                description: `Ajuste manual de ${debt.name} (${adjustment > 0 ? 'Aumento' : 'Reducción'})`
-            });
-
-
-            saveLocal();
-            alert(`Saldo pendiente de "${debt.name}" ajustado. Nuevo saldo: $${debt.pendingAmount.toFixed(2)}`);
-        }
-        
-        // --- LÓGICA DE MOVIMIENTOS GENERALES (Se mantiene igual) ---
-        
-        function toggleFormFields() {
-            const type = document.getElementById('movement-type').value;
-            const debtFields = document.getElementById('debt-fields');
-            const standardFields = document.getElementById('standard-fields');
-            const movBtn = document.getElementById('mov-btn');
-            const accountSelector = document.getElementById('account-selector');
-            const transferSelectors = document.getElementById('transfer-selectors');
-            const movAmount = document.getElementById('mov-amount');
-            const movDescription = document.getElementById('mov-description');
-            
-            debtFields.style.display = 'none';
-            standardFields.style.display = 'block';
-            movBtn.style.display = 'block';
-            accountSelector.style.display = 'block';
-            transferSelectors.style.display = 'none';
-            movAmount.disabled = false;
-            movDescription.disabled = false;
-
-
-            if (type === 'register-debt') {
-                debtFields.style.display = 'block';
-                standardFields.style.display = 'none';
-                movBtn.style.display = 'none';
-            } else if (type === 'transfer') {
-                accountSelector.style.display = 'none';
-                transferSelectors.style.display = 'block';
-                movBtn.innerText = '💾 Registrar Transferencia';
-            } else { 
-                movBtn.innerText = type === 'income' ? '💾 Registrar Ganancia' : '💾 Registrar Gasto';
             }
         }
-        
-        function handleMovement() {
-            const type = document.getElementById('movement-type').value;
-            
-            if (type === 'income' || type === 'expense') {
-                addIncomeExpense();
-            } else if (type === 'transfer') {
-                addTransfer();
-            }
-        }
-        
-        function addIncomeExpense() {
-            const type = document.getElementById('movement-type').value;
-            const amount = parseFloat(document.getElementById('mov-amount').value);
-            const account = document.getElementById('mov-account').value;
-            const description = document.getElementById('mov-description').value || (type === 'income' ? 'Ingreso' : 'Gasto');
-
-            if (isNaN(amount) || amount <= 0) {
-                alert('Ingresa un monto válido.');
-                return;
-            }
-
-            const isIncome = type === 'income';
-
-            if (isIncome) {
-                balances[account] += amount;
-                balances.totalIncome += amount;
-            } else {
-                if (balances[account] < amount) {
-                    alert(`¡Saldo insuficiente en ${account === 'cash' ? 'Efectivo' : 'Banco'}! Saldo actual: $${balances[account].toFixed(2)}`);
-                    return;
-                }
-                balances[account] -= amount;
-                balances.totalExpense += amount;
-            }
-
-            movements.push({
-                date: new Date().toISOString(),
-                type: type,
-                amount: amount,
-                account: account,
-                description: description
-            });
-
-            saveLocal();
-            document.getElementById('mov-amount').value = '';
-            document.getElementById('mov-description').value = '';
-        }
-
-        function addTransfer() {
-            const amount = parseFloat(document.getElementById('mov-amount').value);
-            const fromAccount = document.getElementById('transfer-from').value;
-            const toAccount = document.getElementById('transfer-to').value;
-            const description = document.getElementById('mov-description').value || 'Transferencia Interna';
-
-            if (isNaN(amount) || amount <= 0) {
-                alert('Ingresa un monto válido.');
-                return;
-            }
-
-            if (fromAccount === toAccount) {
-                alert('Las cuentas de origen y destino deben ser diferentes.');
-                return;
-            }
-
-            if (balances[fromAccount] < amount) {
-                alert(`¡Saldo insuficiente en ${fromAccount === 'cash' ? 'Efectivo' : 'Banco'}! Saldo actual: $${balances[fromAccount].toFixed(2)}`);
-                return;
-            }
-
-            balances[fromAccount] -= amount;
-            balances[toAccount] += amount;
-
-            movements.push({
-                date: new Date().toISOString(),
-                type: 'transfer',
-                amount: amount,
-                fromAccount: fromAccount,
-                toAccount: toAccount,
-                account: fromAccount, 
-                description: description
-            });
-
-            saveLocal();
-            document.getElementById('mov-amount').value = '';
-            document.getElementById('mov-description').value = '';
-        }
-        
-        function addDebt() {
-            const name = document.getElementById('debt-name').value;
-            const status = document.getElementById('debt-status').value;
-            const originalAmount = parseFloat(document.getElementById('debt-original-amount').value);
-
-            if (!name || isNaN(originalAmount) || originalAmount <= 0) {
-                alert('Completa el nombre y el monto original de la deuda.');
-                return;
-            }
-
-            debts.push({
-                id: Date.now(),
-                name: name,
-                status: status, 
-                originalAmount: originalAmount,
-                pendingAmount: originalAmount,
-                date: new Date().toISOString()
-            });
-
-            saveLocal();
-            
-            document.getElementById('debt-name').value = '';
-            document.getElementById('debt-original-amount').value = '';
-            document.getElementById('movement-type').value = 'income';
-            toggleFormFields(); 
-
-            switchTab('debts');
-            alert('Deuda/Préstamo registrado.');
-        }
-
-
-        // --- NAVEGACIÓN ---
-        function switchTab(tab) {
-            document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById(`tab-${tab}`).classList.add('active');
-            document.getElementById(`nav-${tab}`).classList.add('active');
-            
-            let titles = { 'home': 'Resumen Financiero', 'register': 'Registrar Movimientos', 'debts': 'Gestión de Deudas' };
-            document.getElementById('page-title').innerText = titles[tab];
-        }
-
-        // Iniciar
-        toggleFormFields(); 
-        render();
     </script>
 </body>
 </html>
