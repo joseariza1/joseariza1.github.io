@@ -7,6 +7,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         .grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
@@ -124,9 +125,14 @@
             <section v-if="vista === 'stock'">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black italic">Inventario</h2>
-                    <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-purple-700 transition">
-                        <i class="bi bi-plus-circle mr-1"></i> Armar Paquete
-                    </button>
+                    <div class="flex gap-2">
+                        <button @click="generarVentanaStock" class="bg-indigo-500 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-600 transition">
+                            <i class="bi bi-list-check mr-1"></i> Ver Existencias
+                        </button>
+                        <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-purple-700 transition">
+                            <i class="bi bi-plus-circle mr-1"></i> Armar Paquete
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-md mb-8 border-t-4 border-indigo-400">
@@ -173,7 +179,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="p in productos" :key="p.id" class="hover:bg-gray-50 transition">
+                            <tr v-for="p in productosOrdenados" :key="p.id" class="hover:bg-gray-50 transition">
                                 <td class="p-4 font-bold">{{ p.nombre }}</td>
                                 <td class="p-4 text-center">
                                     <span v-if="p.esPaquete" class="text-[9px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded font-black">PAQUETE</span>
@@ -346,11 +352,14 @@
                 vista(nueva) { if (nueva === 'reportes') this.$nextTick(() => this.generarGrafica()); }
             },
             computed: {
+                // ORDEN ALFABÉTICO AUTOMÁTICO PARA LA TABLA
+                productosOrdenados() {
+                    return [...this.productos].sort((a, b) => a.nombre.localeCompare(b.nombre));
+                },
                 productosFiltrados() {
                     return this.productos.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase()))
                                          .sort((a, b) => a.nombre.localeCompare(b.nombre));
                 },
-                // COMPUTED MODIFICADA: Calcula el total restando descuentos
                 totalVenta() { return this.carrito.reduce((acc, item) => acc + (parseFloat(item.precioVenta) - (item.descuento || 0)), 0); },
                 totalVendidoAcumulado() { return this.ventasDia.filter(v => !v.devuelta).reduce((acc, v) => acc + v.total, 0); },
                 inversionTotalActual() { 
@@ -362,6 +371,25 @@
                 }
             },
             methods: {
+                // NUEVA FUNCIÓN PARA EL BOTÓN DE VENTANA
+                generarVentanaStock() {
+                    const existentes = this.productos
+                        .filter(p => this.obtenerStockReal(p) > 0)
+                        .map(p => p.nombre)
+                        .sort();
+
+                    if (existentes.length > 0) {
+                        Swal.fire({
+                            title: 'Productos en Existencia',
+                            html: `<div class="text-left"><ul class="list-disc ml-6">${existentes.map(n => `<li class="py-1">${n}</li>`).join('')}</ul></div>`,
+                            icon: 'info',
+                            confirmButtonColor: '#6366f1'
+                        });
+                    } else {
+                        Swal.fire('Sin Stock', 'No hay productos disponibles actualmente', 'warning');
+                    }
+                },
+
                 async persistir() {
                     try {
                         const data = { productos: this.productos, ventas: this.ventasDia };
@@ -448,7 +476,6 @@
 
                 agregarAlCarrito(prod) {
                     if (this.obtenerStockReal(prod) > 0) { 
-                        // Se agrega la propiedad descuento inicializada en 0
                         this.carrito.push({...prod, descuento: 0}); 
                         if (prod.esPaquete) {
                             prod.componentesIds.forEach(id => {
@@ -500,20 +527,20 @@
                     this.registrarVenta('agendado');
                     this.mostrarModalAgenda = false;
                 },
-
+                
                 procesarDevolucion(venta) {
-                    if(confirm("¿Devolver esta venta?")) {
-                        venta.productos.forEach(item => this.reintegrarStock(item));
+                    if(confirm("¿Confirmar devolución? El stock regresará al inventario.")) {
                         venta.devuelta = true;
+                        venta.productos.forEach(p => this.reintegrarStock(p));
                         this.persistir();
                     }
                 },
 
                 eliminarPedidoAgendado(id) {
-                    if(confirm("¿Eliminar pedido?")) {
+                    if(confirm("¿Eliminar pedido agendado? El stock será reintegrado.")) {
                         const idx = this.ventasDia.findIndex(v => v.id === id);
-                        if (idx > -1) {
-                            this.ventasDia[idx].productos.forEach(item => this.reintegrarStock(item));
+                        if(idx !== -1) {
+                            this.ventasDia[idx].productos.forEach(p => this.reintegrarStock(p));
                             this.ventasDia.splice(idx, 1);
                             this.persistir();
                         }
@@ -521,19 +548,32 @@
                 },
 
                 generarGrafica() {
-                    const ctx = document.getElementById('graficaVentas').getContext('2d');
-                    if(this.chartInstance) this.chartInstance.destroy();
+                    const ctx = document.getElementById('graficaVentas');
+                    if (!ctx) return;
+                    if (this.chartInstance) this.chartInstance.destroy();
+                    
+                    const ultimos7Dias = [...Array(7)].map((_, i) => {
+                        const d = new Date(); d.setDate(d.getDate() - i);
+                        return d.toISOString().split('T')[0];
+                    }).reverse();
+
+                    const datos = ultimos7Dias.map(fecha => {
+                        return this.ventasDia
+                            .filter(v => !v.devuelta && v.fechaReal.toString().includes(fecha))
+                            .reduce((acc, v) => acc + v.total, 0);
+                    });
+
                     this.chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'],
+                            labels: ultimos7Dias.map(f => f.split('-').slice(1).join('/')),
                             datasets: [{
-                                label: 'Ventas Semanales',
-                                data: [0, 0, 0, 0, 0, 0, this.totalSemanal],
+                                label: 'Ventas $',
+                                data: datos,
                                 borderColor: '#6366f1',
-                                tension: 0.4,
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
                                 fill: true,
-                                backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                                tension: 0.4
                             }]
                         },
                         options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
