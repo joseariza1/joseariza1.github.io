@@ -201,11 +201,8 @@
 
             <section v-if="vista === 'reportes'">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-green-500">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Ingresos Totales</h4>
-                        <p class="text-2xl font-black text-gray-900">${{ totalVendidoAcumulado }}</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-red-500">
+                    
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-red-500 text-center">
                         <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Inversión Individual</h4>
                         <p class="text-2xl font-black text-red-600">${{ inversionTotalActual }}</p>
                     </div>
@@ -225,7 +222,16 @@
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-md overflow-hidden">
-                    <h3 class="p-5 font-bold text-gray-800 border-b">Detalle de Transacciones</h3>
+                    <div class="flex justify-between items-center p-5 border-b">
+                        <h3 class="font-bold text-gray-800">Detalle de Transacciones</h3>
+                        <button 
+                            v-if="ventasDia.length > 10"
+                            @click="mostrarTodasVentas = !mostrarTodasVentas" 
+                            class="text-[10px] uppercase tracking-wider font-black px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all duration-300"
+                        >
+                            {{ mostrarTodasVentas ? 'Ver menos' : 'Ver todas (' + ventasDia.length + ')' }}
+                        </button>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs text-left">
                             <thead class="bg-gray-50 text-gray-400 font-bold uppercase">
@@ -238,14 +244,14 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 italic">
-                                <tr v-for="v in ventasDia.slice().reverse()" :key="v.id" :class="{'bg-red-50 opacity-70': v.devuelta}">
+                                <tr v-for="v in ventasMostradas" :key="v.id" :class="{'bg-red-50 opacity-70': v.devuelta}">
                                     <td class="p-4 whitespace-nowrap">{{ formatearFecha(v.fechaReal) }}</td>
                                     <td class="p-4 uppercase font-bold text-indigo-600">
                                         {{ v.cliente }} 
                                         <span v-if="v.devuelta" class="block text-[8px] text-red-600 font-black">DEVUELTO</span>
                                     </td>
                                     <td class="p-4">
-                                        <div v-for="p in v.productos" class="font-semibold text-gray-600 tracking-tight">• {{ p.nombre }}</div>
+                                        <div v-for="p in v.productos" :key="p.id" class="font-semibold text-gray-600 tracking-tight">• {{ p.nombre }}</div>
                                     </td>
                                     <td class="p-4 text-right font-black text-sm" :class="v.devuelta ? 'text-gray-400 line-through' : 'text-gray-900'">
                                         ${{ v.total }}
@@ -258,6 +264,9 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div v-if="ventasDia.length > 10 && !mostrarTodasVentas" class="p-3 text-center bg-gray-50 text-gray-400 text-[10px] uppercase font-bold border-t">
+                        Mostrando las últimas 10 transacciones
                     </div>
                 </div>
             </section>
@@ -337,6 +346,7 @@
                     productos: [], 
                     carrito: [],
                     ventasDia: [],
+                    mostrarTodasVentas: false, // Control de visualización de transacciones
                     nuevoProd: { nombre: '', costo: 0, piezas: 0, precioVenta: 0 },
                     editandoId: null,
                     agenda: { cliente: '', fecha: '', lugar: '' },
@@ -348,11 +358,20 @@
                     cargando: true
                 }
             },
+            mounted() {
+                this.cargarDatos();
+            },
             watch: {
                 vista(nueva) { if (nueva === 'reportes') this.$nextTick(() => this.generarGrafica()); }
             },
             computed: {
-                // ORDEN ALFABÉTICO AUTOMÁTICO PARA LA TABLA
+                // LÓGICA DE RECORTE DE TRANSACCIONES
+                ventasMostradas() {
+                    if (this.mostrarTodasVentas) {
+                        return [...this.ventasDia].reverse();
+                    }
+                    return this.ventasDia.slice(-10).reverse();
+                },
                 productosOrdenados() {
                     return [...this.productos].sort((a, b) => a.nombre.localeCompare(b.nombre));
                 },
@@ -371,25 +390,6 @@
                 }
             },
             methods: {
-                // NUEVA FUNCIÓN PARA EL BOTÓN DE VENTANA
-                generarVentanaStock() {
-                    const existentes = this.productos
-                        .filter(p => this.obtenerStockReal(p) > 0)
-                        .map(p => p.nombre)
-                        .sort();
-
-                    if (existentes.length > 0) {
-                        Swal.fire({
-                            title: 'Productos en Existencia',
-                            html: `<div class="text-left"><ul class="list-disc ml-6">${existentes.map(n => `<li class="py-1">${n}</li>`).join('')}</ul></div>`,
-                            icon: 'info',
-                            confirmButtonColor: '#6366f1'
-                        });
-                    } else {
-                        Swal.fire('Sin Stock', 'No hay productos disponibles actualmente', 'warning');
-                    }
-                },
-
                 async persistir() {
                     try {
                         const data = { productos: this.productos, ventas: this.ventasDia };
@@ -424,6 +424,88 @@
                     return Math.min(...stocks);
                 },
 
+                agregarAlCarrito(prod) {
+                    if (this.obtenerStockReal(prod) > 0) { 
+                        this.carrito.push({...prod, idCarrito: Date.now(), descuento: 0}); 
+                        this.actualizarStock(prod, -1);
+                    } else {
+                        Swal.fire('Sin stock', '', 'warning');
+                    }
+                },
+
+                quitarDelCarrito(index) {
+                    const item = this.carrito[index];
+                    this.actualizarStock(item, 1);
+                    this.carrito.splice(index, 1);
+                },
+
+                actualizarStock(prod, cantidad) {
+                    if (prod.esPaquete) {
+                        prod.componentesIds.forEach(id => {
+                            const comp = this.productos.find(p => p.id === id);
+                            if (comp) comp.piezas += cantidad;
+                        });
+                    } else {
+                        const p = this.productos.find(x => x.id === prod.id);
+                        if (p) p.piezas += cantidad;
+                    }
+                },
+
+                finalizarVentaInmediata() {
+                    const nuevaVenta = {
+                        id: Date.now(),
+                        fechaReal: new Date().toISOString(),
+                        cliente: 'Venta Directa',
+                        productos: [...this.carrito],
+                        total: this.totalVenta,
+                        tipo: 'inmediata',
+                        devuelta: false
+                    };
+                    this.ventasDia.push(nuevaVenta);
+                    this.carrito = [];
+                    this.persistir();
+                    Swal.fire('Venta Realizada', '', 'success');
+                },
+
+                finalizarVentaAgendada() {
+                    if (!this.agenda.cliente || !this.agenda.fecha) return;
+                    const nuevaVenta = {
+                        id: Date.now(),
+                        fechaReal: new Date().toISOString(),
+                        fechaEntrega: this.agenda.fecha,
+                        cliente: this.agenda.cliente,
+                        lugar: this.agenda.lugar,
+                        productos: [...this.carrito],
+                        total: this.totalVenta,
+                        tipo: 'agendado',
+                        completado: false,
+                        devuelta: false
+                    };
+                    this.ventasDia.push(nuevaVenta);
+                    this.carrito = [];
+                    this.mostrarModalAgenda = false;
+                    this.agenda = { cliente: '', fecha: '', lugar: '' };
+                    this.persistir();
+                    Swal.fire('Pedido Agendado', '', 'info');
+                },
+
+                procesarDevolucion(venta) {
+                    Swal.fire({
+                        title: '¿Procesar devolución?',
+                        text: "El stock será reintegrado",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, devolver'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            venta.devuelta = true;
+                            venta.productos.forEach(p => this.actualizarStock(p, 1));
+                            this.persistir();
+                            Swal.fire('Devuelto', '', 'success');
+                        }
+                    });
+                },
+
                 guardarProducto() {
                     if (this.editandoId) {
                         const idx = this.productos.findIndex(p => p.id === this.editandoId);
@@ -447,10 +529,16 @@
                 },
 
                 eliminarProducto(id) { 
-                    if(confirm('¿Seguro?')) { 
-                        this.productos = this.productos.filter(p => p.id !== id); 
-                        this.persistir(); 
-                    } 
+                    Swal.fire({
+                        title: '¿Eliminar producto?',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444'
+                    }).then(r => {
+                        if(r.isConfirmed) {
+                            this.productos = this.productos.filter(p => p.id !== id);
+                            this.persistir();
+                        }
+                    });
                 },
 
                 toggleProdEnPaquete(id) {
@@ -474,99 +562,39 @@
                     this.paqueteSeleccionadosIds = [];
                 },
 
-                agregarAlCarrito(prod) {
-                    if (this.obtenerStockReal(prod) > 0) { 
-                        this.carrito.push({...prod, descuento: 0}); 
-                        if (prod.esPaquete) {
-                            prod.componentesIds.forEach(id => {
-                                const comp = this.productos.find(p => p.id === id);
-                                if (comp) comp.piezas--;
-                            });
-                        } else {
-                            const p = this.productos.find(x => x.id === prod.id);
-                            if (p) p.piezas--;
-                        }
-                    } else {
-                        alert("Sin stock disponible");
-                    }
-                },
+                generarVentanaStock() {
+                    const existentes = this.productos
+                        .filter(p => this.obtenerStockReal(p) > 0)
+                        .map(p => p.nombre)
+                        .sort();
 
-                reintegrarStock(item) {
-                    if (item.esPaquete) {
-                        item.componentesIds.forEach(id => {
-                            const comp = this.productos.find(p => p.id === id);
-                            if (comp) comp.piezas++;
-                        });
-                    } else {
-                        const p = this.productos.find(x => x.id === item.id);
-                        if (p) p.piezas++;
-                    }
-                },
-
-                quitarDelCarrito(index) {
-                    this.reintegrarStock(this.carrito[index]);
-                    this.carrito.splice(index, 1);
-                },
-
-                registrarVenta(tipo) {
-                    this.ventasDia.push({
-                        id: Date.now(), total: this.totalVenta,
-                        fechaReal: new Date(), fechaEntrega: this.agenda.fecha || new Date(),
-                        tipo, cliente: this.agenda.cliente || 'Venta Mostrador',
-                        lugar: this.agenda.lugar || 'Local', productos: [...this.carrito],
-                        completado: tipo === 'inmediata', devuelta: false
+                    Swal.fire({
+                        title: 'Stock Disponible',
+                        html: `<div class="text-left text-sm"><ul class="list-disc ml-6">${existentes.map(n => `<li class="py-1">${n}</li>`).join('')}</ul></div>`,
+                        confirmButtonColor: '#6366f1'
                     });
-                    this.carrito = [];
-                    this.agenda = { cliente: '', fecha: '', lugar: '' };
-                    this.persistir();
-                },
-
-                finalizarVentaInmediata() { this.registrarVenta('inmediata'); },
-                finalizarVentaAgendada() {
-                    if(!this.agenda.cliente || !this.agenda.fecha) return alert("Faltan datos");
-                    this.registrarVenta('agendado');
-                    this.mostrarModalAgenda = false;
-                },
-                
-                procesarDevolucion(venta) {
-                    if(confirm("¿Confirmar devolución? El stock regresará al inventario.")) {
-                        venta.devuelta = true;
-                        venta.productos.forEach(p => this.reintegrarStock(p));
-                        this.persistir();
-                    }
-                },
-
-                eliminarPedidoAgendado(id) {
-                    if(confirm("¿Eliminar pedido agendado? El stock será reintegrado.")) {
-                        const idx = this.ventasDia.findIndex(v => v.id === id);
-                        if(idx !== -1) {
-                            this.ventasDia[idx].productos.forEach(p => this.reintegrarStock(p));
-                            this.ventasDia.splice(idx, 1);
-                            this.persistir();
-                        }
-                    }
                 },
 
                 generarGrafica() {
-                    const ctx = document.getElementById('graficaVentas');
-                    if (!ctx) return;
                     if (this.chartInstance) this.chartInstance.destroy();
+                    const ctx = document.getElementById('graficaVentas').getContext('2d');
                     
                     const ultimos7Dias = [...Array(7)].map((_, i) => {
-                        const d = new Date(); d.setDate(d.getDate() - i);
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
                         return d.toISOString().split('T')[0];
                     }).reverse();
 
                     const datos = ultimos7Dias.map(fecha => {
                         return this.ventasDia
-                            .filter(v => !v.devuelta && v.fechaReal.toString().includes(fecha))
+                            .filter(v => !v.devuelta && v.fechaReal.startsWith(fecha))
                             .reduce((acc, v) => acc + v.total, 0);
                     });
 
                     this.chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: ultimos7Dias.map(f => f.split('-').slice(1).join('/')),
+                            labels: ultimos7Dias.map(f => f.split('-').slice(1).reverse().join('/')),
                             datasets: [{
                                 label: 'Ventas $',
                                 data: datos,
@@ -576,11 +604,15 @@
                                 tension: 0.4
                             }]
                         },
-                        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                        options: { responsive: true, plugins: { legend: { display: false } } }
                     });
+                },
+
+                eliminarPedidoAgendado(id) {
+                    this.ventasDia = this.ventasDia.filter(v => v.id !== id);
+                    this.persistir();
                 }
-            },
-            mounted() { this.cargarDatos(); }
+            }
         }).mount('#app');
     </script>
 </body>
