@@ -3,340 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas Pro v3.1</title>
+    <title>NanoWallet Pro Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        .glass-card { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
-        [x-cloak] { display: none !important; }
-        .active-tab { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .modal.active { display: flex; }
+        .tab-active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-gray-50 pb-24" x-data="financeApp()" x-init="init()">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col pb-24">
 
-    <div x-show="currentView === 'main'" x-transition>
-        <header class="p-6">
-            <div class="glass-card text-white rounded-3xl p-6 relative overflow-hidden shadow-xl">
-                <div class="relative z-10">
-                    <p class="text-xs opacity-70 uppercase tracking-tighter">Saldo Total</p>
-                    <h1 class="text-4xl font-bold mt-1" x-text="formatCurrency(getTotalBalance())"></h1>
-                    <div class="mt-8 flex justify-between items-center">
-                        <div class="flex -space-x-2">
-                            <div class="w-8 h-8 rounded-full bg-blue-400 opacity-80 border-2 border-slate-800"></div>
-                            <div class="w-8 h-8 rounded-full bg-indigo-400 opacity-80 border-2 border-slate-800"></div>
-                        </div>
-                        
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <main class="px-6 space-y-6">
-            <section>
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-lg font-bold text-gray-800">Cuentas</h2>
-                    <button @click="openModal('account')" class="text-blue-600 text-sm font-bold">+ Nueva</button>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <template x-for="(acc, index) in accounts" :key="index">
-                        <div @click="prepEditAccount(index)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer active:scale-95 transition">
-                            <p class="text-[10px] text-gray-400 uppercase font-black" x-text="acc.type"></p>
-                            <p class="font-bold text-gray-700 truncate" x-text="acc.name"></p>
-                            <p class="text-blue-600 font-bold" x-text="formatCurrency(acc.balance)"></p>
-                        </div>
-                    </template>
-                </div>
-            </section>
-
-            <section>
-                <h2 class="text-lg font-bold text-gray-800 mb-3">Movimientos Recientes</h2>
-                <div class="bg-white rounded-2xl shadow-sm divide-y divide-gray-50 overflow-hidden">
-                    <template x-for="tx in transactions.slice().reverse().slice(0, 10)" :key="tx.id">
-                        <div @click="prepEditTx(tx)" class="p-4 flex justify-between items-center active:bg-gray-50 cursor-pointer">
-                            <div>
-                                <p class="font-bold text-gray-800 text-sm" x-text="tx.desc"></p>
-                                <p class="text-[10px] text-gray-400" x-text="tx.date + ' • ' + tx.account"></p>
-                            </div>
-                            <p class="font-bold text-sm" :class="tx.type === 'ingreso' ? 'text-green-500' : (tx.type === 'transferencia' ? 'text-blue-500' : 'text-red-500')" 
-                               x-text="(tx.type === 'egreso' ? '-' : '+') + formatCurrency(tx.amount)"></p>
-                        </div>
-                    </template>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <div x-show="currentView === 'debts'" x-transition class="p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-black text-gray-800">Deudas y Pagos</h1>
-            <button @click="openModal('newDebt')" class="bg-black text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg">+ Nuevo Adeudo</button>
+    <header class="p-6 space-y-4 text-center">
+        <div class="flex justify-between items-center">
+            <h1 class="text-lg font-bold text-blue-500 tracking-tight">NanoWallet</h1>
+            <button onclick="openAccModal()" class="text-[10px] bg-slate-900 px-4 py-2 rounded-full border border-slate-800 font-bold uppercase tracking-wider">+ Cuenta</button>
         </div>
-        <div class="space-y-3">
-            <template x-for="(debt, index) in debts" :key="index">
-                <div @click="prepManageDebt(index)" class="bg-white p-4 rounded-2xl shadow-sm border-l-4 flex justify-between items-center" 
-                     :class="debt.type === 'deuda' ? 'border-red-500' : 'border-green-500'">
-                    <div>
-                        <p class="font-bold text-gray-800" x-text="debt.description"></p>
-                        <p class="text-[10px] uppercase text-gray-400" x-text="debt.type === 'deuda' ? 'Por Pagar' : 'Por Cobrar'"></p>
-                    </div>
-                    <p class="font-black text-lg" :class="debt.type === 'deuda' ? 'text-red-500' : 'text-green-500'" x-text="formatCurrency(debt.amount)"></p>
-                </div>
-            </template>
+        
+        <div class="bg-gradient-to-br from-blue-700 to-indigo-900 p-8 rounded-[2.5rem] shadow-2xl border border-blue-500/20">
+            <p class="text-blue-200/60 text-[10px] font-bold uppercase tracking-[0.2em]">Saldo Total:</p>
+            <h2 id="grandTotal" class="text-4xl font-extrabold mt-2 tracking-tighter">$0.00</h2>
         </div>
-    </div>
+    </header>
 
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-10 py-4 flex justify-between items-center z-40">
-        <button @click="currentView = 'main'" :class="currentView === 'main' ? 'text-blue-600' : 'text-gray-300'"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg></button>
-        <button @click="openModal('movement')" class="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl -mt-12 border-4 border-white active:scale-95 transition"><span class="text-2xl font-bold">+</span></button>
-        <button @click="currentView = 'debts'" :class="currentView === 'debts' ? 'text-blue-600' : 'text-gray-300'"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
+    <nav class="flex px-6 border-b border-slate-900 mb-6 text-[11px] font-bold uppercase tracking-widest">
+        <button onclick="switchView('main')" id="btnMain" class="flex-1 py-4 tab-active">General</button>
+        <button onclick="switchView('debts')" id="btnDebts" class="flex-1 py-4 text-slate-500">Deudas</button>
     </nav>
 
-    <div x-show="modal" x-cloak class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div @click.away="modal = false" class="bg-white w-full max-w-md rounded-t-[2.5rem] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-            
-            <div x-show="modalType === 'account'">
-                <h3 class="text-xl font-black mb-4" x-text="form.index !== undefined ? 'Configurar Cuenta' : 'Nueva Cuenta'"></h3>
-                <input x-model="form.name" type="text" placeholder="Nombre (ej. Nómina)" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200">
-                <input x-model.number="form.balance" type="number" placeholder="Saldo" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200 font-bold text-blue-600">
-                <select x-model="form.type" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200 uppercase text-xs font-bold">
-                    <option value="efectivo">Efectivo</option>
-                    <option value="banco">Banco / Débito</option>
-                    <option value="tarjeta">Tarjeta de Crédito</option>
-                </select>
-                <div class="flex flex-col gap-2">
-                    <button @click="saveAccount" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">Guardar</button>
-                    <button x-show="form.index !== undefined" @click="deleteAccount" class="w-full bg-red-100 text-red-600 py-3 rounded-2xl font-bold text-sm">Eliminar Cuenta</button>
+    <main id="viewMain" class="flex-1 space-y-8">
+        <section class="space-y-3 text-left">
+            <div class="px-6"><h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Mis Cuentas <span class="text-[8px] lowercase opacity-50">(toca para editar)</span></h3></div>
+            <div id="accountsList" class="flex gap-4 overflow-x-auto px-6 pb-2 hide-scrollbar snap-x"></div>
+        </section>
+        <section class="px-6 space-y-4 text-left">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Actividad</h3>
+            <div id="txHistory" class="space-y-1"></div>
+        </section>
+    </main>
+
+    <main id="viewDebts" class="hidden flex-1 px-6 space-y-6">
+        <div class="flex justify-between items-center">
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-left">Lista de Deudas</h3>
+            <button onclick="openDebtModal()" class="text-xs text-blue-400 font-bold">+ Nueva Deuda</button>
+        </div>
+        <div id="debtsList" class="space-y-4"></div>
+    </main>
+
+    <button onclick="prepareTxModal()" class="fixed bottom-8 right-6 w-16 h-16 bg-blue-600 text-white rounded-[1.5rem] shadow-xl flex items-center justify-center text-3xl font-bold z-50 transition-transform active:scale-90">+</button>
+
+    <div id="modalAccount" class="modal text-left">
+        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
+            <h2 id="accModalTitle" class="text-2xl font-bold mb-6">Cuenta</h2>
+            <input type="hidden" id="editAccId">
+            <div class="space-y-4">
+                <input id="accName" type="text" placeholder="Nombre (Ej: Banco)" class="w-full bg-slate-800 p-4 rounded-2xl outline-none text-sm">
+                <input id="accBalance" type="number" placeholder="Saldo" class="w-full bg-slate-800 p-4 rounded-2xl outline-none text-sm">
+                <div class="flex gap-2">
+                    <button onclick="saveAccount()" class="flex-1 bg-blue-600 p-4 rounded-2xl font-bold">Guardar</button>
+                    <button id="btnDelAcc" onclick="deleteAcc()" class="hidden bg-red-900/30 text-red-500 px-6 rounded-2xl">✕</button>
+                    <button onclick="closeModal('modalAccount')" class="bg-slate-700 p-4 rounded-2xl font-bold text-xs italic">Cerrar</button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div x-show="modalType === 'movement' || modalType === 'editTx'">
-                <div class="flex justify-around mb-6 border-b border-gray-100">
-                    <button @click="form.txType = 'egreso'" :class="form.txType === 'egreso' && 'active-tab'" class="pb-2 px-2 font-bold text-sm">Gasto</button>
-                    <button @click="form.txType = 'ingreso'" :class="form.txType === 'ingreso' && 'active-tab'" class="pb-2 px-2 font-bold text-sm">Ingreso</button>
-                    <button @click="form.txType = 'transferencia'" :class="form.txType === 'transferencia' && 'active-tab'" class="pb-2 px-2 font-bold text-sm">Transferir</button>
+    <div id="modalDebt" class="modal text-left">
+        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
+            <h2 id="debtModalTitle" class="text-2xl font-bold mb-6 text-red-400">Deuda</h2>
+            <input type="hidden" id="editDebtId">
+            <div class="space-y-4">
+                <input id="debtName" type="text" placeholder="¿A quién le debes?" class="w-full bg-slate-800 p-4 rounded-2xl outline-none text-sm">
+                <input id="debtAmount" type="number" placeholder="Monto" class="w-full bg-slate-800 p-4 rounded-2xl outline-none text-sm">
+                <div class="flex gap-2">
+                    <button onclick="saveDebt()" class="flex-1 bg-red-600 p-4 rounded-2xl font-bold">Confirmar</button>
+                    <button onclick="closeModal('modalDebt')" class="bg-slate-700 p-4 rounded-2xl font-bold italic">✕</button>
                 </div>
-                <input x-model="form.txDesc" type="text" placeholder="Concepto" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200">
-                <input x-model.number="form.txAmount" type="number" placeholder="0.00" class="w-full p-4 bg-gray-50 rounded-2xl mb-4 border-none ring-1 ring-gray-200 font-bold text-xl text-center">
-
-                <div x-show="form.txType !== 'transferencia'">
-                    <select x-model="form.txAccount" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200">
-                        <option value="">Seleccionar Cuenta...</option>
-                        <template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template>
-                    </select>
-                </div>
-
-                <div x-show="form.txType === 'transferencia'" class="space-y-3 mb-6">
-                    <select x-model="form.fromAcc" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200"><option value="">Desde...</option><template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template></select>
-                    <select x-model="form.toAcc" class="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200"><option value="">Hacia...</option><template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template></select>
-                </div>
-
-                <button @click="modalType === 'editTx' ? updateTransaction() : saveTransaction()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg">Confirmar</button>
             </div>
+        </div>
+    </div>
 
-            <div x-show="modalType === 'newDebt'">
-                <h3 class="text-xl font-black mb-6">Nuevo Adeudo</h3>
-                <input x-model="form.debtDesc" type="text" placeholder="Descripción (ej. Préstamo Juan)" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200">
-                <input x-model.number="form.debtAmount" type="number" placeholder="Monto" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200 font-bold">
-                <select x-model="form.debtType" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200">
-                    <option value="deuda">Yo debo (Deuda)</option>
-                    <option value="pago">Me deben (Cobro)</option>
-                </select>
-                <button @click="saveDebt" class="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-lg">Guardar Adeudo</button>
+    <div id="modalTx" class="modal">
+        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
+            <div class="flex gap-2 mb-6">
+                <button onclick="setTxMode('Gasto')" id="modeGasto" class="flex-1 bg-blue-600 p-2 rounded-lg text-[10px] font-bold uppercase">Gasto</button>
+                <button onclick="setTxMode('Ingreso')" id="modeIngreso" class="flex-1 bg-slate-800 p-2 rounded-lg text-[10px] font-bold uppercase">Ingreso</button>
+                <button onclick="setTxMode('Traspaso')" id="modeTraspaso" class="flex-1 bg-slate-800 p-2 rounded-lg text-[10px] font-bold uppercase">Traspaso</button>
             </div>
-
-            <div x-show="modalType === 'manageDebt'">
-                <h3 class="text-xl font-black mb-2" x-text="selectedDebt?.description"></h3>
-                <p class="text-3xl font-black text-center my-6" :class="selectedDebt?.type === 'deuda' ? 'text-red-500' : 'text-green-500'" x-text="formatCurrency(selectedDebt?.amount)"></p>
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <button @click="form.action = 'abono'" :class="form.action === 'abono' ? 'bg-green-500 text-white' : 'bg-gray-100'" class="py-3 rounded-xl font-bold text-xs">Abonar</button>
-                    <button @click="form.action = 'aumento'" :class="form.action === 'aumento' ? 'bg-red-500 text-white' : 'bg-gray-100'" class="py-3 rounded-xl font-bold text-xs">Aumentar</button>
+            <div class="space-y-4">
+                <select id="txAccount" class="w-full bg-slate-800 p-4 rounded-2xl text-sm outline-none"></select>
+                <div id="transferTarget" class="hidden">
+                    <p class="text-[9px] font-bold text-blue-500 mb-1 ml-2 uppercase text-left">Hacia</p>
+                    <select id="txDest" class="w-full bg-slate-800 p-4 rounded-2xl text-sm outline-none border border-blue-500/30"></select>
                 </div>
-                <input x-model.number="form.changeAmount" type="number" placeholder="Monto" class="w-full p-4 bg-gray-50 rounded-2xl mb-3 border-none ring-1 ring-gray-200 font-bold">
-                <select x-model="form.targetAcc" class="w-full p-4 bg-gray-50 rounded-2xl mb-6 border-none ring-1 ring-gray-200">
-                    <option value="">Cuenta que afecta el saldo...</option>
-                    <template x-for="acc in accounts"><option :value="acc.name" x-text="acc.name"></option></template>
-                </select>
-                <button @click="executeDebtChange" class="w-full bg-black text-white py-4 rounded-2xl font-bold">Procesar</button>
+                <input id="txAmount" type="number" placeholder="$0.00" class="w-full bg-transparent text-center text-4xl font-extrabold py-4 outline-none">
+                <button onclick="executeTx()" class="w-full bg-white text-black p-4 rounded-2xl font-bold">Confirmar Movimiento</button>
+                <button onclick="closeModal('modalTx')" class="w-full text-slate-500 text-xs mt-2">Cancelar</button>
             </div>
+        </div>
+    </div>
 
-            <button @click="modal = false" class="w-full mt-6 text-gray-400 font-bold text-xs uppercase tracking-widest">Cerrar</button>
+    <div id="modalPay" class="modal">
+        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800 text-left">
+            <h2 class="text-xl font-bold mb-4">Abonar Pago</h2>
+            <div class="space-y-4">
+                <input type="hidden" id="payDebtId">
+                <select id="payAcc" class="w-full bg-slate-800 p-4 rounded-2xl text-sm outline-none"></select>
+                <input id="payVal" type="number" placeholder="Monto" class="w-full bg-slate-800 p-4 rounded-2xl outline-none text-sm border border-green-500/30">
+                <button onclick="confirmPayment()" class="w-full bg-green-600 p-4 rounded-2xl font-bold">Confirmar Pago</button>
+                <button onclick="closeModal('modalPay')" class="w-full text-slate-500 text-xs mt-2 text-center">Cerrar</button>
+            </div>
         </div>
     </div>
 
     <script>
-        function financeApp() {
-            return {
-                currentView: 'main',
-                modal: false,
-                modalType: '',
-                accounts: [],
-                transactions: [],
-                debts: [],
-                form: {},
-                selectedDebt: null,
-                selectedDebtIndex: null,
+        let data = JSON.parse(localStorage.getItem('nano_v_final')) || { accounts: [], txs: [], debts: [] };
+        let currentTxType = 'Gasto';
 
-                init() {
-                    const saved = localStorage.getItem('finanzas_v3_1');
-                    if (saved) {
-                        const data = JSON.parse(saved);
-                        this.accounts = data.accounts || [];
-                        this.transactions = data.transactions || [];
-                        this.debts = data.debts || [];
-                    }
-                },
+        function save() {
+            localStorage.setItem('nano_v_final', JSON.stringify(data));
+            render();
+        }
 
-                save() {
-                    localStorage.setItem('finanzas_v3_1', JSON.stringify({
-                        accounts: this.accounts,
-                        transactions: this.transactions,
-                        debts: this.debts
-                    }));
-                },
+        function switchView(view) {
+            document.getElementById('viewMain').classList.toggle('hidden', view !== 'main');
+            document.getElementById('viewDebts').classList.toggle('hidden', view !== 'debts');
+            document.getElementById('btnMain').classList.toggle('tab-active', view === 'main');
+            document.getElementById('btnDebts').classList.toggle('tab-active', view === 'debts');
+        }
 
-                formatCurrency(val) {
-                    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val || 0);
-                },
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-                getTotalBalance() {
-                    return this.accounts.reduce((sum, a) => sum + a.balance, 0);
-                },
+        // --- CUENTAS ---
+        function openAccModal(id = null) {
+            const title = document.getElementById('accModalTitle');
+            const btnDel = document.getElementById('btnDelAcc');
+            if(id) {
+                const acc = data.accounts.find(a => a.id === id);
+                document.getElementById('editAccId').value = acc.id;
+                document.getElementById('accName').value = acc.name;
+                document.getElementById('accBalance').value = acc.balance;
+                title.innerText = "Editar Cuenta";
+                btnDel.classList.remove('hidden');
+            } else {
+                document.getElementById('editAccId').value = "";
+                document.getElementById('accName').value = "";
+                document.getElementById('accBalance').value = "";
+                title.innerText = "Nueva Cuenta";
+                btnDel.classList.add('hidden');
+            }
+            document.getElementById('modalAccount').classList.add('active');
+        }
 
-                openModal(type) {
-                    this.modalType = type;
-                    this.form = { txType: 'egreso', action: 'abono', debtType: 'deuda', txAmount: 0 };
-                    this.modal = true;
-                },
+        function saveAccount() {
+            const id = document.getElementById('editAccId').value;
+            const name = document.getElementById('accName').value || 'Cuenta';
+            const bal = parseFloat(document.getElementById('accBalance').value) || 0;
+            if(id) {
+                const acc = data.accounts.find(a => a.id == id);
+                acc.name = name; acc.balance = bal;
+            } else {
+                data.accounts.push({ id: Date.now(), name, balance: bal });
+            }
+            closeModal('modalAccount'); save();
+        }
 
-                // GESTIÓN DE CUENTAS
-                prepEditAccount(index) {
-                    this.form = { ...this.accounts[index], index };
-                    this.modalType = 'account';
-                    this.modal = true;
-                },
-
-                saveAccount() {
-                    if (this.form.index !== undefined) {
-                        this.accounts[this.form.index] = { name: this.form.name, balance: this.form.balance, type: this.form.type };
-                    } else {
-                        this.accounts.push({ name: this.form.name, balance: this.form.balance, type: this.form.type });
-                    }
-                    this.save();
-                    this.modal = false;
-                },
-
-                deleteAccount() {
-                    if (confirm('¿Seguro que deseas eliminar esta cuenta? Los movimientos previos no se borrarán pero quedarán sin cuenta vinculada.')) {
-                        this.accounts.splice(this.form.index, 1);
-                        this.save();
-                        this.modal = false;
-                    }
-                },
-
-                // GESTIÓN DE MOVIMIENTOS
-                saveTransaction() {
-                    const amount = parseFloat(this.form.txAmount);
-                    if (isNaN(amount) || amount <= 0) return alert("Ingresa un monto válido");
-
-                    if (this.form.txType === 'transferencia') {
-                        const from = this.accounts.find(a => a.name === this.form.fromAcc);
-                        const to = this.accounts.find(a => a.name === this.form.toAcc);
-                        if (!from || !to || from === to) return alert("Selecciona cuentas distintas");
-                        from.balance -= amount;
-                        to.balance += amount;
-                    } else {
-                        const acc = this.accounts.find(a => a.name === this.form.txAccount);
-                        if (!acc) return alert("Selecciona una cuenta");
-                        if (this.form.txType === 'egreso') acc.balance -= amount;
-                        else acc.balance += amount;
-                    }
-
-                    this.transactions.push({
-                        id: Date.now(),
-                        desc: this.form.txDesc || (this.form.txType === 'transferencia' ? 'Transferencia' : 'Movimiento'),
-                        amount,
-                        type: this.form.txType,
-                        account: this.form.txType === 'transferencia' ? `${this.form.fromAcc} → ${this.form.toAcc}` : this.form.txAccount,
-                        date: new Date().toLocaleDateString()
-                    });
-                    this.save();
-                    this.modal = false;
-                },
-
-                prepEditTx(tx) {
-                    this.form = { ...tx, txAmount: tx.amount, txDesc: tx.desc, txType: tx.type, txAccount: tx.account };
-                    this.modalType = 'editTx';
-                    this.modal = true;
-                },
-
-                updateTransaction() {
-                    const tx = this.transactions.find(t => t.id === this.form.id);
-                    const oldAcc = this.accounts.find(a => a.name === tx.account);
-                    
-                    // Deshacer anterior
-                    if (oldAcc) {
-                        if (tx.type === 'egreso') oldAcc.balance += tx.amount;
-                        else if (tx.type === 'ingreso') oldAcc.balance -= tx.amount;
-                    }
-
-                    // Aplicar nuevo
-                    const newAcc = this.accounts.find(a => a.name === this.form.txAccount);
-                    const newAmt = parseFloat(this.form.txAmount);
-                    if (newAcc) {
-                        if (this.form.txType === 'egreso') newAcc.balance -= newAmt;
-                        else if (this.form.txType === 'ingreso') newAcc.balance += newAmt;
-                    }
-
-                    tx.desc = this.form.txDesc;
-                    tx.amount = newAmt;
-                    tx.type = this.form.txType;
-                    tx.account = this.form.txAccount;
-
-                    this.save();
-                    this.modal = false;
-                },
-
-                // DEUDAS (CORREGIDO)
-                saveDebt() {
-                    if (!this.form.debtDesc || !this.form.debtAmount) return alert("Completa los datos");
-                    this.debts.push({
-                        description: this.form.debtDesc,
-                        amount: parseFloat(this.form.debtAmount),
-                        type: this.form.debtType
-                    });
-                    this.save();
-                    this.modal = false;
-                },
-
-                prepManageDebt(index) {
-                    this.selectedDebtIndex = index;
-                    this.selectedDebt = this.debts[index];
-                    this.form = { action: 'abono', changeAmount: 0 };
-                    this.modalType = 'manageDebt';
-                    this.modal = true;
-                },
-
-                executeDebtChange() {
-                    const amount = parseFloat(this.form.changeAmount);
-                    const acc = this.accounts.find(a => a.name === this.form.targetAcc);
-                    if (!acc || isNaN(amount)) return alert("Selecciona cuenta y monto");
-
-                    if (this.form.action === 'abono') {
-                        this.selectedDebt.amount -= amount;
-                        if (this.selectedDebt.type === 'deuda') acc.balance -= amount;
-                        else acc.balance += amount;
-                    } else {
-                        this.selectedDebt.amount += amount;
-                        if (this.selectedDebt.type === 'deuda') acc.balance += amount;
-                        else acc.balance -= amount;
-                    }
-
-                    if (this.selectedDebt.amount <= 0) this.debts.splice(this.selectedDebtIndex, 1);
-                    this.save();
-                    this.modal = false;
-                }
+        function deleteAcc() {
+            const id = parseInt(document.getElementById('editAccId').value);
+            if(confirm('¿Borrar esta cuenta permanentemente?')) {
+                data.accounts = data.accounts.filter(a => a.id !== id);
+                closeModal('modalAccount'); save();
             }
         }
+
+        // --- DEUDAS ---
+        function openDebtModal(id = null) {
+            const title = document.getElementById('debtModalTitle');
+            if(id) {
+                const d = data.debts.find(x => x.id === id);
+                document.getElementById('editDebtId').value = d.id;
+                document.getElementById('debtName').value = d.name;
+                document.getElementById('debtAmount').value = d.amount;
+                title.innerText = "Editar Deuda";
+            } else {
+                document.getElementById('editDebtId').value = "";
+                document.getElementById('debtName').value = "";
+                document.getElementById('debtAmount').value = "";
+                title.innerText = "Nueva Deuda";
+            }
+            document.getElementById('modalDebt').classList.add('active');
+        }
+
+        function saveDebt() {
+            const id = document.getElementById('editDebtId').value;
+            const name = document.getElementById('debtName').value || 'Deuda';
+            const amount = parseFloat(document.getElementById('debtAmount').value) || 0;
+            if(id) {
+                const d = data.debts.find(x => x.id == id);
+                d.name = name; d.amount = amount;
+            } else {
+                data.debts.push({ id: Date.now(), name, amount });
+            }
+            closeModal('modalDebt'); save();
+        }
+
+        // --- TRANSACCIONES ---
+        function setTxMode(mode) {
+            currentTxType = mode;
+            ['Gasto', 'Ingreso', 'Traspaso'].forEach(m => {
+                document.getElementById('mode'+m).className = m === mode ? 'flex-1 bg-blue-600 p-2 rounded-lg text-[10px] font-bold uppercase' : 'flex-1 bg-slate-800 p-2 rounded-lg text-[10px] font-bold uppercase';
+            });
+            document.getElementById('transferTarget').classList.toggle('hidden', mode !== 'Traspaso');
+        }
+
+        function prepareTxModal() {
+            const sel = document.getElementById('txAccount');
+            const dest = document.getElementById('txDest');
+            const opt = data.accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            sel.innerHTML = opt; dest.innerHTML = opt;
+            document.getElementById('txAmount').value = "";
+            setTxMode('Gasto');
+            document.getElementById('modalTx').classList.add('active');
+        }
+
+        function executeTx() {
+            const aId = parseInt(document.getElementById('txAccount').value);
+            const val = parseFloat(document.getElementById('txAmount').value);
+            if(!val) return;
+            const acc = data.accounts.find(a => a.id === aId);
+
+            if(currentTxType === 'Traspaso') {
+                const dId = parseInt(document.getElementById('txDest').value);
+                const dAcc = data.accounts.find(a => a.id === dId);
+                if(aId === dId) return alert("Cuentas iguales");
+                acc.balance -= val; dAcc.balance += val;
+                data.txs.unshift({ id: Date.now(), type: 'Traspaso', accName: `${acc.name} → ${dAcc.name}`, amount: val, date: 'Hoy' });
+            } else {
+                acc.balance += (currentTxType === 'Ingreso' ? val : -val);
+                data.txs.unshift({ id: Date.now(), type: currentTxType, accName: acc.name, amount: val, date: 'Hoy' });
+            }
+            closeModal('modalTx'); save();
+        }
+
+        // --- PAGOS DE DEUDA ---
+        function openPay(id) {
+            const d = data.debts.find(x => x.id === id);
+            document.getElementById('payDebtId').value = id;
+            document.getElementById('payVal').value = d.amount;
+            document.getElementById('payAcc').innerHTML = data.accounts.map(a => `<option value="${a.id}">${a.name} ($${a.balance})</option>`).join('');
+            document.getElementById('modalPay').classList.add('active');
+        }
+
+        function confirmPayment() {
+            const dId = parseInt(document.getElementById('payDebtId').value);
+            const aId = parseInt(document.getElementById('payAcc').value);
+            const val = parseFloat(document.getElementById('payVal').value);
+            const debt = data.debts.find(d => d.id === dId);
+            const acc = data.accounts.find(a => a.id === aId);
+            if(acc && val > 0) {
+                acc.balance -= val; debt.amount -= val;
+                data.txs.unshift({ id: Date.now(), type: 'Gasto', accName: acc.name, amount: val, date: 'Hoy', note: 'Pago Deuda' });
+                if(debt.amount <= 0) data.debts = data.debts.filter(d => d.id !== dId);
+                closeModal('modalPay'); save();
+            }
+        }
+
+        // --- RENDER ---
+        function render() {
+            const total = data.accounts.reduce((s, a) => s + a.balance, 0);
+            document.getElementById('grandTotal').innerText = `$${total.toLocaleString('es-MX', {minimumFractionDigits: 2})}`;
+
+            document.getElementById('accountsList').innerHTML = data.accounts.length ? data.accounts.map(a => `
+                <div onclick="openAccModal(${a.id})" class="snap-center min-w-[140px] bg-slate-900 p-5 rounded-[2rem] border border-slate-800 active:scale-95 transition-all cursor-pointer">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase truncate">${a.name}</p>
+                    <p class="text-lg font-bold">$${a.balance.toFixed(2)}</p>
+                </div>
+            `).join('') : '<p class="text-[10px] text-slate-700 italic px-6">No hay cuentas</p>';
+
+            document.getElementById('txHistory').innerHTML = data.txs.map(t => `
+                <div class="flex justify-between items-center p-3 border-b border-slate-900/50">
+                    <div class="text-left">
+                        <p class="text-xs font-bold">${t.accName}</p>
+                        <p class="text-[8px] text-slate-500 uppercase">${t.type}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold ${t.type === 'Ingreso' ? 'text-green-400' : 'text-slate-200'}">$${t.amount.toFixed(2)}</span>
+                        <button onclick="data.txs = data.txs.filter(x => x.id !== ${t.id}); save();" class="text-slate-800 px-2">✕</button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('debtsList').innerHTML = data.debts.length ? data.debts.map(d => `
+                <div class="bg-slate-900 p-5 rounded-3xl flex justify-between items-center shadow-lg">
+                    <div class="text-left">
+                        <p class="font-bold text-sm text-slate-300">${d.name}</p>
+                        <p class="text-xs text-red-500 font-bold tracking-tighter">$${d.amount.toFixed(2)}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openPay(${d.id})" class="bg-green-600 px-3 py-1 rounded-lg text-[10px] font-bold">PAGAR</button>
+                        <button onclick="openDebtModal(${d.id})" class="bg-slate-800 p-2 rounded-lg text-[10px]">✎</button>
+                        <button onclick="data.debts = data.debts.filter(x => x.id !== ${d.id}); save();" class="text-slate-700 px-1">✕</button>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-center text-slate-600 py-10 text-sm">Sin deudas pendientes</p>';
+        }
+
+        render();
     </script>
 </body>
 </html>
