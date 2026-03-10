@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Capricho">
     <link rel="apple-touch-icon" href="https://64.media.tumblr.com/35742cd55e440bd23cc6f54d609311de/17f484eeadce956e-66/s1280x1920/e8523aecc9edeac598bfd621e6582c4c28507514.png">
     <meta name="theme-color" content="#4f46e5">
+    <title>Capricho - Sistema de Gestión</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,6 +20,7 @@
         .grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
         [v-cloak] { display: none; }
         .loading-overlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-gray-50 antialiased text-gray-800">
@@ -49,7 +52,7 @@
                     <div v-if="carrito.length === 0" class="text-gray-400 py-6 text-center border-2 border-dashed rounded-xl italic">Selecciona productos para vender</div>
 
                     <div class="flex flex-col gap-2 mb-6">
-                        <div v-for="(item, index) in carrito" :key="index" class="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm text-sm">
+                        <div v-for="(item, index) in carrito" :key="item.idCarrito" class="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm text-sm">
                             <div class="flex flex-col">
                                 <span class="font-bold text-indigo-900">{{ item.nombre }}</span>
                                 <span class="text-[10px] uppercase font-bold text-gray-400">Precio base: ${{ item.precioVenta }}</span>
@@ -104,6 +107,7 @@
 
             <section v-if="vista === 'agendados'">
                 <h2 class="text-2xl font-black mb-6 text-indigo-800">📦 Pedidos por Entregar</h2>
+                <div v-if="ventasDia.filter(x => x.tipo === 'agendado' && !x.completado).length === 0" class="text-center py-20 text-gray-400 italic">No hay pedidos pendientes de entrega</div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div v-for="v in ventasDia.filter(x => x.tipo === 'agendado' && !x.completado)" :key="v.id" class="bg-white p-5 rounded-2xl shadow border-l-8 border-blue-500">
                         <div class="flex justify-between items-start mb-3">
@@ -205,8 +209,7 @@
             </section>
 
             <section v-if="vista === 'reportes'">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-red-500">
                         <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Inversión Individual</h4>
                         <p class="text-2xl font-black text-red-600">${{ inversionTotalActual }}</p>
@@ -256,7 +259,7 @@
                                         <span v-if="v.devuelta" class="block text-[8px] text-red-600 font-black">DEVUELTO</span>
                                     </td>
                                     <td class="p-4">
-                                        <div v-for="p in v.productos" :key="p.id" class="font-semibold text-gray-600 tracking-tight">• {{ p.nombre }}</div>
+                                        <div v-for="p in v.productos" :key="p.idCarrito" class="font-semibold text-gray-600 tracking-tight">• {{ p.nombre }}</div>
                                     </td>
                                     <td class="p-4 text-right font-black text-sm" :class="v.devuelta ? 'text-gray-400 line-through' : 'text-gray-900'">
                                         ${{ v.total }}
@@ -269,9 +272,6 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                    <div v-if="ventasDia.length > 10 && !mostrarTodasVentas" class="p-3 text-center bg-gray-50 text-gray-400 text-[10px] uppercase font-bold border-t">
-                        Mostrando las últimas 10 transacciones
                     </div>
                 </div>
             </section>
@@ -307,7 +307,6 @@
                     <h2 class="text-xl font-black text-purple-700">Diseñador de Paquetes</h2>
                     <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Paso 1: Elige componentes</span>
                 </div>
-                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Nombre del Pack</label>
@@ -318,7 +317,6 @@
                         <input type="number" v-model="paqueteNuevo.precioVenta" placeholder="0.00" class="w-full border-2 border-purple-200 bg-purple-50 p-3 rounded-xl outline-none font-bold text-purple-700">
                     </div>
                 </div>
-
                 <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Selecciona los productos que incluye:</p>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8 max-h-48 overflow-y-auto p-2 border rounded-2xl bg-gray-50">
                     <div v-for="p in productos.filter(x => !x.esPaquete)" 
@@ -328,7 +326,6 @@
                         {{ p.nombre }}
                     </div>
                 </div>
-
                 <div class="flex gap-3">
                     <button @click="guardarPaquete" :disabled="!paqueteNuevo.nombre || paqueteSeleccionadosIds.length === 0" class="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold shadow-lg disabled:opacity-30 hover:bg-purple-700 transition">CREAR PAQUETE DINÁMICO</button>
                     <button @click="mostrarModalPaquete = false; paqueteSeleccionadosIds = []" class="px-8 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold">CANCELAR</button>
@@ -351,7 +348,7 @@
                     productos: [], 
                     carrito: [],
                     ventasDia: [],
-                    mostrarTodasVentas: false, // Control de visualización de transacciones
+                    mostrarTodasVentas: false,
                     nuevoProd: { nombre: '', costo: 0, piezas: 0, precioVenta: 0 },
                     editandoId: null,
                     agenda: { cliente: '', fecha: '', lugar: '' },
@@ -367,10 +364,11 @@
                 this.cargarDatos();
             },
             watch: {
-                vista(nueva) { if (nueva === 'reportes') this.$nextTick(() => this.generarGrafica()); }
+                vista(nueva) { 
+                    if (nueva === 'reportes') this.$nextTick(() => this.generarGrafica()); 
+                }
             },
             computed: {
-                // LÓGICA DE RECORTE DE TRANSACCIONES
                 ventasMostradas() {
                     if (this.mostrarTodasVentas) {
                         return [...this.ventasDia].reverse();
@@ -385,7 +383,6 @@
                                          .sort((a, b) => a.nombre.localeCompare(b.nombre));
                 },
                 totalVenta() { return this.carrito.reduce((acc, item) => acc + (parseFloat(item.precioVenta) - (item.descuento || 0)), 0); },
-                totalVendidoAcumulado() { return this.ventasDia.filter(v => !v.devuelta).reduce((acc, v) => acc + v.total, 0); },
                 inversionTotalActual() { 
                     return this.productos.filter(p => !p.esPaquete).reduce((acc, p) => acc + ( (p.costo || 0) * (p.piezas || 0) ), 0); 
                 },
@@ -397,7 +394,7 @@
             methods: {
                 async persistir() {
                     try {
-                        const data = { productos: this.productos, ventas: this.ventasDia };
+                        const data = { productos: JSON.parse(JSON.stringify(this.productos)), ventas: JSON.parse(JSON.stringify(this.ventasDia)) };
                         await fetch(`${FIREBASE_URL}data.json`, {
                             method: 'PUT',
                             body: JSON.stringify(data)
@@ -417,7 +414,10 @@
                     finally { this.cargando = false; }
                 },
 
-                formatearFecha(f) { return new Date(f).toLocaleString('es-MX', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}); },
+                formatearFecha(f) { 
+                    if(!f) return '-';
+                    return new Date(f).toLocaleString('es-MX', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}); 
+                },
                 
                 obtenerStockReal(prod) {
                     if (!prod.esPaquete) return prod.piezas;
@@ -473,7 +473,10 @@
                 },
 
                 finalizarVentaAgendada() {
-                    if (!this.agenda.cliente || !this.agenda.fecha) return;
+                    if (!this.agenda.cliente || !this.agenda.fecha) {
+                        Swal.fire('Error', 'Nombre y Fecha son obligatorios', 'error');
+                        return;
+                    }
                     const nuevaVenta = {
                         id: Date.now(),
                         fechaReal: new Date().toISOString(),
@@ -494,24 +497,17 @@
                     Swal.fire('Pedido Agendado', '', 'info');
                 },
 
-                procesarDevolucion(venta) {
-                    Swal.fire({
-                        title: '¿Procesar devolución?',
-                        text: "El stock será reintegrado",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Sí, devolver'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            venta.devuelta = true;
-                            venta.productos.forEach(p => this.actualizarStock(p, 1));
-                            this.persistir();
-                            Swal.fire('Devuelto', '', 'success');
-                        }
-                    });
+                eliminarPedidoAgendado(id) {
+                    const ped = this.ventasDia.find(v => v.id === id);
+                    if (ped) {
+                        ped.productos.forEach(p => this.actualizarStock(p, 1));
+                        this.ventasDia = this.ventasDia.filter(v => v.id !== id);
+                        this.persistir();
+                    }
                 },
 
                 guardarProducto() {
+                    if (!this.nuevoProd.nombre) return;
                     if (this.editandoId) {
                         const idx = this.productos.findIndex(p => p.id === this.editandoId);
                         this.productos[idx] = { ...this.nuevoProd, id: this.editandoId, esPaquete: false };
@@ -519,8 +515,9 @@
                     } else {
                         this.productos.push({ ...this.nuevoProd, id: Date.now(), esPaquete: false });
                     }
-                    this.persistir();
                     this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
+                    this.persistir();
+                    Swal.fire('Guardado', '', 'success');
                 },
 
                 editarProducto(p) {
@@ -533,64 +530,82 @@
                     this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
                 },
 
-                eliminarProducto(id) { 
+                eliminarProducto(id) {
                     Swal.fire({
-                        title: '¿Eliminar producto?',
+                        title: '¿Eliminar?',
+                        text: "Esto borrará el producto del inventario",
+                        icon: 'warning',
                         showCancelButton: true,
-                        confirmButtonColor: '#ef4444'
-                    }).then(r => {
-                        if(r.isConfirmed) {
+                        confirmButtonText: 'Sí, borrar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
                             this.productos = this.productos.filter(p => p.id !== id);
                             this.persistir();
                         }
                     });
                 },
 
+                procesarDevolucion(venta) {
+                    Swal.fire({
+                        title: '¿Confirmar Devolución?',
+                        text: "Se restaurará el stock y se marcará la venta como nula",
+                        icon: 'warning',
+                        showCancelButton: true
+                    }).then(res => {
+                        if(res.isConfirmed) {
+                            venta.devuelta = true;
+                            venta.productos.forEach(p => this.actualizarStock(p, 1));
+                            this.persistir();
+                            if(this.vista === 'reportes') this.generarGrafica();
+                        }
+                    });
+                },
+
+                generarVentanaStock() {
+                    const lista = this.productos
+                        .filter(p => !p.esPaquete)
+                        .map(p => `<li><b>${p.nombre}:</b> ${p.piezas} pzas</li>`)
+                        .join('');
+                    Swal.fire({
+                        title: 'Existencias Individuales',
+                        html: `<ul class="text-left text-sm space-y-1">${lista}</ul>`
+                    });
+                },
+
                 toggleProdEnPaquete(id) {
-                    const index = this.paqueteSeleccionadosIds.indexOf(id);
-                    if (index > -1) this.paqueteSeleccionadosIds.splice(index, 1);
+                    const idx = this.paqueteSeleccionadosIds.indexOf(id);
+                    if (idx > -1) this.paqueteSeleccionadosIds.splice(idx, 1);
                     else this.paqueteSeleccionadosIds.push(id);
                 },
 
                 guardarPaquete() {
-                    const nuevoPack = {
+                    const pack = {
                         id: Date.now(),
                         nombre: this.paqueteNuevo.nombre,
                         precioVenta: this.paqueteNuevo.precioVenta,
                         esPaquete: true,
                         componentesIds: [...this.paqueteSeleccionadosIds]
                     };
-                    this.productos.push(nuevoPack);
-                    this.persistir();
+                    this.productos.push(pack);
                     this.mostrarModalPaquete = false;
                     this.paqueteNuevo = { nombre: '', precioVenta: null };
                     this.paqueteSeleccionadosIds = [];
-                },
-
-                generarVentanaStock() {
-                    const existentes = this.productos
-                        .filter(p => this.obtenerStockReal(p) > 0)
-                        .map(p => p.nombre)
-                        .sort();
-
-                    Swal.fire({
-                        title: 'Stock Disponible',
-                        html: `<div class="text-left text-sm"><ul class="list-disc ml-6">${existentes.map(n => `<li class="py-1">${n}</li>`).join('')}</ul></div>`,
-                        confirmButtonColor: '#6366f1'
-                    });
+                    this.persistir();
+                    Swal.fire('Paquete Creado', '', 'success');
                 },
 
                 generarGrafica() {
+                    const ctx = document.getElementById('graficaVentas');
+                    if (!ctx) return;
                     if (this.chartInstance) this.chartInstance.destroy();
-                    const ctx = document.getElementById('graficaVentas').getContext('2d');
-                    
-                    const ultimos7Dias = [...Array(7)].map((_, i) => {
+
+                    const ultimos7 = [...Array(7)].map((_, i) => {
                         const d = new Date();
                         d.setDate(d.getDate() - i);
                         return d.toISOString().split('T')[0];
                     }).reverse();
 
-                    const datos = ultimos7Dias.map(fecha => {
+                    const dataVentas = ultimos7.map(fecha => {
                         return this.ventasDia
                             .filter(v => !v.devuelta && v.fechaReal.startsWith(fecha))
                             .reduce((acc, v) => acc + v.total, 0);
@@ -599,23 +614,22 @@
                     this.chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: ultimos7Dias.map(f => f.split('-').slice(1).reverse().join('/')),
+                            labels: ultimos7.map(f => f.split('-').slice(1).reverse().join('/')),
                             datasets: [{
                                 label: 'Ventas $',
-                                data: datos,
-                                borderColor: '#6366f1',
-                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                data: dataVentas,
+                                borderColor: '#4f46e5',
+                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
                                 fill: true,
                                 tension: 0.4
                             }]
                         },
-                        options: { responsive: true, plugins: { legend: { display: false } } }
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true } }
+                        }
                     });
-                },
-
-                eliminarPedidoAgendado(id) {
-                    this.ventasDia = this.ventasDia.filter(v => v.id !== id);
-                    this.persistir();
                 }
             }
         }).mount('#app');
