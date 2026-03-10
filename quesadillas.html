@@ -5,32 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Quesadilla POS</title>
     
+    <meta name="theme-color" content="#f97316">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Quesadillas">
-    <meta name="theme-color" content="#ffffff">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5787/5787100.png">
-
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Quesadilla POS","short_name":"Quesas","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#f97316","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/5787/5787100.png","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Quesadilla POS","short_name":"Quesas","start_url":"/","display":"standalone","background_color":"#ffffff","theme_color":"#f97316","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/5787/5787100.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;900&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .modal-full { display: none; position: fixed; inset: 0; background: #f8fafc; z-index: 100; flex-direction: column; }
         .modal-full.active { display: flex; }
-        /* Estilo para que se sienta como App en iPhone */
-        @supports (-webkit-touch-callout: none) {
-            .pb-24 { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
-        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-24">
 
-    <header class="bg-white border-b border-slate-200 p-5 sticky top-0 z-40 pt-10">
+    <header class="bg-white border-b border-slate-200 p-5 sticky top-0 z-40">
         <h1 class="text-2xl font-black text-slate-800 tracking-tighter text-center">Quesadillas<span class="text-orange-500">.</span></h1>
     </header>
 
@@ -38,7 +31,7 @@
         <section id="tab-mesas" class="tab-content active space-y-4">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Órdenes Abiertas</h2>
-                <button onclick="nuevaMesa()" class="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold shadow-xl active:scale-95 transition-all">+ Nueva Mesa</button>
+                <button onclick="nuevaMesa()" class="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold shadow-xl active:scale-95">+ Nueva Mesa</button>
             </div>
             <div id="grid-mesas" class="grid grid-cols-2 gap-4"></div>
         </section>
@@ -52,7 +45,7 @@
             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 mb-6">
                 <h3 class="font-bold mb-4">Configurar Menú</h3>
                 <div class="space-y-3">
-                    <input id="inv-nombre" type="text" placeholder="Nombre" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border-none focus:ring-2 ring-orange-500">
+                    <input id="inv-nombre" type="text" placeholder="Nombre" class="w-full bg-slate-50 p-4 rounded-2xl outline-none border-none">
                     <div class="flex gap-2">
                         <input id="inv-precio" type="number" placeholder="Precio $" class="flex-1 bg-slate-50 p-4 rounded-2xl outline-none">
                         <select id="inv-tipo" class="flex-1 bg-slate-50 p-4 rounded-2xl font-bold text-slate-500">
@@ -61,7 +54,7 @@
                             <option value="extra">➕ Extra</option>
                         </select>
                     </div>
-                    <button onclick="guardarInventario()" class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl shadow-lg">GUARDAR</button>
+                    <button onclick="guardarInventario()" class="w-full bg-orange-500 text-white font-black py-4 rounded-2xl">GUARDAR</button>
                 </div>
             </div>
             <div id="lista-inventario" class="space-y-2"></div>
@@ -69,10 +62,10 @@
     </main>
 
     <div id="modal-pos" class="modal-full">
-        <div class="p-4 bg-white border-b flex justify-between items-center pt-10">
+        <div class="p-4 bg-white border-b flex justify-between items-center">
             <button onclick="cerrarPOS()" class="text-slate-400 text-2xl p-2 font-bold">✕</button>
             <h3 id="pos-mesa-nombre" class="font-black text-slate-800">Mesa</h3>
-            <button onclick="toggleTicket()" class="bg-orange-50 text-orange-600 px-4 py-2 rounded-xl font-bold">🛒 <span id="cart-count">0</span></button>
+            <button onclick="toggleTicket()" class="bg-orange-50 text-orange-600 px-4 py-2 rounded-xl font-bold italic">Ticket <span id="cart-count">0</span></button>
         </div>
         <div class="flex-1 overflow-y-auto p-4 bg-slate-50">
             <div id="grid-catalogo" class="grid grid-cols-2 gap-3"></div>
@@ -91,42 +84,38 @@
     </div>
 
     <div id="sidebar-ticket" class="fixed inset-y-0 right-0 w-full max-w-xs bg-white shadow-2xl z-[120] transform translate-x-full transition-transform duration-300 flex flex-col">
-        <div class="p-6 border-b flex justify-between items-center pt-10"><h4 class="font-black text-xl">Ticket</h4><button onclick="toggleTicket()">✕</button></div>
+        <div class="p-6 border-b flex justify-between items-center"><h4 class="font-black text-xl">Resumen</h4><button onclick="toggleTicket()">✕</button></div>
         <div id="pos-ticket-content" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
-        <div class="p-6 border-t"><button onclick="toggleTicket()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl">VOLVER</button></div>
+        <div class="p-6 border-t"><button onclick="toggleTicket()" class="w-full bg-slate-900 text-white font-black py-4 rounded-2xl">CERRAR</button></div>
     </div>
 
     <div id="modal-checkout" class="fixed inset-0 bg-white z-[150] hidden flex-col overflow-y-auto">
-        <div class="p-6 border-b flex justify-between items-center sticky top-0 bg-white pt-10">
+        <div class="p-6 border-b flex justify-between items-center sticky top-0 bg-white">
             <button onclick="cerrarCheckout()" class="text-slate-400 font-bold">← Volver</button>
-            <h3 class="font-black text-xl">Cobrar</h3>
+            <h3 class="font-black text-xl italic">Totalizar</h3>
             <div class="w-10"></div>
         </div>
         <div class="p-6 max-w-md mx-auto w-full space-y-6">
             <div id="checkout-pedido" class="space-y-3 bg-slate-50 p-5 rounded-[2rem] border border-slate-100"></div>
-            
-            <div class="bg-orange-50 p-5 rounded-[2rem]">
-                <h4 class="text-xs font-bold text-orange-600 mb-2">Cargo Extra / Envío</h4>
+            <div class="bg-orange-50 p-4 rounded-2xl">
+                <h4 class="text-xs font-bold text-orange-600 mb-2">Monto Extra (Ej: Envío)</h4>
                 <div class="flex gap-2">
-                    <input id="checkout-monto-extra" type="number" oninput="calcularTotalFinal()" placeholder="$ 0.00" class="w-24 p-3 rounded-xl outline-none font-bold text-orange-600">
+                    <input id="checkout-monto-extra" type="number" oninput="calcularTotalFinal()" placeholder="$ 0" class="w-24 p-3 rounded-xl outline-none font-bold text-orange-600">
                     <input id="checkout-motivo-extra" type="text" placeholder="Motivo" class="flex-1 p-3 rounded-xl outline-none text-sm">
                 </div>
             </div>
-
             <div class="flex justify-between items-center px-2">
-                <span class="text-xl font-black text-slate-800">TOTAL</span>
+                <span class="text-xl font-black">TOTAL</span>
                 <span id="checkout-total-final" class="text-3xl font-black text-orange-500">$0.00</span>
             </div>
-            
             <div class="bg-slate-900 p-6 rounded-[2.5rem] text-white space-y-4">
                 <input id="pago-cliente" type="number" oninput="calcularCambio()" placeholder="Paga con..." class="w-full bg-slate-800 p-4 rounded-2xl text-2xl font-black text-emerald-400 outline-none">
-                <div class="flex justify-between items-center pt-2 border-t border-slate-800">
-                    <span class="font-bold text-sm">Cambio:</span>
+                <div class="flex justify-between items-center pt-2">
+                    <span class="text-sm">Cambio:</span>
                     <span id="cambio-devolver" class="text-2xl font-black">$0.00</span>
                 </div>
             </div>
-
-            <button onclick="confirmarPagoFinal()" class="w-full bg-emerald-500 text-white font-black py-5 rounded-[2.5rem] text-lg shadow-xl">FINALIZAR VENTA</button>
+            <button onclick="confirmarPagoFinal()" class="w-full bg-emerald-500 text-white font-black py-5 rounded-[2.5rem] text-lg">CERRAR CUENTA</button>
         </div>
     </div>
 
@@ -137,16 +126,17 @@
     </nav>
 
     <script>
-        // Registro de Service Worker para PWA
+        // TRUCO PARA ANDROID: Service Worker Inline
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('data:text/javascript;base64,c2VsZi.YWRkRXZlbnRMaXN0ZW5lcignaW5zdGFsbCcsIGU9PmV2ZW50LnVudGlsKGNhY2hlcy5vcGVuKCdwJykuZmV0Y2goJy4nKSkpOw==');
-            });
+            const sw = 'self.addEventListener("fetch", (e) => {});';
+            const blob = new Blob([sw], {type: 'text/javascript'});
+            const url = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(url);
         }
 
         let db = {
-            menu: JSON.parse(localStorage.getItem('qp_menu_v3')) || [],
-            mesas: JSON.parse(localStorage.getItem('qp_mesas_v3')) || []
+            menu: JSON.parse(localStorage.getItem('qp_data_menu')) || [],
+            mesas: JSON.parse(localStorage.getItem('qp_data_mesas')) || []
         };
 
         let currentMesa = null;
@@ -155,8 +145,8 @@
         let baseTotalCheckout = 0;
 
         function save() {
-            localStorage.setItem('qp_menu_v3', JSON.stringify(db.menu));
-            localStorage.setItem('qp_mesas_v3', JSON.stringify(db.mesas));
+            localStorage.setItem('qp_data_menu', JSON.stringify(db.menu));
+            localStorage.setItem('qp_data_mesas', JSON.stringify(db.mesas));
             render();
         }
 
@@ -180,7 +170,7 @@
         }
 
         function nuevaMesa() {
-            const n = prompt("Mesa/Cliente:");
+            const n = prompt("Nombre Mesa/Cliente:");
             if(n) { db.mesas.push({ id: Date.now(), nombre: n, orden: [] }); save(); }
         }
 
@@ -197,8 +187,8 @@
         function renderGrid() {
             const items = db.menu.filter(m => m.tipo !== 'extra');
             document.getElementById('grid-catalogo').innerHTML = items.map(i => `
-                <button onclick="abrirExtras(${i.id})" class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 text-left active:scale-95 transition-all">
-                    <p class="text-[9px] font-black uppercase text-slate-300 mb-1">${i.tipo}</p>
+                <button onclick="abrirExtras(${i.id})" class="bg-white p-5 rounded-3xl shadow-sm border text-left active:scale-95 transition-all">
+                    <p class="text-[9px] font-black uppercase text-slate-300">${i.tipo}</p>
                     <p class="font-black text-slate-800 leading-tight">${i.nombre}</p>
                     <p class="text-orange-500 font-bold mt-2">$${i.precio.toFixed(2)}</p>
                 </button>
@@ -213,7 +203,7 @@
             const extras = db.menu.filter(m => m.tipo === 'extra');
             document.getElementById('lista-extras-opciones').innerHTML = extras.map(e => `
                 <label class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
-                    <div class="flex items-center gap-3"><input type="checkbox" onchange="toggleExtra(${e.id})" class="w-6 h-6 accent-orange-500"><span class="font-bold text-slate-700">${e.nombre}</span></div>
+                    <div class="flex items-center gap-3"><input type="checkbox" onchange="toggleExtra(${e.id})" class="w-6 h-6 accent-orange-500"><b>${e.nombre}</b></div>
                     <span class="text-orange-500 font-bold">+$${e.precio}</span>
                 </label>
             `).join('');
@@ -232,12 +222,7 @@
                 const ex = db.menu.find(m => m.id === eid);
                 return { nombre: ex.nombre, precio: ex.precio };
             });
-            const comboKey = selectedProduct.id + extrasData.map(e => e.nombre).sort().join('|');
-            const existe = currentMesa.orden.find(o => (o.idBase + o.extras.map(e => e.nombre).sort().join('|')) === comboKey);
-            
-            if(existe) existe.cantidad += 1;
-            else currentMesa.orden.push({ idBase: selectedProduct.id, nombre: selectedProduct.nombre, precio: selectedProduct.precio, extras: extrasData, cantidad: 1 });
-            
+            currentMesa.orden.push({ idBase: selectedProduct.id, nombre: selectedProduct.nombre, precio: selectedProduct.precio, extras: extrasData, cantidad: 1 });
             cerrarExtras();
             updateTicketView();
         }
@@ -246,40 +231,26 @@
             document.getElementById('pos-ticket-content').innerHTML = currentMesa.orden.map((o, idx) => `
                 <div class="flex justify-between border-b pb-2">
                     <div>
-                        <p class="font-black text-sm">${o.cantidad}x ${o.nombre}</p>
-                        ${o.extras.map(e => `<p class="text-[10px] text-orange-500 font-bold">+ ${e.nombre}</p>`).join('')}
+                        <p class="font-black text-sm">${o.nombre}</p>
+                        ${o.extras.map(e => `<p class="text-[10px] text-orange-500">+ ${e.nombre}</p>`).join('')}
                     </div>
-                    <button onclick="removerItem(${idx})" class="text-red-300 text-xs">✕</button>
+                    <button onclick="currentMesa.orden.splice(${idx},1); updateTicketView();" class="text-red-300">✕</button>
                 </div>
             `).join('');
-            document.getElementById('cart-count').innerText = currentMesa.orden.reduce((a, b) => a + b.cantidad, 0);
-        }
-
-        function removerItem(idx) {
-            if(currentMesa.orden[idx].cantidad > 1) currentMesa.orden[idx].cantidad -= 1;
-            else currentMesa.orden.splice(idx, 1);
-            updateTicketView();
+            document.getElementById('cart-count').innerText = currentMesa.orden.length;
         }
 
         function toggleTicket() { document.getElementById('sidebar-ticket').classList.toggle('translate-x-full'); }
 
         function abrirCheckout(id) {
             currentMesa = db.mesas.find(m => m.id === id);
-            baseTotalCheckout = currentMesa.orden.reduce((acc, o) => {
-                const precioExtras = o.extras.reduce((a, b) => a + b.precio, 0);
-                return acc + ((o.precio + precioExtras) * o.cantidad);
-            }, 0);
-            
+            baseTotalCheckout = currentMesa.orden.reduce((acc, o) => acc + o.precio + o.extras.reduce((a, b) => a + b.precio, 0), 0);
             document.getElementById('checkout-pedido').innerHTML = currentMesa.orden.map(o => `
                 <div class="border-b last:border-0 pb-2">
-                    <div class="flex justify-between font-bold">
-                        <span>${o.cantidad}x ${o.nombre}</span>
-                        <span>$${((o.precio + o.extras.reduce((a,b)=>a+b.precio,0)) * o.cantidad).toFixed(2)}</span>
-                    </div>
-                    ${o.extras.map(e => `<div class="text-[10px] text-orange-500 ml-4 font-bold">+ ${e.nombre}</div>`).join('')}
+                    <div class="flex justify-between font-bold"><span>${o.nombre}</span><span>$${(o.precio + o.extras.reduce((a,b)=>a+b.precio,0)).toFixed(2)}</span></div>
+                    ${o.extras.map(e => `<div class="text-[10px] text-orange-500 ml-4">+ ${e.nombre}</div>`).join('')}
                 </div>
             `).join('');
-            
             document.getElementById('checkout-monto-extra').value = '';
             document.getElementById('pago-cliente').value = '';
             calcularTotalFinal();
@@ -288,20 +259,18 @@
 
         function calcularTotalFinal() {
             const extra = parseFloat(document.getElementById('checkout-monto-extra').value) || 0;
-            const totalFinal = baseTotalCheckout + extra;
-            document.getElementById('checkout-total-final').innerText = `$${totalFinal.toFixed(2)}`;
+            document.getElementById('checkout-total-final').innerText = `$${(baseTotalCheckout + extra).toFixed(2)}`;
             calcularCambio();
         }
 
         function calcularCambio() {
-            const totalFinal = parseFloat(document.getElementById('checkout-total-final').innerText.replace('$', ''));
+            const total = parseFloat(document.getElementById('checkout-total-final').innerText.replace('$', ''));
             const pago = parseFloat(document.getElementById('pago-cliente').value) || 0;
-            const cambio = pago - totalFinal;
-            document.getElementById('cambio-devolver').innerText = cambio >= 0 ? `$${cambio.toFixed(2)}` : 'Incompleto';
+            document.getElementById('cambio-devolver').innerText = (pago - total >= 0) ? `$${(pago - total).toFixed(2)}` : 'Incompleto';
         }
 
         function confirmarPagoFinal() {
-            if(confirm("¿Venta confirmada?")) {
+            if(confirm("¿Venta finalizada?")) {
                 db.mesas = db.mesas.filter(m => m.id !== currentMesa.id);
                 document.getElementById('modal-checkout').style.display = 'none';
                 save();
@@ -312,9 +281,8 @@
 
         function render() {
             document.getElementById('grid-mesas').innerHTML = db.mesas.map(m => {
-                const total = m.orden.reduce((acc, o) => acc + ((o.precio + o.extras.reduce((a,b)=>a+b.precio,0)) * o.cantidad), 0);
-                return `
-                <button onclick="abrirPOS(${m.id})" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm text-left active:scale-95 transition-all">
+                const total = m.orden.reduce((acc, o) => acc + o.precio + o.extras.reduce((a,b)=>a+b.precio,0), 0);
+                return `<button onclick="abrirPOS(${m.id})" class="bg-white p-6 rounded-[2rem] border text-left active:scale-95 transition-all">
                     <h4 class="font-black text-slate-800 truncate">${m.nombre}</h4>
                     <p class="text-orange-500 font-black mt-2">$${total.toFixed(2)}</p>
                 </button>`;
@@ -322,15 +290,15 @@
 
             document.getElementById('lista-cobro').innerHTML = db.mesas.map(m => `
                 <div class="bg-white p-5 rounded-[2rem] border flex justify-between items-center">
-                    <div><p class="font-black">${m.nombre}</p></div>
+                    <p class="font-black">${m.nombre}</p>
                     <button onclick="abrirCheckout(${m.id})" class="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-black text-xs">COBRAR</button>
                 </div>
             `).join('');
 
             document.getElementById('lista-inventario').innerHTML = db.menu.map(m => `
                 <div class="bg-white p-4 rounded-2xl flex justify-between items-center border">
-                    <span class="text-sm"><b>${m.tipo.toUpperCase()}</b>: ${m.nombre} ($${m.precio.toFixed(2)})</span>
-                    <button onclick="if(confirm('¿Borrar?')){db.menu = db.menu.filter(x=>x.id != ${m.id}); save();}" class="text-red-200 p-2">✕</button>
+                    <span class="text-sm"><b>${m.tipo}</b>: ${m.nombre} ($${m.precio})</span>
+                    <button onclick="db.menu = db.menu.filter(x=>x.id != ${m.id}); save();" class="text-red-200">✕</button>
                 </div>
             `).join('');
         }
@@ -338,4 +306,4 @@
         render();
     </script>
 </body>
-                        </html>
+</html>
