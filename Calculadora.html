@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>OmniCalc Pro</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22OmniCalc%22,%22short_name%22:%22OmniCalc%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23000000%22,%22theme_color%22:%22%23000000%22}">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #1c1c1e;
+            --accent: #ff9f0a;
+            --secondary: #32d74b;
+            --text: #ffffff;
+            --btn: #2c2c2e;
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
+        body {
+            margin: 0;
+            font-family: -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Pantallas de las Vistas */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-top: 40px;
+            padding-bottom: 120px;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; animation: slideUp 0.3s ease-out; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Estilo de Inputs y Tarjetas */
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        input, select {
+            width: 100%;
+            background: var(--btn);
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            margin-top: 8px;
+        }
+
+        .res-text { font-size: 1.4rem; color: var(--accent); font-weight: bold; margin-top: 15px; }
+
+        /* Calculadora Estilo iPhone */
+        .calc-screen { text-align: right; padding: 40px 10px 20px; }
+        #calc-res { font-size: 4rem; font-weight: 200; overflow-x: auto; white-space: nowrap; }
+        #calc-exp { color: #888; font-size: 1.2rem; min-height: 1.5rem; }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .calc-grid button {
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.8rem;
+            background: var(--btn);
+            color: white;
+            transition: opacity 0.1s;
+        }
+
+        .calc-grid button:active { opacity: 0.5; }
+        .calc-grid .op { background: var(--accent); }
+        .calc-grid .top { background: #a5a5a5; color: black; font-size: 1.4rem; }
+        .calc-grid .zero { grid-column: span 2; aspect-ratio: initial; border-radius: 50px; text-align: left; padding-left: 30px; }
+
+        /* Tab Bar Inferior */
+        nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(28,28,30,0.9);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 calc(10px + var(--safe-bottom));
+            border-top: 0.5px solid #333;
+        }
+
+        .nav-item { color: #888; text-align: center; font-size: 0.7rem; cursor: pointer; flex: 1; }
+        .nav-item.active { color: var(--accent); }
+        .nav-item i { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="content">
+        <div id="v-calc" class="view active">
+            <div class="calc-screen">
+                <div id="calc-exp"></div>
+                <div id="calc-res">0</div>
+            </div>
+            <div class="calc-grid">
+                <button class="top" onclick="cAC()">AC</button>
+                <button class="top" onclick="cAdd('sqrt(')">√</button>
+                <button class="top" onclick="cAdd('%')">%</button>
+                <button class="op" onclick="cAdd('/')">÷</button>
+                
+                <button onclick="cAdd('7')">7</button>
+                <button onclick="cAdd('8')">8</button>
+                <button onclick="cAdd('9')">9</button>
+                <button class="op" onclick="cAdd('*')">×</button>
+                
+                <button onclick="cAdd('4')">4</button>
+                <button onclick="cAdd('5')">5</button>
+                <button onclick="cAdd('6')">6</button>
+                <button class="op" onclick="cAdd('-')">−</button>
+                
+                <button onclick="cAdd('1')">1</button>
+                <button onclick="cAdd('2')">2</button>
+                <button onclick="cAdd('3')">3</button>
+                <button class="op" onclick="cAdd('+')">+</button>
+                
+                <button class="zero" onclick="cAdd('0')">0</button>
+                <button onclick="cAdd('.')">.</button>
+                <button class="op" onclick="cSolve()">=</button>
+            </div>
+        </div>
+
+        <div id="v-conv" class="view">
+            <h2 style="margin-top:0">Conversor Unidades</h2>
+            <div class="card">
+                <label>Valor</label>
+                <input type="number" id="unit-in" value="1" oninput="uConv()">
+                <div style="display:flex; gap:10px; margin-top:15px">
+                    <select id="unit-from" onchange="uConv()">
+                        <option value="m">Metros</option>
+                        <option value="inch">Pulgadas</option>
+                        <option value="ft">Pies</option>
+                        <option value="kg">Kilos</option>
+                        <option value="lb">Libras</option>
+                    </select>
+                    <select id="unit-to" onchange="uConv()">
+                        <option value="cm">Centímetros</option>
+                        <option value="ft">Pies</option>
+                        <option value="m">Metros</option>
+                        <option value="lb">Libras</option>
+                        <option value="kg">Kilos</option>
+                    </select>
+                </div>
+                <div class="res-text" id="unit-out">Resultado: 100 cm</div>
+            </div>
+        </div>
+
+        <div id="v-health" class="view">
+            <h2 style="margin-top:0">Índice de Masa Corporal</h2>
+            <div class="card">
+                <label>Peso (kg)</label>
+                <input type="number" id="weight" placeholder="70" oninput="calcIMC()">
+                <label style="margin-top:15px">Altura (cm)</label>
+                <input type="number" id="height" placeholder="175" oninput="calcIMC()">
+                <div class="res-text" id="imc-res">IMC: --</div>
+                <div id="imc-info" style="color:#888; margin-top:5px">Introduce tus datos</div>
+            </div>
+        </div>
+    </div>
+
+    <nav>
+        <div class="nav-item active" onclick="showV('v-calc', this)"><i>🔢</i>Calc</div>
+        <div class="nav-item" onclick="showV('v-conv', this)"><i>📏</i>Unid</div>
+        <div class="nav-item" onclick="showV('v-health', this)"><i>⚖️</i>Salud</div>
+    </nav>
+
+    <script>
+        // Navegación
+        function showV(id, el) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // Lógica Calculadora
+        let exp = "";
+        const resDiv = document.getElementById('calc-res');
+        const expDiv = document.getElementById('calc-exp');
+
+        function cAdd(v) {
+            if (exp === "0") exp = "";
+            exp += v;
+            resDiv.innerText = exp;
+        }
+
+        function cAC() { exp = ""; resDiv.innerText = "0"; expDiv.innerText = ""; }
+
+        function cSolve() {
+            try {
+                const r = math.evaluate(exp.replace('×', '*').replace('÷', '/'));
+                expDiv.innerText = exp + " =";
+                exp = math.format(r, {precision: 10}).toString();
+                resDiv.innerText = exp;
+            } catch {
+                resDiv.innerText = "Error";
+                exp = "";
+            }
+        }
+
+        // Lógica Unidades
+        function uConv() {
+            const val = document.getElementById('unit-in').value;
+            const from = document.getElementById('unit-from').value;
+            const to = document.getElementById('unit-to').value;
+            try {
+                const r = math.evaluate(`${val} ${from} to ${to}`);
+                document.getElementById('unit-out').innerText = `Resultado: ${math.format(r, 4)}`;
+            } catch { document.getElementById('unit-out').innerText = "Incompatible"; }
+        }
+
+        // Lógica IMC
+        function calcIMC() {
+            const w = document.getElementById('weight').value;
+            const h = document.getElementById('height').value / 100;
+            if (w && h) {
+                const imc = (w / (h * h)).toFixed(1);
+                let msg = "";
+                if (imc < 18.5) msg = "Bajo peso";
+                else if (imc < 25) msg = "Normal";
+                else if (imc < 30) msg = "Sobrepeso";
+                else msg = "Obesidad";
+                document.getElementById('imc-res').innerText = `IMC: ${imc}`;
+                document.getElementById('imc-info').innerText = msg;
+            }
+        }
+
+        // Registro de Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch", (e) => e.respondWith(fetch(e.request)))');
+        }
+    </script>
+</body>
+</html>
