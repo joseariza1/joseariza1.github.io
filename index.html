@@ -1,447 +1,336 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Herramientas Digitales - Pestañas</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Heimaux OS Ultra Fix</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#3498db">
-    <meta name="apple-mobile-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
 
-    <style>
-        /* ================================================= */
-        /* == ESTILOS CSS ================================== */
-        /* ================================================= */
-        
-        /* --- Estilos base de los iconos --- */
-
-/* Oculta los íconos I de Font Awesome para que no interfieran con las imágenes */
-.grid-item i {
-    display: none; 
+<style>
+:root {
+    --glass: rgba(255, 255, 255, 0.2);
+    --glass-heavy: rgba(255, 255, 255, 0.35);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --accent: #A0EEFF;
 }
 
-/* Define el estilo para las imágenes personalizadas (el método más fácil) */
-.custom-icon {
-    width: 60px;       /* Controla el tamaño del icono */
-    height: 60px;
-    margin-bottom: 10px;
-    object-fit: contain; /* Asegura que la imagen no se distorsione */
-    transition: transform 0.2s;
+body, html {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif;
+    color: white; user-select: none; -webkit-user-select: none;
 }
 
-/* Si quieres que los íconos de Font Awesome sigan funcionando, 
-   solo debes usar la etiqueta <img> en los elementos que quieres personalizar
-   y dejar la etiqueta <i> en el resto. 
-   Para que Font Awesome funcione solo cuando la etiqueta <img> no existe: */
-
-.grid-item i {
-    /* Mantiene los estilos originales de Font Awesome, 
-       solo si no has agregado la clase 'custom-icon' */
-    display: block; 
-    font-size: 2.8em; 
-    color: var(--primary-color);
-    margin-bottom: 10px;
+/* Capa de Fondo */
+#bg-layer {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: -2; background-size: cover; background-position: center;
+    background-color: #E0CFFC;
 }
 
-/* Si un elemento tiene la clase 'custom-icon', usa esa imagen y no el <i> */
-.grid-item:has(.custom-icon) i {
-    display: none;
+.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5; z-index: -1; pointer-events: none; }
+.orb-1 { width: 400px; height: 400px; background: white; top: -100px; left: -100px; }
+.orb-2 { width: 500px; height: 500px; background: var(--accent); bottom: -100px; right: -100px; }
+
+#desktop {
+    position: relative; z-index: 10;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center;
 }
 
-        :root {
-            --primary-color: #3498db; 
-            --secondary-color: #2c3e50; 
-            --bg-color: #ecf0f1; 
-            --card-bg: #ffffff;
-            --text-color: #333;
-            --border-radius: 8px;
-            --shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
+/* Barra de Categorías Superior (CORREGIDA) */
+#category-bar {
+    margin-top: 50px; display: flex; gap: 12px; width: 90%;
+    overflow-x: auto; white-space: nowrap; scrollbar-width: none; 
+    padding: 10px; z-index: 30;
+}
+#category-bar::-webkit-scrollbar { display: none; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
+.cat-pill {
+    padding: 10px 22px; background: rgba(0, 0, 0, 0.1);
+    border-radius: 25px; border: 1px solid var(--glass-border);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    cursor: pointer; font-size: 14px; color: white; transition: 0.3s;
+}
+.cat-pill.active { background: white; color: #333; font-weight: bold; transform: scale(1.05); }
 
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 25px 15px;
-            text-align: center;
-            box-shadow: var(--shadow);
-        }
-        header h1 { margin: 0; font-size: 2.5em; }
+/* Contenedor Principal */
+.glass-panel {
+    width: 92%; max-width: 400px; height: 70vh;
+    background: var(--glass); backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 35px; border: 1px solid var(--glass-border);
+    padding: 25px; box-sizing: border-box; overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-top: 15px;
+}
 
-        main {
-            padding: 20px 20px 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            box-sizing: border-box;
-        }
+.icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 
-        /* --- Estilos de Pestañas (Tabs) --- */
-        #tabs-container {
-            width: 100%;
-            overflow-x: auto; /* Permite desplazamiento horizontal en móviles */
-            white-space: nowrap; /* Evita que los botones se envuelvan */
-            margin-bottom: 20px;
-            background-color: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            padding: 5px;
-        }
+.icon-item {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 15px; border-radius: 25px; transition: 0.2s;
+}
+.icon-item:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
+.icon-item.dragging { opacity: 0.3; }
 
-        .tab-button {
-            background-color: transparent;
-            color: var(--secondary-color);
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: color 0.3s, background-color 0.3s, border-bottom 0.3s;
-            display: inline-flex;
-            align-items: center;
-            border-bottom: 3px solid transparent; /* Línea inactiva */
-        }
-        
-        .tab-button i {
-            margin-right: 8px;
-        }
+.icon-box {
+    width: 75px; height: 75px; background: var(--glass-heavy);
+    border-radius: 24px; display: flex; align-items: center;
+    justify-content: center; font-size: 34px; margin-bottom: 10px;
+    border: 1px solid var(--glass-border);
+}
+.icon-label { font-size: 13px; font-weight: 400; text-align: center; }
 
-        .tab-button:hover:not(.active) {
-            background-color: rgba(52, 152, 219, 0.1);
-        }
+/* Drawer de Gestión */
+#drawer {
+    position: fixed; bottom: -100%; left: 0; width: 100%; height: 90vh;
+    background: rgba(15, 15, 15, 0.97); backdrop-filter: blur(25px);
+    z-index: 100; transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding: 30px; box-sizing: border-box; border-radius: 40px 40px 0 0;
+    overflow-y: auto; color: white;
+}
+#drawer.open { bottom: 0; }
+.handle { width: 50px; height: 6px; background: #444; border-radius: 3px; margin: 0 auto 30px; }
 
-        .tab-button.active {
-            color: var(--primary-color);
-            border-bottom: 3px solid var(--primary-color); /* Línea activa */
-        }
+h3 { font-weight: 300; color: var(--accent); margin-bottom: 15px; font-size: 14px; text-transform: uppercase; }
 
-        /* Contenido de la Sección (Oculto por defecto) */
-        .tab-content {
-            display: none;
-            padding: 10px 0;
-            animation: fadeIn 0.5s;
-        }
+input, select {
+    width: 100%; padding: 15px; margin-bottom: 15px;
+    background: rgba(255,255,255,0.1); border: 1px solid #333; color: white;
+    border-radius: 15px; font-size: 16px; box-sizing: border-box;
+}
 
-        .tab-content.active {
-            display: block;
-        }
+.btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
+.btn { flex: 1; padding: 16px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; }
+.btn-save { background: var(--accent); color: #111; }
+.btn-del { background: #ff4d4d; color: white; }
+.btn-close { background: #333; color: #ccc; }
 
-        /* --- Estilos de la Cuadrícula --- */
-        .grid-section-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 15px; 
-            padding-bottom: 20px;
-        }
+.cat-mgmt-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 8px;
+}
 
-        .grid-item {
-            background-color: var(--card-bg);
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px 10px;
-            text-decoration: none;
-            color: var(--text-color);
-            text-align: center;
-            transition: transform 0.2s;
-            min-height: 130px; 
-        }
-
-        .grid-item:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .grid-item i {
-            font-size: 2.8em; 
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-
-        .grid-item h3 {
-            margin: 0;
-            font-size: 1.1em;
-            color: var(--secondary-color);
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            width: 100%;
-        }
-
-        /* Estilos específicos de marca */
-        .grid-item.social i.fa-facebook { color: #3b5998; }
-        .grid-item.social i.fa-tumblr { color: #35465C; }
-        .grid-item.social i.fa-pinterest { color: #F0002A; }
-        .grid-item.financial i.fa-money-bill { color: #85BB65; }
-        .grid-item.financial i.fa-wallet { color: #f39c12; }
-        .grid-item.entretenimiento i.fa-youtube { color: #FF0000; }
-        .grid-item.entretenimiento i.fa-soundcloud { color: #ff7700; }
-
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @media (max-width: 600px) {
-            .grid-section-container {
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-            }
-            .grid-item {
-                min-height: 100px;
-                padding: 15px 5px;
-            }
-            .grid-item i {
-                font-size: 2.2em;
-            }
-            .tab-button {
-                padding: 10px 12px;
-                font-size: 0.9em;
-            }
-        }
-    </style>
+#hint { position: fixed; bottom: 15px; width: 100%; text-align: center; font-size: 11px; opacity: 0.5; pointer-events: none; }
+</style>
 </head>
 <body>
-    
-    <main>
+
+    <div id="bg-layer"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div id="desktop">
+        <div id="category-bar"></div>
+        <div class="glass-panel">
+            <div class="icon-grid" id="main-grid"></div>
+        </div>
+    </div>
+
+    <div id="hint">Desliza ↑ ajustes | Mantén presionado icono para editar</div>
+
+    <div id="drawer">
+        <div class="handle"></div>
         
-        <div id="tabs-container">
-            
-            <button class="tab-button active" onclick="openSection(event, 'social')">
-                <i class="fas fa-users"></i> Social
-            </button>
-            <button class="tab-button" onclick="openSection(event, 'productivity')">
-                <i class="fas fa-tools"></i> Productividad
-            </button>
-            <button class="tab-button" onclick="openSection(event, 'finance')">
-                <i class="fas fa-money-bill-wave"></i> Finanzas
-            </button>
-            <button class="tab-button" onclick="openSection(event, 'entertainment')">
-                <i class="fas fa-tv"></i> Entretenimiento
-            </button>
-        </div>
-
-        <div id="social" class="tab-content active">
-            <div class="grid-section-container">
-                <a href="https://www.facebook.com" target="_blank" class="grid-item social">
-                    <i class="fab fa-facebook-f"></i>
-                    <h3>Facebook</h3>
-                </a>
-                <a href="https://www.twitter.com" target="_blank" class="grid-item social">
-                    <i class="fab fa-twitter"></i>
-                    <h3>X (Twitter)</h3>
-                </a>
-                <a href="https://www.tumblr.com" target="_blank" class="grid-item social">
-                    <i class="fab fa-tumblr"></i>
-                    <h3>Tumblr</h3>
-                </a>
-                
-                <a href="https://www.pinterest.com.mx/" target="_blank" class="grid-item">
-                    <i class="fa-brands fa-pinterest"></i>
-                    <h3>Pinterest</h3>
-                </a>
-                
-                
-            </div>
-        </div>
-
-        <div id="productivity" class="tab-content">
-            <div class="grid-section-container">
-                <a href="https://gemini.google.com/app" target="_blank" class="grid-item">
-                    <img src="https://img.icons8.com/skeuomorphism/1200/gemini-ai.jpg" alt="Icono ChatGPT" class="custom-icon">
-                    <h3>Gemini</h3>
-                </a>
-                <a href="https://chat.openai.com" target="_blank" class="grid-item">
-                   <img src="https://img.icons8.com/pulsar-line/1200/chatgpt.jpg" alt="Icono ChatGPT" class="custom-icon">
-                   
-                    <h3>ChatGPT</h3>
-                </a>
-                 <a href="https://letrasyfuentes.com" target="_blank" class="grid-item">
-                    <i class="fa-solid fa-font"></i>
-                    <h3>Letras y Fuentes</h3>
-                </a>
-                
-                <a href="https://www.google.com/" target="_blank" class="grid-item">
-                    <i class="fa-brands fa-chrome"></i>
-                    <h3>Chrome</h3>
-                </a>
-                
-                <a href="https://www.google.com/maps/@19.5100672,-99.1461376,9z?utm_campaign=ml-ardi&g_ep=Eg1tbF8yMDI2MDMxNl8wIJvbDyoASAJQAQ%3D%3D" target="_blank" class="grid-item">
-                    <i class="fa-solid fa-map"></i>
-                    <h3>Maps</h3>
-                </a>
-                
-                
-                <a href="https://translate.google.com" target="_blank" class="grid-item">
-                    <i class="fas fa-language"></i>
-                    <h3>Traductor</h3>
-                </a>
-                <a href=" https://classroom.google.com/ " target="_blank" class="grid-item">
-                    <img src="https://images.seeklogo.com/logo-png/47/1/google-classroom-logo-png_seeklogo-479750.png" alt="Icono ChatGPT" class="custom-icon">
-                    <h3>Classroom</h3>
-                </a>
-                <a href="https://mail.google.com" target="_blank" class="grid-item">
-                    <i class="fas fa-envelope"></i>
-                    <h3>Gmail</h3>
-                </a>
-                <a href="https://drive.google.com" target="_blank" class="grid-item">
-                    <i class="fa-brands fa-google-drive"></i>
-                    <h3>Google Drive</h3>
-                </a>
-                
-                <a href="https://wordpress.com/es/" target="_blank" class="grid-item">
-                    <i class="fa-brands fa-wordpress"></i>
-                    <h3>Wordpress</h3>
-                </a>
-                
-                <a href="https://www.fishersci.es/es/es/search/chemical/substructure.html" target="_blank" class="grid-item">
-                    <i class="fa fa-vial"></i>
-                    <h3>Estructuras Quimicas</h3>
-                </a>
-                
-                <a href="https://www.mathway.com/es/Algebra" target="_blank" class="grid-item">
-                    <i class="fa fa-square-root-variable"></i>
-                    <h3>Mathway</h3>
-                </a>
-                
-                <a href="https://drive.google.com" target="_blank" class="grid-item">
-                    <i class="fa-brands fa-google-drive"></i>
-                    <h3>Google Drive</h3>
-                </a>
-                
-                
-            </div>
-        </div>
+        <h3>Fondo de Pantalla</h3>
+        <input type="text" id="bg-input" placeholder="Color (#000) o URL de imagen" onchange="updateBg(this.value)">
         
-        <div id="finance" class="tab-content">
-            <div class="grid-section-container">
-                
-                <a href="https://joseariza1.github.io/Finanzas.html" target="_blank" class="grid-item financial">
-                    <i class="fa-solid fa-money-bill"></i>
-                    <h3>Finanzas</h3>
-                </a>
-                
-                <a href="https://joseariza1.github.io/Capricho.html" target="_blank" class="grid-item financial">
-                    <i class="fa-solid fa-gifts"></i>
-                    <h3>Capricho</h3>
-                </a>
-                
-                <a href="https://www.paypal.com/mx/home" target="_blank" class="grid-item financial">
-                    <i class="fab fa-paypal"></i>
-                    <h3>PayPal</h3>
-                </a>
-                <a href="https://impuestos.ejemplo.gob.mx" target="_blank" class="grid-item financial">
-                    <i class="fas fa-calculator"></i>
-                    <h3>Impuestos</h3>
-                </a>
-                <a href="https://cfeinternet.mx" target="_blank" class="grid-item financial">
-                    <i class="fa-solid fa-tower-broadcast"></i>
-                      <h3>Internet CFE</h3>
-                </a>
-            </div>
+        <hr style="border: 0.1px solid #333; margin: 20px 0;">
+
+        <h3>Categorías</h3>
+        <div class="btn-group">
+            <input type="text" id="new-cat-name" placeholder="Nueva Categoría" style="margin-bottom:0">
+            <button class="btn btn-save" onclick="addCat()" style="flex:0.4">Añadir</button>
         </div>
+        <div id="cat-list-mgmt"></div>
 
-        <div id="entertainment" class="tab-content">
-            <div class="grid-section-container">
-                <a href="https://www.youtube.com" target="_blank" class="grid-item social">
-                    <i class="fab fa-youtube"></i>
-                    <h3>YouTube</h3>
-                </a>
-                <a href="https://pluto.tv/latam/live-tv/" target="_blank" class="grid-item social">
-                    <i class="fas fa-tv"></i>
-                    <h3>Pluto Tv</h3>
-                </a>
-                
-                <a href="https://music.youtube.com" target="_blank" class="grid-item social">
-                    <i class="fa-solid fa-circle-play"></i>
-                    <h3>YouTube Music</h3>
-                </a>
-                
-                <a href="https://radio.garden/visit/mexico-city/mFxWfHUs?hl=es-419" target="_blank" class="grid-item social">
-                    <i class="fas fa-earth-america"></i>
-                    <h3>Radio Garden</h3>
-                </a>
-                
-                <a href="https://m.soundcloud.com" target="_blank" class="grid-item social">
-                    <i class="fab fa-soundcloud"></i>
-                    <h3>SoundCloud</h3>
-                </a>
-                
-                <a href="https://poki.com/es" target="_blank" class="grid-item social">
-<i class="fa-solid fa-gamepad"></i>                    <h3>Poky</h3>
-                </a>
-                
-                <a href="https://www.netflix.com" target="_blank" class="grid-item">
-                    <i class="fas fa-film"></i>
-                    <h3>Netflix</h3>
-                </a>
-                <a href="https://www.twitch.tv" target="_blank" class="grid-item social">
-                    <i class="fab fa-twitch"></i>
-                    <h3>Twitch</h3>
-                </a>
-                <a href="https://open.spotify.com" target="_blank" class="grid-item">
-                    <i class="fab fa-spotify"></i>
-                    <h3>Spotify Web</h3>
-                </a>
-            </div>
+        <hr style="border: 0.1px solid #333; margin: 20px 0;">
+
+        <h3 id="form-title">Nuevo Icono</h3>
+        <input type="hidden" id="i-id">
+        <input type="text" id="i-name" placeholder="Nombre (ej: TikTok)">
+        <input type="text" id="i-html" placeholder='Icono (ej: <i class="fa-brands fa-tiktok"></i>)'>
+        <input type="text" id="i-url" placeholder="URL Destino">
+        <select id="i-cat-select"></select>
+
+        <div class="btn-group">
+            <button class="btn btn-save" onclick="saveIcon()">Guardar Cambios</button>
+            <button class="btn btn-del" id="del-btn" style="display:none;" onclick="removeIcon()">Eliminar</button>
         </div>
-    </main>
+        <button class="btn btn-close" onclick="closeDrawer()">Cerrar Ajustes</button>
+    </div>
 
-    <footer>
-        <p>© 2025 ANOVA Media Center</p>
-    </footer>
+<script>
+const DB_KEY = 'heimaux_final_fix';
+let db = JSON.parse(localStorage.getItem(DB_KEY)) || {
+    bg: 'linear-gradient(135deg, #E0CFFC 0%, #A0EEFF 100%)',
+    cats: ['Todo', 'Social', 'Apps'],
+    activeCat: 'Todo',
+    icons: [
+        { id: 1, name: 'Google', html: '<i class="fa-brands fa-google" style="color:#4285F4"></i>', url: 'https://google.com', cat: 'Apps' },
+        { id: 2, name: 'TikTok', html: '<i class="fa-brands fa-tiktok" style="color:white"></i>', url: 'https://tiktok.com', cat: 'Social' }
+    ]
+};
 
-    
-    <script>
-        function openSection(evt, sectionId) {
-            // 1. Ocultar todos los contenidos de las pestañas
-            const tabContent = document.getElementsByClassName("tab-content");
-            for (let i = 0; i < tabContent.length; i++) {
-                tabContent[i].classList.remove('active');
-            }
+function persist() { localStorage.setItem(DB_KEY, JSON.stringify(db)); render(); }
 
-            // 2. Desactivar todos los botones de las pestañas
-            const tabButtons = document.getElementsByClassName("tab-button");
-            for (let i = 0; i < tabButtons.length; i++) {
-                tabButtons[i].classList.remove('active');
-            }
+function updateBg(val) {
+    db.bg = val;
+    const layer = document.getElementById('bg-layer');
+    if(val.includes('http')) {
+        layer.style.background = `url('${val}')`;
+        layer.style.backgroundSize = 'cover';
+    } else {
+        layer.style.background = val;
+    }
+    persist();
+}
 
-            // 3. Mostrar el contenido de la pestaña actual
-            document.getElementById(sectionId).classList.add('active');
+/** CATEGORIAS **/
+function addCat() {
+    const v = document.getElementById('new-cat-name').value.trim();
+    if(v && !db.cats.includes(v)) { db.cats.push(v); document.getElementById('new-cat-name').value = ''; persist(); }
+}
 
-            // 4. Activar el botón de la pestaña actual
-            evt.currentTarget.classList.add('active');
-            
-            // Opcional: Asegurar que el botón activo esté visible si hay desplazamiento horizontal
-            evt.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+function deleteCat(n) {
+    if(n === 'Todo') return;
+    if(confirm(`¿Borrar "${n}"?`)) {
+        db.cats = db.cats.filter(c => c !== n);
+        db.icons.forEach(i => { if(i.cat === n) i.cat = 'Todo'; });
+        persist();
+    }
+}
+
+function renameCat(old) {
+    const n = prompt("Nuevo nombre:", old);
+    if(n && n !== old) {
+        db.cats = db.cats.map(c => c === old ? n : c);
+        db.icons.forEach(i => { if(i.cat === old) i.cat = n; });
+        persist();
+    }
+}
+
+/** RENDER **/
+function render() {
+    // Fondo
+    const layer = document.getElementById('bg-layer');
+    if(db.bg.includes('http')) layer.style.background = `url('${db.bg}') center/cover`;
+    else layer.style.background = db.bg;
+
+    // Categorías
+    const bar = document.getElementById('category-bar');
+    const select = document.getElementById('i-cat-select');
+    const mgmt = document.getElementById('cat-list-mgmt');
+    bar.innerHTML = ''; select.innerHTML = ''; mgmt.innerHTML = '';
+
+    db.cats.forEach(c => {
+        const pill = document.createElement('div');
+        pill.className = `cat-pill ${db.activeCat === c ? 'active' : ''}`;
+        pill.innerText = c;
+        pill.onclick = (e) => { e.stopPropagation(); db.activeCat = c; render(); };
+        bar.appendChild(pill);
+
+        const opt = document.createElement('option');
+        opt.value = opt.innerText = c;
+        select.appendChild(opt);
+
+        if(c !== 'Todo') {
+            const d = document.createElement('div');
+            d.className = 'cat-mgmt-item';
+            d.innerHTML = `<span>${c}</span><div><i class="fa-solid fa-pen" onclick="renameCat('${c}')"></i> <i class="fa-solid fa-trash" onclick="deleteCat('${c}')" style="margin-left:10px"></i></div>`;
+            mgmt.appendChild(d);
         }
+    });
+
+    // Iconos
+    const grid = document.getElementById('main-grid');
+    grid.innerHTML = '';
+    const list = db.activeCat === 'Todo' ? db.icons : db.icons.filter(i => i.cat === db.activeCat);
+
+    list.forEach(i => {
+        const el = document.createElement('div');
+        el.className = 'icon-item';
+        el.draggable = true;
+        el.dataset.id = i.id;
+        el.innerHTML = `<div class="icon-box">${i.html}</div><div class="icon-label">${i.name}</div>`;
         
-        // Registro del Service Worker (para la funcionalidad PWA)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registrado:', reg.scope))
-                    .catch(err => console.error('Fallo el registro de Service Worker:', err));
-            });
-        }
-    </script>
+        let timer;
+        el.addEventListener('touchstart', () => timer = setTimeout(() => openEdit(i.id), 800));
+        el.addEventListener('touchend', () => clearTimeout(timer));
+        el.addEventListener('mousedown', () => timer = setTimeout(() => openEdit(i.id), 800));
+        el.addEventListener('mouseup', () => clearTimeout(timer));
+        el.addEventListener('click', () => { if(i.url !== '#') window.open(i.url, '_blank') });
+
+        grid.appendChild(el);
+    });
+    initDrag();
+}
+
+/** DRAG & DROP **/
+let dragEl = null;
+function initDrag() {
+    const grid = document.getElementById('main-grid');
+    grid.querySelectorAll('.icon-item').forEach(item => {
+        item.addEventListener('dragstart', () => { dragEl = item; item.classList.add('dragging'); });
+        item.addEventListener('dragend', () => {
+            item.classList.remove('dragging');
+            const ids = Array.from(grid.querySelectorAll('.icon-item')).map(el => Number(el.dataset.id));
+            db.icons.sort((a,b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+        });
+        item.addEventListener('dragover', e => {
+            e.preventDefault();
+            const box = item.getBoundingClientRect();
+            const offset = e.clientY - box.top - box.height/2;
+            if(offset < 0) grid.insertBefore(dragEl, item);
+            else grid.insertBefore(dragEl, item.nextSibling);
+        });
+    });
+}
+
+/** GESTION **/
+function openDrawer() { document.getElementById('drawer').classList.add('open'); }
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); resetForm(); }
+function resetForm() {
+    document.getElementById('i-id').value = '';
+    document.getElementById('i-name').value = '';
+    document.getElementById('i-html').value = '';
+    document.getElementById('i-url').value = '';
+    document.getElementById('del-btn').style.display = 'none';
+    document.getElementById('form-title').innerText = 'Nuevo Icono';
+}
+
+function openEdit(id) {
+    const i = db.icons.find(x => x.id === id);
+    document.getElementById('i-id').value = i.id;
+    document.getElementById('i-name').value = i.name;
+    document.getElementById('i-html').value = i.html;
+    document.getElementById('i-url').value = i.url;
+    document.getElementById('i-cat-select').value = i.cat;
+    document.getElementById('del-btn').style.display = 'block';
+    document.getElementById('form-title').innerText = 'Editar Icono';
+    openDrawer();
+}
+
+function saveIcon() {
+    const id = document.getElementById('i-id').value;
+    const n = document.getElementById('i-name').value, h = document.getElementById('i-html').value, u = document.getElementById('i-url').value, c = document.getElementById('i-cat-select').value;
+    if(!n || !h || !u) return;
+    if(id) { const idx = db.icons.findIndex(x => x.id == id); db.icons[idx] = {id: Number(id), name:n, html:h, url:u, cat:c}; }
+    else { db.icons.push({id: Date.now(), name:n, html:h, url:u, cat:c}); }
+    persist(); closeDrawer();
+}
+
+function removeIcon() {
+    const id = document.getElementById('i-id').value;
+    if(confirm("¿Eliminar?")) { db.icons = db.icons.filter(x => x.id != id); persist(); closeDrawer(); }
+}
+
+let sy = 0;
+document.addEventListener('touchstart', e => sy = e.touches[0].clientY);
+document.addEventListener('touchend', e => { if(sy - e.changedTouches[0].clientY > 150) openDrawer(); });
+
+render();
+</script>
 </body>
 </html>
