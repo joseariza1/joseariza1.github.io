@@ -3,24 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Flow Pro - Ultra Scanner</title>
+    <title>POS Flow Pro - Stock Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         .hidden { display: none; }
-        #reader-pos, #reader-reg { background: #000 !important; border: none !important; }
-        #reader-pos video { object-fit: cover !important; border-radius: 2rem; }
+        #reader-pos, #reader-reg { background: #000 !important; border-radius: 2rem; overflow: hidden; }
+        #reader-pos video, #reader-reg video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
         
-        /* Guía visual de escaneo */
-        .scanner-overlay {
-            position: absolute;
-            inset: 0;
-            border: 2px solid rgba(255,255,255,0.1);
-            background: linear-gradient(rgba(79, 70, 229, 0.1) 2px, transparent 2px) 0 0 / 100% 40px;
-            pointer-events: none;
-            z-index: 10;
-        }
         .scanner-line {
             position: absolute;
             width: 100%;
@@ -29,291 +20,237 @@
             top: 50%;
             box-shadow: 0 0 15px #ff004c;
             animation: scan 2s infinite ease-in-out;
+            z-index: 20;
         }
-        @keyframes scan {
-            0%, 100% { top: 20%; }
-            50% { top: 80%; }
-        }
-
-        .catalog-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); 
-            gap: 8px; 
-        }
+        @keyframes scan { 0%, 100% { top: 20%; } 50% { top: 80%; } }
 
         @media (min-width: 1024px) {
             .main-layout { display: grid; grid-template-columns: 1fr 400px; gap: 20px; height: 85vh; }
-            .scroll-area { overflow-y: auto; padding-right: 10px; }
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen font-sans text-slate-900 overflow-x-hidden">
+<body class="bg-slate-100 min-h-screen font-sans text-slate-900">
 
-    <nav class="bg-slate-900 text-white p-4 sticky top-0 z-[100] shadow-2xl">
+    <nav class="bg-slate-900 text-white p-4 sticky top-0 z-[100] shadow-xl">
         <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/30">
-                    <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
-                </div>
-                <span class="font-black tracking-tighter text-lg">POS FLOW <span class="text-indigo-400">V13</span></span>
-            </div>
-            <div id="cam-status" class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-300">Cámara Lista</span>
-            </div>
+            <span class="font-black tracking-tighter text-lg flex items-center gap-2">
+                <i data-lucide="zap" class="text-indigo-400"></i> POS FLOW <small class="text-[10px] opacity-50">V14</small>
+            </span>
+            <div id="cam-indicator" class="text-[9px] font-black px-3 py-1 bg-slate-800 rounded-full border border-white/10 uppercase">Sistema Listo</div>
         </div>
     </nav>
 
     <main class="container mx-auto p-4 lg:p-6">
-        <section id="view-pos" class="main-layout animate-in fade-in duration-500">
-            <div class="scroll-area space-y-6">
-                <div class="relative group">
-                    <div id="scanner-box" class="relative bg-black rounded-[2.5rem] overflow-hidden h-60 md:h-80 shadow-2xl border-4 border-white transition-all">
-                        <div id="reader-pos" class="w-full h-full"></div>
-                        <div class="scanner-overlay">
-                            <div class="scanner-line"></div>
-                            <div class="absolute inset-0 border-[40px] border-black/40"></div>
-                        </div>
-                        <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center z-20">
-                            <button onclick="restartCamera()" class="bg-white/10 backdrop-blur-xl p-4 rounded-2xl text-white hover:bg-white/20 active:scale-90 transition-all">
-                                <i data-lucide="refresh-ccw" class="w-5 h-5"></i>
-                            </button>
-                            <span class="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-[10px] font-bold text-white uppercase tracking-widest border border-white/10">Alinea el código al centro</span>
-                        </div>
-                    </div>
+        <section id="view-pos" class="main-layout">
+            <div class="space-y-6 overflow-y-auto pr-2">
+                <div class="relative bg-black rounded-[2.5rem] overflow-hidden h-64 md:h-80 shadow-2xl border-4 border-white">
+                    <div id="reader-pos" class="w-full h-full"></div>
+                    <div class="scanner-line"></div>
+                    <button onclick="forceRestart('pos')" class="absolute bottom-4 right-4 bg-white/10 backdrop-blur-md p-3 rounded-2xl text-white z-30"><i data-lucide="refresh-cw"></i></button>
                 </div>
 
                 <div class="space-y-4">
-                    <div class="relative">
-                        <i data-lucide="search" class="absolute left-4 top-4 text-slate-400 w-5 h-5"></i>
-                        <input type="text" id="pos-search" oninput="renderCatalog(this.value)" placeholder="Buscar por nombre..." class="w-full pl-12 p-4 bg-white rounded-2xl shadow-sm border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all">
-                    </div>
-                    <div id="product-catalog" class="catalog-grid"></div>
+                    <input type="text" id="pos-search" oninput="renderCatalog(this.value)" placeholder="Buscar producto..." class="w-full p-4 bg-white rounded-2xl shadow-sm border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
+                    <div id="product-catalog" class="grid grid-cols-3 md:grid-cols-4 gap-3"></div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-2xl border border-slate-200/50 flex flex-col h-full mt-6 lg:mt-0">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="font-black text-slate-400 text-[10px] uppercase tracking-widest">Carrito de Venta</h3>
-                    <button onclick="clearCart()" class="text-slate-300 hover:text-red-500 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-                
-                <div id="cart-items" class="flex-1 overflow-y-auto space-y-3 mb-6 pr-2 min-h-[200px]">
-                    </div>
-
-                <div class="bg-slate-900 p-6 rounded-[2rem] shadow-xl text-white">
+            <div class="bg-white p-6 rounded-[2.5rem] shadow-2xl flex flex-col mt-6 lg:mt-0">
+                <div id="cart-items" class="flex-1 overflow-y-auto space-y-3 mb-6 min-h-[250px]"></div>
+                <div class="bg-slate-900 p-6 rounded-[2rem] text-white">
                     <div class="flex justify-between items-center mb-4">
-                        <span class="text-slate-400 font-bold text-xs uppercase">Total a Pagar</span>
+                        <span class="text-slate-400 font-bold text-xs">TOTAL</span>
                         <span id="cart-total" class="text-4xl font-black text-indigo-400">$0.00</span>
                     </div>
-                    <button onclick="completeSale()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-5 rounded-2xl font-black text-xl shadow-lg shadow-indigo-900/40 active:scale-95 transition-all flex items-center justify-center gap-3">
-                        <i data-lucide="check-circle" class="w-6 h-6"></i> FINALIZAR VENTA
-                    </button>
+                    <button onclick="completeSale()" class="w-full bg-indigo-600 py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">COBRAR</button>
                 </div>
             </div>
         </section>
 
-        <section id="view-inventory" class="hidden max-w-2xl mx-auto space-y-6 pb-24 animate-in slide-in-from-bottom duration-500">
+        <section id="view-inventory" class="hidden max-w-2xl mx-auto space-y-6 pb-24">
             <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-200">
-                <h2 class="text-2xl font-black mb-6 flex items-center gap-2"><i data-lucide="package-plus" class="text-indigo-600"></i> Nuevo Producto</h2>
-                <form id="product-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" id="p-name" placeholder="Nombre" class="md:col-span-2 p-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    <div class="md:col-span-2 flex gap-2">
-                        <input type="text" id="p-code" placeholder="Código de Barras" class="flex-1 p-4 bg-slate-50 rounded-2xl outline-none">
-                        <button type="button" onclick="startScannerReg()" class="bg-slate-800 text-white px-6 rounded-2xl active:scale-90 transition-transform"><i data-lucide="scan-barcode"></i></button>
+                <h2 class="text-xl font-black mb-6 uppercase tracking-tight">Nuevo Ingreso</h2>
+                <form id="product-form" class="space-y-4">
+                    <input type="text" id="p-name" placeholder="Nombre del Producto" class="w-full p-4 bg-slate-50 rounded-2xl outline-none" required>
+                    
+                    <div class="space-y-2">
+                        <div class="flex gap-2">
+                            <input type="text" id="p-code" placeholder="Código de Barras" class="flex-1 p-4 bg-slate-50 rounded-2xl outline-none">
+                            <button type="button" onclick="toggleStockScanner()" id="btn-stock-cam" class="bg-slate-800 text-white px-6 rounded-2xl active:scale-90 transition-all">
+                                <i data-lucide="camera"></i>
+                            </button>
+                        </div>
+                        <div id="reader-reg-container" class="hidden relative h-48 bg-black rounded-3xl overflow-hidden border-2 border-indigo-500">
+                            <div id="reader-reg" class="w-full h-full"></div>
+                            <div class="scanner-line"></div>
+                        </div>
                     </div>
-                    <div id="reader-reg" class="hidden md:col-span-2 rounded-3xl overflow-hidden h-48 bg-black mb-4"></div>
-                    
-                    <input type="number" id="p-price" placeholder="Precio $" step="0.1" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
-                    <select id="p-unit" class="p-4 bg-slate-50 rounded-2xl outline-none font-bold"><option value="pza">Pieza</option><option value="kg">Kilo</option></select>
-                    <input type="number" id="p-stock" placeholder="Stock" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
-                    <input type="number" id="p-min" placeholder="Aviso Mínimo" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
-                    
-                    <button type="submit" class="md:col-span-2 bg-slate-900 text-white py-5 rounded-2xl font-black text-lg shadow-lg">REGISTRAR EN ALMACÉN</button>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="number" id="p-price" placeholder="Precio $" step="0.1" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
+                        <select id="p-unit" class="p-4 bg-slate-50 rounded-2xl outline-none font-bold"><option value="pza">Pza</option><option value="kg">Kg</option></select>
+                        <input type="number" id="p-stock" placeholder="Cantidad" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
+                        <input type="number" id="p-min" placeholder="Stock Mín" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
+                    </div>
+                    <button type="submit" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black">GUARDAR EN STOCK</button>
                 </form>
             </div>
             <div id="inventory-list" class="space-y-3"></div>
         </section>
     </main>
 
-    <footer class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 p-4 flex justify-around lg:hidden z-[100]">
-        <button onclick="switchView('pos')" class="flex flex-col items-center gap-1 text-indigo-600">
-            <i data-lucide="layout-grid" class="w-6 h-6"></i><span class="text-[10px] font-black uppercase tracking-widest">Ventas</span>
-        </button>
-        <button onclick="switchView('inventory')" class="flex flex-col items-center gap-1 text-slate-400">
-            <i data-lucide="layers" class="w-6 h-6"></i><span class="text-[10px] font-black uppercase tracking-widest">Almacén</span>
-        </button>
+    <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md p-4 flex justify-around border-t lg:hidden z-50">
+        <button onclick="switchView('pos')" class="flex flex-col items-center text-indigo-600 font-bold"><i data-lucide="shopping-cart"></i><span class="text-[10px]">VENTA</span></button>
+        <button onclick="switchView('inventory')" class="flex flex-col items-center text-slate-400 font-bold"><i data-lucide="package"></i><span class="text-[10px]">STOCK</span></button>
     </footer>
 
     <script>
-        let inventory = JSON.parse(localStorage.getItem('pos_pro_v13')) || [];
+        let inventory = JSON.parse(localStorage.getItem('pos_v14_data')) || [];
         let cart = [];
-        let scannerLocked = false;
         let html5QrCode = null;
+        let isScannerLocked = false;
 
-        // --- Sistema de Audio ---
         const playBeep = () => {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const g = ctx.createGain();
-                osc.connect(g); g.connect(ctx.destination);
-                osc.frequency.value = 1000; g.gain.value = 0.1;
-                osc.start(); osc.stop(ctx.currentTime + 0.1);
-            } catch(e) {}
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.connect(g); g.connect(ctx.destination);
+            osc.frequency.value = 1200; g.gain.value = 0.05;
+            osc.start(); osc.stop(ctx.currentTime + 0.08);
         };
 
         lucide.createIcons();
 
-        // --- CONTROL DE CÁMARA ROBUSTO ---
-        async function stopCamera() {
+        // --- MOTOR DE CÁMARA ÚNICO ---
+        async function killScanner() {
             if (html5QrCode && html5QrCode.isScanning) {
                 await html5QrCode.stop();
                 html5QrCode.clear();
             }
             html5QrCode = null;
+            return new Promise(resolve => setTimeout(resolve, 300)); // Pausa técnica
         }
 
-        async function startScannerFlow() {
-            await stopCamera();
-            html5QrCode = new Html5Qrcode("reader-pos");
+        async function startScanner(elementId, callback) {
+            await killScanner();
+            html5QrCode = new Html5Qrcode(elementId);
+            const config = { fps: 20, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.5 }) };
             
-            // Configuración optimizada para códigos de barras largos
-            const config = { 
-                fps: 25, 
-                qrbox: (w, h) => { return { width: w * 0.8, height: h * 0.4 } }, // Área ancha para códigos de barras
-                aspectRatio: 1.0
-            };
-
             try {
-                await html5QrCode.start({ facingMode: "environment" }, config, (text) => {
-                    if (scannerLocked) return;
-                    const p = inventory.find(prod => prod.code === text);
-                    if (p) {
-                        handleLock();
-                        addToCart(p.id);
-                        playBeep();
-                    }
-                });
-                updateCamStatus(true);
+                await html5QrCode.start({ facingMode: "environment" }, config, callback);
+                document.getElementById('cam-indicator').innerText = "Cámara Activa";
             } catch (err) {
-                console.error(err);
-                updateCamStatus(false);
+                console.error("Error al iniciar cámara:", err);
             }
         }
 
-        async function restartCamera() {
-            const btn = event.currentTarget;
-            btn.classList.add('animate-spin');
-            await startScannerFlow();
-            setTimeout(() => btn.classList.remove('animate-spin'), 1000);
+        // --- FLUJO VENTAS ---
+        async function initPosScanner() {
+            await startScanner("reader-pos", (text) => {
+                if (isScannerLocked) return;
+                const p = inventory.find(prod => prod.code === text);
+                if (p) {
+                    lockUI();
+                    addToCart(p.id);
+                    playBeep();
+                }
+            });
         }
 
-        function handleLock() {
-            scannerLocked = true;
-            document.getElementById('scanner-box').style.borderColor = "#4f46e5";
+        function lockUI() {
+            isScannerLocked = true;
+            document.getElementById('cam-indicator').classList.replace('bg-slate-800', 'bg-indigo-600');
             setTimeout(() => {
-                scannerLocked = false;
-                document.getElementById('scanner-box').style.borderColor = "white";
+                isScannerLocked = false;
+                document.getElementById('cam-indicator').classList.replace('bg-indigo-600', 'bg-slate-800');
             }, 2000);
         }
 
-        function updateCamStatus(ok) {
-            const status = document.getElementById('cam-status');
-            status.innerHTML = ok ? 
-                `<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-[10px] font-bold text-slate-300">Cámara Activa</span>` :
-                `<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-[10px] font-bold text-slate-300">Cámara Error</span>`;
+        // --- FLUJO STOCK (CORREGIDO) ---
+        async function toggleStockScanner() {
+            const container = document.getElementById('reader-reg-container');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                await startScanner("reader-reg", (text) => {
+                    document.getElementById('p-code').value = text;
+                    playBeep();
+                    toggleStockScanner(); // Cerrar al detectar
+                });
+            } else {
+                await killScanner();
+                container.classList.add('hidden');
+            }
         }
 
-        // --- LÓGICA DE VENTA ---
+        // --- LOGICA DE CARRITO Y VISTAS ---
         function addToCart(id) {
             const product = inventory.find(p => p.id === id);
             if (!product) return;
-            const existing = cart.find(i => i.id === id);
-            
-            if (existing) {
-                if (existing.qty + 1 > product.stock) return alert("Stock agotado");
-                existing.qty++;
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                if (item.qty + 1 > product.stock) return alert("Sin stock");
+                item.qty++;
             } else {
-                if (product.stock < 1) return alert("Sin existencias");
+                if (product.stock < 1) return alert("Sin stock");
                 cart.push({ ...product, qty: 1 });
             }
             renderCart();
-        }
-
-        function updateQty(id, delta) {
-            const item = cart.find(i => i.id === id);
-            const p = inventory.find(prod => prod.id === id);
-            if (item) {
-                if (item.qty + delta > p.stock) return alert("Máximo stock");
-                item.qty += delta;
-                if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
-                renderCart();
-            }
         }
 
         function renderCart() {
             const container = document.getElementById('cart-items');
             let total = 0;
             container.innerHTML = cart.map(item => {
-                const sub = item.price * item.qty;
-                total += sub;
+                total += (item.price * item.qty);
                 return `
-                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-3xl flex items-center justify-between animate-in slide-in-from-right duration-300">
-                        <div class="flex-1">
-                            <p class="font-black text-xs text-slate-800 uppercase leading-tight">${item.name}</p>
-                            <p class="text-[10px] font-bold text-indigo-600 mt-1">$${item.price.toFixed(2)} c/u</p>
-                        </div>
+                    <div class="flex justify-between items-center p-4 bg-slate-50 rounded-3xl border border-slate-100">
+                        <div class="flex-1 text-xs font-black uppercase">${item.name}</div>
                         <div class="flex items-center gap-3">
-                            <div class="flex items-center bg-white rounded-2xl p-1 shadow-sm border border-slate-100">
-                                <button onclick="updateQty(${item.id}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500">-</button>
-                                <span class="px-3 font-black text-sm">${item.qty}</span>
-                                <button onclick="updateQty(${item.id}, 1)" class="w-8 h-8 flex items-center justify-center text-indigo-600 font-bold">+</button>
+                            <div class="flex items-center bg-white rounded-xl p-1 shadow-sm">
+                                <button onclick="changeQty(${item.id},-1)" class="w-7 h-7 flex items-center justify-center font-bold text-slate-400">-</button>
+                                <span class="px-2 font-black text-xs">${item.qty}</span>
+                                <button onclick="changeQty(${item.id},1)" class="w-7 h-7 flex items-center justify-center font-bold text-indigo-600">+</button>
                             </div>
-                            <span class="w-20 text-right font-black text-slate-900">$${sub.toFixed(2)}</span>
+                            <span class="w-16 text-right font-black text-indigo-700">$${(item.price * item.qty).toFixed(2)}</span>
                         </div>
                     </div>
                 `;
             }).join('');
             document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            const p = inventory.find(prod => prod.id === id);
+            if (item) {
+                if (item.qty + delta > p.stock) return alert("Máximo alcanzado");
+                item.qty += delta;
+                if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+                renderCart();
+            }
+        }
+
+        async function switchView(view) {
+            document.getElementById('view-pos').classList.toggle('hidden', view !== 'pos');
+            document.getElementById('view-inventory').classList.toggle('hidden', view !== 'inventory');
+            
+            await killScanner(); // Apagar todo al cambiar de pestaña
+            
+            if (view === 'pos') {
+                initPosScanner();
+                renderCatalog();
+            } else {
+                document.getElementById('reader-reg-container').classList.add('hidden');
+                renderInventory();
+            }
             lucide.createIcons();
         }
 
         function completeSale() {
             if (cart.length === 0) return;
-            cart.forEach(item => {
-                const p = inventory.find(inv => inv.id === item.id);
-                if (p) p.stock -= item.qty;
-            });
-            localStorage.setItem('pos_pro_v13', JSON.stringify(inventory));
-            cart = []; renderCart();
-            alert("Venta procesada con éxito.");
-        }
-
-        function clearCart() { if(confirm("¿Vaciar carrito?")) { cart = []; renderCart(); } }
-
-        // --- GESTIÓN DE VISTAS ---
-        async function switchView(view) {
-            document.getElementById('view-pos').classList.toggle('hidden', view !== 'pos');
-            document.getElementById('view-inventory').classList.toggle('hidden', view !== 'inventory');
-            await stopCamera();
-            if (view === 'pos') { startScannerFlow(); renderCatalog(); } else { renderInventory(); }
-            lucide.createIcons();
-        }
-
-        // --- INVENTARIO ---
-        async function startScannerReg() {
-            await stopCamera();
-            document.getElementById('reader-reg').classList.remove('hidden');
-            html5QrCode = new Html5Qrcode("reader-reg");
-            try {
-                await html5QrCode.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
-                    document.getElementById('p-code').value = text;
-                    playBeep();
-                    stopCamera();
-                    document.getElementById('reader-reg').classList.add('hidden');
-                });
-            } catch (err) { alert("Permiso denegado."); }
+            cart.forEach(item => { const p = inventory.find(inv => inv.id === item.id); if (p) p.stock -= item.qty; });
+            localStorage.setItem('pos_v14_data', JSON.stringify(inventory));
+            cart = []; renderCart(); alert("✅ Venta Completada");
         }
 
         document.getElementById('product-form').onsubmit = (e) => {
@@ -323,44 +260,36 @@
                 name: document.getElementById('p-name').value,
                 code: document.getElementById('p-code').value,
                 price: parseFloat(document.getElementById('p-price').value),
-                unit: document.getElementById('p-unit').value,
                 stock: parseFloat(document.getElementById('p-stock').value),
                 min: parseFloat(document.getElementById('p-min').value)
             });
-            localStorage.setItem('pos_pro_v13', JSON.stringify(inventory));
-            e.target.reset(); renderInventory(); alert("Producto Guardado");
+            localStorage.setItem('pos_v14_data', JSON.stringify(inventory));
+            e.target.reset(); renderInventory(); alert("Guardado");
         };
 
         function renderCatalog(f = "") {
-            document.getElementById('product-catalog').innerHTML = inventory
-                .filter(p => p.name.toLowerCase().includes(f.toLowerCase()))
-                .map(p => `
-                    <button onclick="addToCart(${p.id})" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm active:scale-95 transition-all text-center group">
-                        <p class="text-[9px] font-black text-slate-400 truncate uppercase group-hover:text-indigo-600">${p.name}</p>
-                        <p class="text-xs font-black text-slate-900 mt-1">$${p.price.toFixed(2)}</p>
-                    </button>
-                `).join('');
+            document.getElementById('product-catalog').innerHTML = inventory.filter(p => p.name.toLowerCase().includes(f.toLowerCase())).map(p => `
+                <button onclick="addToCart(${p.id})" class="p-2 bg-white border border-slate-100 rounded-2xl shadow-sm text-center active:scale-95 transition-all">
+                    <p class="text-[8px] font-black truncate text-slate-400 uppercase">${p.name}</p>
+                    <p class="text-xs font-black text-indigo-600 mt-1">$${p.price.toFixed(2)}</p>
+                </button>
+            `).join('');
         }
 
         function renderInventory() {
             document.getElementById('inventory-list').innerHTML = inventory.map((p, i) => `
-                <div class="bg-white p-5 rounded-[2rem] flex justify-between items-center shadow-sm border border-slate-100">
-                    <div class="flex items-center gap-4">
-                        <div class="bg-indigo-50 p-3 rounded-2xl text-indigo-600"><i data-lucide="box"></i></div>
-                        <div>
-                            <p class="font-black text-slate-800 text-sm uppercase">${p.name}</p>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase">Stock: ${p.stock} | Mín: ${p.min}</p>
-                        </div>
-                    </div>
-                    <button onclick="deleteProduct(${i})" class="bg-red-50 p-3 rounded-xl text-red-400 hover:bg-red-500 hover:text-white transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                <div class="bg-white p-4 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-slate-50">
+                    <div><p class="font-black text-xs uppercase">${p.name}</p><p class="text-[10px] text-slate-400 font-bold">Stock: ${p.stock} | Cód: ${p.code || 'N/A'}</p></div>
+                    <button onclick="deleteProd(${i})" class="text-red-200 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `).join('');
             lucide.createIcons();
         }
 
-        function deleteProduct(i) { if(confirm("¿Eliminar producto?")) { inventory.splice(i, 1); localStorage.setItem('pos_pro_v13', JSON.stringify(inventory)); renderInventory(); } }
+        function deleteProd(i) { if(confirm("¿Eliminar?")) { inventory.splice(i,1); localStorage.setItem('pos_v14_data', JSON.stringify(inventory)); renderInventory(); } }
 
-        // Inicio
+        function forceRestart(type) { if(type === 'pos') initPosScanner(); }
+
         switchView('pos');
     </script>
 </body>
