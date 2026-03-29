@@ -20,7 +20,6 @@
         .grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
         [v-cloak] { display: none; }
         .loading-overlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="bg-gray-50 antialiased text-gray-800">
@@ -29,7 +28,7 @@
         <div v-if="cargando" class="loading-overlay">
             <div class="text-center">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent mb-2"></div>
-                <p>Sincronizando con la nube...</p>
+                <p>Sincronizando datos...</p>
             </div>
         </div>
 
@@ -45,33 +44,27 @@
             <section v-if="vista === 'ventas'">
                 <div class="bg-white p-6 rounded-2xl shadow-xl mb-8 border-t-4 border-indigo-500">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold"><i class="bi bi-cart4 text-indigo-600"></i> Cesta Actual</h2>
-                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">{{ carrito.length }} ítems</span>
+                        <h2 class="text-xl font-bold">Cesta Actual</h2>
                     </div>
                     
-                    <div v-if="carrito.length === 0" class="text-gray-400 py-6 text-center border-2 border-dashed rounded-xl italic">Selecciona productos para vender</div>
+                    <div v-if="carrito.length === 0" class="text-gray-400 py-6 text-center border-2 border-dashed rounded-xl italic">Selecciona productos</div>
 
                     <div class="flex flex-col gap-2 mb-6">
-                        <div v-for="(item, index) in carrito" :key="item.idCarrito" class="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm text-sm">
+                        <div v-for="(item, index) in carrito" :key="item.id" class="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm">
                             <div class="flex flex-col">
-                                <span class="font-bold text-indigo-900">{{ item.nombre }}</span>
-                                <span class="text-[10px] uppercase font-bold text-gray-400">Precio base: ${{ item.precioVenta }}</span>
+                                <span class="font-bold text-indigo-900">{{ item.nombre }} <span class="text-indigo-500">x{{ item.cantidad }}</span></span>
+                                <span class="text-[10px] uppercase font-bold text-gray-400">Unit: ${{ item.precioVenta }}</span>
                             </div>
                             <div class="flex items-center gap-3">
-                                <div class="flex flex-col items-end">
-                                    <label class="text-[9px] font-black text-red-400 uppercase">Desc.</label>
-                                    <input type="number" v-model.number="item.descuento" class="w-16 bg-white border border-red-200 rounded text-right px-1 font-bold text-red-500 outline-none" placeholder="0">
-                                </div>
-                                <div class="text-right min-w-[60px]">
-                                    <span class="text-indigo-600 font-black text-lg">${{ item.precioVenta - (item.descuento || 0) }}</span>
-                                </div>
-                                <button @click="quitarDelCarrito(index)" class="text-red-500 hover:scale-110 transition"><i class="bi bi-trash3-fill"></i></button>
+                                <input type="number" v-model.number="item.descuento" class="w-16 bg-white border border-red-100 rounded text-right px-1 font-bold text-red-500" placeholder="0">
+                                <span class="text-indigo-600 font-black">${{ (item.precioVenta * item.cantidad) - (item.descuento || 0) }}</span>
+                                <button @click="quitarDelCarrito(index)" class="text-red-500"><i class="bi bi-trash3-fill"></i></button>
                             </div>
                         </div>
                     </div>
 
                     <div class="flex flex-col md:flex-row justify-between items-center border-t pt-4 gap-4">
-                        <span class="text-3xl font-black text-gray-900">Total: ${{ totalVenta }}</span>
+                        <span class="text-3xl font-black">Total: ${{ totalVenta }}</span>
                         <div class="flex gap-2 w-full md:w-auto font-bold">
                             <button @click="finalizarVentaInmediata" :disabled="carrito.length === 0" class="flex-1 bg-green-500 text-white px-6 py-3 rounded-xl hover:bg-green-600 disabled:opacity-50 transition">Vender Ya</button>
                             <button @click="mostrarModalAgenda = true" :disabled="carrito.length === 0" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition">Agendar</button>
@@ -89,15 +82,11 @@
                          @click="agregarAlCarrito(prod)" 
                          :class="{'opacity-50 grayscale cursor-not-allowed': obtenerStockReal(prod) <= 0}"
                          class="bg-white p-4 rounded-2xl shadow hover:shadow-xl transition-all cursor-pointer border border-transparent hover:border-indigo-200 relative">
-                        
                         <div v-if="prod.esPaquete" class="absolute top-2 right-2 bg-purple-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">PACK</div>
-                        
                         <div class="text-center">
-                            <i v-if="prod.esPaquete" class="bi bi-boxes text-3xl text-purple-500 mb-2 block"></i>
-                            <i v-else class="bi bi-tag text-3xl text-indigo-400 mb-2 block"></i>
                             <h3 class="font-bold text-sm h-10 overflow-hidden leading-tight mb-1">{{ prod.nombre }}</h3>
                             <p class="text-indigo-600 font-black text-xl">${{ prod.precioVenta }}</p>
-                            <span :class="obtenerStockReal(prod) > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] px-2 py-0.5 rounded font-bold uppercase">
+                            <span :class="obtenerStockReal(prod) > 3 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" class="text-[10px] px-2 py-0.5 rounded font-bold uppercase">
                                 Stock: {{ obtenerStockReal(prod) }}
                             </span>
                         </div>
@@ -106,27 +95,22 @@
             </section>
 
             <section v-if="vista === 'agendados'">
-                <h2 class="text-2xl font-black mb-6 text-indigo-800">📦 Pedidos por Entregar</h2>
-                <div v-if="ventasDia.filter(x => x.tipo === 'agendado' && !x.completado).length === 0" class="text-center py-20 text-gray-400 italic">No hay pedidos pendientes de entrega</div>
+                <h2 class="text-2xl font-black italic mb-6">Pedidos Agendados</h2>
+                <div v-if="ventasDia.filter(v => v.tipo === 'agendado' && !v.completado).length === 0" class="text-center py-12 text-gray-400">No hay pedidos pendientes.</div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div v-for="v in ventasDia.filter(x => x.tipo === 'agendado' && !x.completado)" :key="v.id" class="bg-white p-5 rounded-2xl shadow border-l-8 border-blue-500">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <h3 class="font-black text-lg uppercase text-blue-700">{{ v.cliente }}</h3>
-                                <p class="text-xs text-gray-600 font-bold mt-1"><i class="bi bi-calendar-event"></i> {{ formatearFecha(v.fechaEntrega) }}</p>
-                                <p class="text-xs text-gray-500"><i class="bi bi-geo-alt"></i> {{ v.lugar }}</p>
-                            </div>
-                            <button @click="eliminarPedidoAgendado(v.id)" class="text-red-400 hover:text-red-600 p-2 transition">
-                                <i class="bi bi-trash3-fill text-xl"></i>
-                            </button>
+                    <div v-for="v in ventasDia.filter(v => v.tipo === 'agendado' && !v.completado)" :key="v.id" class="bg-white p-6 rounded-2xl shadow-md border-l-8 border-blue-500">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-lg text-blue-900">{{ v.cliente }}</h3>
+                            <span class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-bold">{{ v.fechaEntrega }}</span>
                         </div>
-                        <div class="text-xs bg-gray-50 p-3 rounded-lg mb-4">
-                            <div v-for="p in v.productos" class="flex justify-between border-b last:border-0 py-1">
-                                <span>{{ p.nombre }}</span>
-                                <span class="font-bold">${{ p.precioVenta - (p.descuento || 0) }}</span>
+                        <p class="text-sm text-gray-500 mb-4"><i class="bi bi-geo-alt"></i> {{ v.lugar }}</p>
+                        <div class="text-xs text-gray-600 mb-4">
+                            <div v-for="p in v.productos" class="flex justify-between border-b py-1">
+                                <span>{{ p.nombre }} x{{ p.cantidad }}</span>
+                                <span>${{ (p.precioVenta * p.cantidad) - (p.descuento || 0) }}</span>
                             </div>
                         </div>
-                        <button @click="v.completado = true; persistir()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Completar Entrega</button>
+                        <button @click="completarPedido(v.id)" class="w-full bg-green-500 text-white py-2 rounded-lg font-bold text-xs hover:bg-green-600">Entregado</button>
                     </div>
                 </div>
             </section>
@@ -135,72 +119,87 @@
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black italic">Inventario</h2>
                     <div class="flex gap-2">
-                        <button @click="generarVentanaStock" class="bg-indigo-500 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-indigo-600 transition">
-                            <i class="bi bi-list-check mr-1"></i> Ver Existencias
-                        </button>
-                        <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-5 py-2 rounded-xl font-bold text-sm shadow-lg hover:bg-purple-700 transition">
-                            <i class="bi bi-plus-circle mr-1"></i> Armar Paquete
-                        </button>
+                        <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow hover:bg-purple-700">Crear Paquete</button>
+                        <button @click="generarVentanaStock" class="bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">Ver Nombres</button>
                     </div>
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-md mb-8 border-t-4 border-indigo-400">
-                    <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-4">{{ editandoId ? 'Modificar Producto' : 'Nuevo Producto' }}</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div class="flex flex-col">
-                            <label class="text-[10px] font-bold ml-2 text-gray-500 uppercase">Nombre</label>
-                            <input type="text" v-model="nuevoProd.nombre" class="border p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-4">Registrar Producto Individual</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre</label>
+                                <input type="text" v-model="nuevoProd.nombre" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Costo Unitario</label>
+                                <input type="number" v-model.number="nuevoProd.costo" class="w-full border p-3 rounded-xl outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Stock inicial</label>
+                                <input type="number" v-model.number="nuevoProd.piezas" class="w-full border p-3 rounded-xl outline-none">
+                            </div>
                         </div>
-                        <div class="flex flex-col">
-                            <label class="text-[10px] font-bold ml-2 text-gray-500 uppercase">Costo Unitario ($)</label>
-                            <input type="number" v-model="nuevoProd.costo" class="border p-3 rounded-xl outline-none">
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="text-[10px] font-bold ml-2 text-gray-500 uppercase">Cantidad Inicial</label>
-                            <input type="number" v-model="nuevoProd.piezas" class="border p-3 rounded-xl outline-none">
+
+                        <div class="bg-gray-50 p-4 rounded-2xl border-2 border-dashed border-gray-200">
+                            <h4 class="text-[10px] font-black text-indigo-500 uppercase mb-3">Calculadora de Precios</h4>
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <div class="bg-white p-2 rounded-lg border">
+                                    <p class="text-[9px] text-gray-400">Ganar 50%</p>
+                                    <p class="font-bold text-indigo-600">${{ (nuevoProd.costo * 1.5).toFixed(2) }}</p>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border">
+                                    <p class="text-[9px] text-gray-400">Ganar 70%</p>
+                                    <p class="font-bold text-indigo-600">${{ (nuevoProd.costo * 1.7).toFixed(2) }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-red-500 uppercase ml-1">Precio de Venta</label>
+                                <input type="number" v-model.number="nuevoProd.precioVenta" class="w-full border-2 border-indigo-200 p-3 rounded-xl outline-none font-black text-lg bg-white" placeholder="0">
+                            </div>
                         </div>
                     </div>
                     
-                    <div v-if="nuevoProd.costo > 0" class="bg-indigo-50 p-4 rounded-xl flex flex-wrap gap-6 items-center">
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Sug. 50%</p><p class="font-black text-indigo-600">${{ (nuevoProd.costo * 1.5).toFixed(2) }}</p></div>
-                        <div><p class="text-[10px] font-bold text-gray-400 uppercase">Sug. 70%</p><p class="font-black text-indigo-600">${{ (nuevoProd.costo * 1.7).toFixed(2) }}</p></div>
-                        <div class="flex-1">
-                            <label class="text-[10px] font-bold text-indigo-500 uppercase">Precio de Venta Final:</label>
-                            <input type="number" v-model="nuevoProd.precioVenta" class="w-full border-2 border-indigo-300 p-2 rounded-lg font-black text-lg">
-                        </div>
+                    <div class="flex gap-2 mt-6">
+                        <button @click="guardarProducto" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg">GUARDAR</button>
+                        <button v-if="editandoId" @click="cancelarEdicion" class="px-6 bg-gray-200 text-gray-500 py-3 rounded-xl font-bold">CANCELAR</button>
                     </div>
-                    
-                    <div class="mt-6 flex gap-2 font-bold">
-                        <button @click="guardarProducto" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl shadow-lg hover:bg-indigo-700 transition">{{ editandoId ? 'Actualizar Producto' : 'Registrar en Inventario' }}</button>
-                        <button v-if="editandoId" @click="cancelarEdicion" class="px-6 bg-gray-200 text-gray-600 py-3 rounded-xl hover:bg-gray-300 transition text-sm">Cancelar</button>
-                    </div>
+                </div>
+
+                <div class="mb-4 relative">
+                    <input type="text" v-model="busquedaStock" placeholder="Buscar en inventario..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200">
+                    <i class="bi bi-search absolute left-3 top-2.5 text-gray-400"></i>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-md overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 border-b">
-                            <tr class="text-gray-400 text-[10px] uppercase font-bold tracking-wider">
+                            <tr class="text-gray-400 text-[10px] uppercase font-bold">
                                 <th class="p-4 text-left">Producto</th>
                                 <th class="p-4 text-center">Tipo</th>
                                 <th class="p-4 text-center">Stock</th>
-                                <th class="p-4 text-center">Venta</th>
+                                <th class="p-4 text-center">Precio</th>
                                 <th class="p-4 text-right">Acción</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="p in productosOrdenados" :key="p.id" class="hover:bg-gray-50 transition">
-                                <td class="p-4 font-bold">{{ p.nombre }}</td>
+                            <tr v-for="p in productosStockFiltrados" :key="p.id" class="hover:bg-gray-50 transition" :class="{'bg-red-50': obtenerStockReal(p) <= 3}">
+                                <td class="p-4 font-bold">
+                                    {{ p.nombre }}
+                                    <span v-if="obtenerStockReal(p) <= 3" class="block text-[9px] text-red-500 font-black animate-pulse">STOCK BAJO</span>
+                                </td>
                                 <td class="p-4 text-center">
                                     <span v-if="p.esPaquete" class="text-[9px] bg-purple-100 text-purple-600 px-2 py-0.5 rounded font-black">PAQUETE</span>
-                                    <span v-else class="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-black">INDIVIDUAL</span>
+                                    <span v-else class="text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-black">UNITARIO</span>
                                 </td>
-                                <td class="p-4 text-center font-black">
-                                    <span :class="p.esPaquete ? 'text-purple-600' : ''">{{ obtenerStockReal(p) }}</span>
-                                </td>
+                                <td class="p-4 text-center font-black">{{ obtenerStockReal(p) }}</td>
                                 <td class="p-4 text-center font-black text-green-600">${{ p.precioVenta }}</td>
-                                <td class="p-4 text-right">
-                                    <button v-if="!p.esPaquete" @click="editarProducto(p)" class="text-blue-500 mx-2 hover:scale-110 transition"><i class="bi bi-pencil-square"></i></button>
-                                    <button @click="eliminarProducto(p.id)" class="text-red-400 hover:text-red-600 transition"><i class="bi bi-trash-fill"></i></button>
+                                <td class="p-4 text-right flex justify-end gap-2">
+                                    <button v-if="!p.esPaquete" @click="resurtirProducto(p)" class="text-green-500"><i class="bi bi-plus-square-fill text-lg"></i></button>
+                                    <button v-if="!p.esPaquete" @click="editarProducto(p)" class="text-blue-500"><i class="bi bi-pencil-square text-lg"></i></button>
+                                    <button @click="eliminarProducto(p.id)" class="text-red-400"><i class="bi bi-trash-fill text-lg"></i></button>
                                 </td>
                             </tr>
                         </tbody>
@@ -211,63 +210,49 @@
             <section v-if="vista === 'reportes'">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-red-500">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Inversión Individual</h4>
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Inversión Total</h4>
                         <p class="text-2xl font-black text-red-600">${{ inversionTotalActual }}</p>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-indigo-500 text-center">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Ventas 7 Días</h4>
-                        <p class="text-2xl font-black text-gray-900">${{ totalSemanal }}</p>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-orange-400">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Productos Diferentes</h4>
+                        <p class="text-2xl font-black text-orange-600">{{ productos.length }} ítems</p>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-blue-400 text-center">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Pedidos Pendientes</h4>
-                        <p class="text-2xl font-black text-blue-600">{{ ventasDia.filter(v => v.tipo === 'agendado' && !v.completado).length }}</p>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-indigo-500">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Ventas 7 Días</h4>
+                        <p class="text-2xl font-black text-indigo-600">${{ totalSemanal }}</p>
                     </div>
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-md mb-8">
-                    <h3 class="font-bold text-gray-500 text-sm mb-4 uppercase tracking-wider">Flujo de Ventas (Semana)</h3>
                     <canvas id="graficaVentas" height="120"></canvas>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-md overflow-hidden">
-                    <div class="flex justify-between items-center p-5 border-b">
-                        <h3 class="font-bold text-gray-800">Detalle de Transacciones</h3>
-                        <button 
-                            v-if="ventasDia.length > 10"
-                            @click="mostrarTodasVentas = !mostrarTodasVentas" 
-                            class="text-[10px] uppercase tracking-wider font-black px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all duration-300"
-                        >
-                            {{ mostrarTodasVentas ? 'Ver menos' : 'Ver todas (' + ventasDia.length + ')' }}
-                        </button>
+                    <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+                        <h3 class="font-bold text-gray-700">Últimas 10 Transacciones</h3>
+                        <span class="text-[10px] text-gray-400 italic">Limpieza automática activa</span>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-xs text-left">
-                            <thead class="bg-gray-50 text-gray-400 font-bold uppercase">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
                                 <tr>
-                                    <th class="p-4">Fecha</th>
-                                    <th class="p-4">Cliente</th>
-                                    <th class="p-4">Artículos</th>
-                                    <th class="p-4 text-right">Total</th>
-                                    <th class="p-4 text-center">Acción</th>
+                                    <th class="p-3 text-left">Fecha</th>
+                                    <th class="p-3 text-left">Cliente</th>
+                                    <th class="p-3 text-left">Artículos</th>
+                                    <th class="p-3 text-center">Total</th>
+                                    <th class="p-3 text-right">Acción</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 italic">
-                                <tr v-for="v in ventasMostradas" :key="v.id" :class="{'bg-red-50 opacity-70': v.devuelta}">
-                                    <td class="p-4 whitespace-nowrap">{{ formatearFecha(v.fechaReal) }}</td>
-                                    <td class="p-4 uppercase font-bold text-indigo-600">
-                                        {{ v.cliente }} 
-                                        <span v-if="v.devuelta" class="block text-[8px] text-red-600 font-black">DEVUELTO</span>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr v-for="v in ventasDia.slice().reverse()" :key="v.id" :class="{'bg-red-50 opacity-60': v.devuelta}">
+                                    <td class="p-3 text-[10px]">{{ fFecha(v.fechaReal) }}</td>
+                                    <td class="p-3 font-bold text-indigo-700">{{ v.cliente }}</td>
+                                    <td class="p-3 italic text-[11px] text-gray-600">
+                                        <div v-for="p in v.productos">• {{ p.nombre }} (x{{ p.cantidad }})</div>
                                     </td>
-                                    <td class="p-4">
-                                        <div v-for="p in v.productos" :key="p.idCarrito" class="font-semibold text-gray-600 tracking-tight">• {{ p.nombre }}</div>
-                                    </td>
-                                    <td class="p-4 text-right font-black text-sm" :class="v.devuelta ? 'text-gray-400 line-through' : 'text-gray-900'">
-                                        ${{ v.total }}
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <button v-if="!v.devuelta" @click="procesarDevolucion(v)" class="bg-red-100 text-red-600 px-3 py-1 rounded-full font-black text-[9px] hover:bg-red-600 hover:text-white transition">
-                                            DEVOLUCIÓN
-                                        </button>
+                                    <td class="p-3 text-center font-black">${{ v.total }}</td>
+                                    <td class="p-3 text-right">
+                                        <button v-if="!v.devuelta" @click="devolverVenta(v.id)" class="text-red-400"><i class="bi bi-arrow-counterclockwise"></i></button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -279,56 +264,38 @@
 
         <div v-if="mostrarModalAgenda" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
             <div class="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl">
-                <h2 class="text-xl font-bold mb-6 text-indigo-700 underline decoration-indigo-200">Datos para Agendar</h2>
-                <div class="space-y-4 text-sm font-semibold">
-                    <div>
-                        <label class="text-xs text-gray-400 uppercase">Nombre del Cliente</label>
-                        <input type="text" v-model="agenda.cliente" class="w-full border p-3 rounded-xl mt-1 focus:border-indigo-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-400 uppercase">Fecha/Hora Entrega</label>
-                        <input type="datetime-local" v-model="agenda.fecha" class="w-full border p-3 rounded-xl mt-1 focus:border-indigo-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-400 uppercase">Lugar de Entrega</label>
-                        <input type="text" v-model="agenda.lugar" class="w-full border p-3 rounded-xl mt-1 focus:border-indigo-500 outline-none">
-                    </div>
+                <h2 class="text-xl font-bold mb-6 text-indigo-700">Agendar Pedido</h2>
+                <div class="space-y-4">
+                    <input type="text" v-model="agenda.cliente" placeholder="Nombre del Cliente" class="w-full border p-3 rounded-xl outline-none">
+                    <input type="datetime-local" v-model="agenda.fecha" class="w-full border p-3 rounded-xl outline-none">
+                    <input type="text" v-model="agenda.lugar" placeholder="Lugar de Entrega" class="w-full border p-3 rounded-xl outline-none">
                 </div>
                 <div class="flex gap-2 mt-8 font-black">
-                    <button @click="finalizarVentaAgendada" class="flex-[2] bg-indigo-600 text-white py-4 rounded-xl shadow-lg hover:bg-indigo-700 transition">CONFIRMAR AGENDA</button>
-                    <button @click="mostrarModalAgenda = false" class="flex-1 bg-gray-100 py-4 rounded-xl text-gray-400">CERRAR</button>
+                    <button @click="finalizarVentaAgendada" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl shadow-lg">CONFIRMAR</button>
+                    <button @click="mostrarModalAgenda = false" class="bg-gray-100 px-6 py-4 rounded-xl text-gray-400">CERRAR</button>
                 </div>
             </div>
         </div>
 
         <div v-if="mostrarModalPaquete" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
             <div class="bg-white p-8 rounded-3xl w-full max-w-2xl shadow-2xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-black text-purple-700">Diseñador de Paquetes</h2>
-                    <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Paso 1: Elige componentes</span>
-                </div>
+                <h2 class="text-xl font-black text-purple-700 mb-6 italic">Nuevo Paquete</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Nombre del Pack</label>
-                        <input type="text" v-model="paqueteNuevo.nombre" placeholder="Ej: Kit Regalo 1" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-purple-400">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Precio de Venta Pack</label>
-                        <input type="number" v-model="paqueteNuevo.precioVenta" placeholder="0.00" class="w-full border-2 border-purple-200 bg-purple-50 p-3 rounded-xl outline-none font-bold text-purple-700">
-                    </div>
+                    <input type="text" v-model="paqueteNuevo.nombre" placeholder="Nombre del Pack" class="border p-3 rounded-xl outline-none">
+                    <input type="number" v-model.number="paqueteNuevo.precioVenta" placeholder="Precio Final Pack" class="border-2 border-purple-200 p-3 rounded-xl font-bold outline-none">
                 </div>
-                <p class="text-[10px] font-black text-gray-400 uppercase mb-2">Selecciona los productos que incluye:</p>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8 max-h-48 overflow-y-auto p-2 border rounded-2xl bg-gray-50">
+                <label class="text-[10px] font-bold text-gray-400 uppercase">Selecciona los productos incluidos:</label>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto p-2 border rounded-xl bg-gray-50">
                     <div v-for="p in productos.filter(x => !x.esPaquete)" 
                          @click="toggleProdEnPaquete(p.id)" 
-                         :class="paqueteSeleccionadosIds.includes(p.id) ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-500 border-gray-100'"
-                         class="border p-3 rounded-xl text-[11px] font-bold cursor-pointer text-center transition shadow-sm truncate">
+                         :class="paqueteSeleccionadosIds.includes(p.id) ? 'bg-purple-600 text-white' : 'bg-white text-gray-500'"
+                         class="border p-2 rounded-lg text-[11px] font-bold cursor-pointer text-center truncate transition-colors">
                         {{ p.nombre }}
                     </div>
                 </div>
-                <div class="flex gap-3">
-                    <button @click="guardarPaquete" :disabled="!paqueteNuevo.nombre || paqueteSeleccionadosIds.length === 0" class="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold shadow-lg disabled:opacity-30 hover:bg-purple-700 transition">CREAR PAQUETE DINÁMICO</button>
-                    <button @click="mostrarModalPaquete = false; paqueteSeleccionadosIds = []" class="px-8 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold">CANCELAR</button>
+                <div class="flex gap-3 mt-8">
+                    <button @click="guardarPaquete" class="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold shadow-lg">CREAR PACK</button>
+                    <button @click="mostrarModalPaquete = false" class="px-8 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold">CERRAR</button>
                 </div>
             </div>
         </div>
@@ -337,7 +304,6 @@
 
     <script type="module">
         const FIREBASE_URL = "https://capricho-8db02-default-rtdb.firebaseio.com/"; 
-
         const { createApp } = Vue;
 
         createApp({
@@ -345,44 +311,40 @@
                 return {
                     vista: 'ventas',
                     busqueda: '',
+                    busquedaStock: '',
                     productos: [], 
                     carrito: [],
                     ventasDia: [],
-                    mostrarTodasVentas: false,
-                    nuevoProd: { nombre: '', costo: 0, piezas: 0, precioVenta: 0 },
+                    nuevoProd: { nombre: '', costo: null, piezas: null, precioVenta: null },
                     editandoId: null,
                     agenda: { cliente: '', fecha: '', lugar: '' },
                     mostrarModalAgenda: false,
                     mostrarModalPaquete: false,
                     paqueteNuevo: { nombre: '', precioVenta: null },
                     paqueteSeleccionadosIds: [],
-                    chartInstance: null,
-                    cargando: true
+                    cargando: true,
+                    chartInstance: null
                 }
+            },
+            watch: {
+                vista(nueva) { if (nueva === 'reportes') this.$nextTick(() => this.initChart()); }
             },
             mounted() {
                 this.cargarDatos();
             },
-            watch: {
-                vista(nueva) { 
-                    if (nueva === 'reportes') this.$nextTick(() => this.generarGrafica()); 
-                }
-            },
             computed: {
-                ventasMostradas() {
-                    if (this.mostrarTodasVentas) {
-                        return [...this.ventasDia].reverse();
-                    }
-                    return this.ventasDia.slice(-10).reverse();
-                },
                 productosOrdenados() {
                     return [...this.productos].sort((a, b) => a.nombre.localeCompare(b.nombre));
                 },
                 productosFiltrados() {
-                    return this.productos.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase()))
-                                         .sort((a, b) => a.nombre.localeCompare(b.nombre));
+                    return this.productosOrdenados.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase()));
                 },
-                totalVenta() { return this.carrito.reduce((acc, item) => acc + (parseFloat(item.precioVenta) - (item.descuento || 0)), 0); },
+                productosStockFiltrados() {
+                    return this.productosOrdenados.filter(p => p.nombre.toLowerCase().includes(this.busquedaStock.toLowerCase()));
+                },
+                totalVenta() { 
+                    return this.carrito.reduce((acc, item) => acc + ((parseFloat(item.precioVenta) * item.cantidad) - (item.descuento || 0)), 0); 
+                },
                 inversionTotalActual() { 
                     return this.productos.filter(p => !p.esPaquete).reduce((acc, p) => acc + ( (p.costo || 0) * (p.piezas || 0) ), 0); 
                 },
@@ -393,13 +355,14 @@
             },
             methods: {
                 async persistir() {
+                    // Limitar a las últimas 10 ventas antes de guardar
+                    if (this.ventasDia.length > 10) {
+                        this.ventasDia = this.ventasDia.slice(-10);
+                    }
                     try {
                         const data = { productos: JSON.parse(JSON.stringify(this.productos)), ventas: JSON.parse(JSON.stringify(this.ventasDia)) };
-                        await fetch(`${FIREBASE_URL}data.json`, {
-                            method: 'PUT',
-                            body: JSON.stringify(data)
-                        });
-                    } catch (e) { console.error("Error sincronizando:", e); }
+                        await fetch(`${FIREBASE_URL}data.json`, { method: 'PUT', body: JSON.stringify(data) });
+                    } catch (e) { console.error(e); }
                 },
 
                 async cargarDatos() {
@@ -410,15 +373,10 @@
                             this.productos = data.productos || [];
                             this.ventasDia = data.ventas || [];
                         }
-                    } catch (e) { console.error("Error al cargar:", e); }
+                    } catch (e) { console.error(e); }
                     finally { this.cargando = false; }
                 },
 
-                formatearFecha(f) { 
-                    if(!f) return '-';
-                    return new Date(f).toLocaleString('es-MX', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}); 
-                },
-                
                 obtenerStockReal(prod) {
                     if (!prod.esPaquete) return prod.piezas;
                     if (!prod.componentesIds || prod.componentesIds.length === 0) return 0;
@@ -430,8 +388,13 @@
                 },
 
                 agregarAlCarrito(prod) {
-                    if (this.obtenerStockReal(prod) > 0) { 
-                        this.carrito.push({...prod, idCarrito: Date.now(), descuento: 0}); 
+                    const itemEnCarrito = this.carrito.find(item => item.id === prod.id);
+                    if (this.obtenerStockReal(prod) > 0) {
+                        if (itemEnCarrito) {
+                            itemEnCarrito.cantidad++;
+                        } else {
+                            this.carrito.push({ ...prod, cantidad: 1, descuento: 0 });
+                        }
                         this.actualizarStock(prod, -1);
                     } else {
                         Swal.fire('Sin stock', '', 'warning');
@@ -440,7 +403,7 @@
 
                 quitarDelCarrito(index) {
                     const item = this.carrito[index];
-                    this.actualizarStock(item, 1);
+                    this.actualizarStock(item, item.cantidad);
                     this.carrito.splice(index, 1);
                 },
 
@@ -451,59 +414,28 @@
                             if (comp) comp.piezas += cantidad;
                         });
                     } else {
-                        const p = this.productos.find(x => x.id === prod.id);
+                        const p = this.productos.find(x => x.id === (prod.idItem || prod.id));
                         if (p) p.piezas += cantidad;
                     }
                 },
 
-                finalizarVentaInmediata() {
-                    const nuevaVenta = {
-                        id: Date.now(),
-                        fechaReal: new Date().toISOString(),
-                        cliente: 'Venta Directa',
-                        productos: [...this.carrito],
-                        total: this.totalVenta,
-                        tipo: 'inmediata',
-                        devuelta: false
-                    };
-                    this.ventasDia.push(nuevaVenta);
-                    this.carrito = [];
-                    this.persistir();
-                    Swal.fire('Venta Realizada', '', 'success');
+                resurtirProducto(prod) {
+                    Swal.fire({
+                        title: `Resurtir ${prod.nombre}`,
+                        input: 'number',
+                        inputLabel: '¿Cuántas piezas llegaron?',
+                        showCancelButton: true
+                    }).then(res => {
+                        if (res.isConfirmed && res.value > 0) {
+                            prod.piezas += parseInt(res.value);
+                            this.persistir();
+                        }
+                    });
                 },
 
-                finalizarVentaAgendada() {
-                    if (!this.agenda.cliente || !this.agenda.fecha) {
-                        Swal.fire('Error', 'Nombre y Fecha son obligatorios', 'error');
-                        return;
-                    }
-                    const nuevaVenta = {
-                        id: Date.now(),
-                        fechaReal: new Date().toISOString(),
-                        fechaEntrega: this.agenda.fecha,
-                        cliente: this.agenda.cliente,
-                        lugar: this.agenda.lugar,
-                        productos: [...this.carrito],
-                        total: this.totalVenta,
-                        tipo: 'agendado',
-                        completado: false,
-                        devuelta: false
-                    };
-                    this.ventasDia.push(nuevaVenta);
-                    this.carrito = [];
-                    this.mostrarModalAgenda = false;
-                    this.agenda = { cliente: '', fecha: '', lugar: '' };
-                    this.persistir();
-                    Swal.fire('Pedido Agendado', '', 'info');
-                },
-
-                eliminarPedidoAgendado(id) {
-                    const ped = this.ventasDia.find(v => v.id === id);
-                    if (ped) {
-                        ped.productos.forEach(p => this.actualizarStock(p, 1));
-                        this.ventasDia = this.ventasDia.filter(v => v.id !== id);
-                        this.persistir();
-                    }
+                generarVentanaStock() {
+                    const lista = this.productosOrdenados.map(p => `<li class="py-1 border-b text-xs text-left">${p.nombre}</li>`).join('');
+                    Swal.fire({ title: 'Existencias', html: `<ul class="max-h-60 overflow-y-auto">${lista}</ul>` });
                 },
 
                 guardarProducto() {
@@ -515,60 +447,16 @@
                     } else {
                         this.productos.push({ ...this.nuevoProd, id: Date.now(), esPaquete: false });
                     }
-                    this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
+                    this.nuevoProd = { nombre: '', costo: null, piezas: null, precioVenta: null };
                     this.persistir();
                     Swal.fire('Guardado', '', 'success');
                 },
 
-                editarProducto(p) {
-                    this.editandoId = p.id;
-                    this.nuevoProd = { ...p };
-                },
-
-                cancelarEdicion() {
-                    this.editandoId = null;
-                    this.nuevoProd = { nombre: '', costo: 0, piezas: 0, precioVenta: 0 };
-                },
-
-                eliminarProducto(id) {
-                    Swal.fire({
-                        title: '¿Eliminar?',
-                        text: "Esto borrará el producto del inventario",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Sí, borrar'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            this.productos = this.productos.filter(p => p.id !== id);
-                            this.persistir();
-                        }
-                    });
-                },
-
-                procesarDevolucion(venta) {
-                    Swal.fire({
-                        title: '¿Confirmar Devolución?',
-                        text: "Se restaurará el stock y se marcará la venta como nula",
-                        icon: 'warning',
-                        showCancelButton: true
-                    }).then(res => {
-                        if(res.isConfirmed) {
-                            venta.devuelta = true;
-                            venta.productos.forEach(p => this.actualizarStock(p, 1));
-                            this.persistir();
-                            if(this.vista === 'reportes') this.generarGrafica();
-                        }
-                    });
-                },
-
-                generarVentanaStock() {
-                    const lista = this.productos
-                        .filter(p => !p.esPaquete)
-                        .map(p => `<li><b>${p.nombre}:</b> ${p.piezas} pzas</li>`)
-                        .join('');
-                    Swal.fire({
-                        title: 'Existencias Individuales',
-                        html: `<ul class="text-left text-sm space-y-1">${lista}</ul>`
+                editarProducto(p) { this.editandoId = p.id; this.nuevoProd = { ...p }; window.scrollTo(0,0); },
+                cancelarEdicion() { this.editandoId = null; this.nuevoProd = { nombre: '', costo: null, piezas: null, precioVenta: null }; },
+                eliminarProducto(id) { 
+                    Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true }).then(r => {
+                        if(r.isConfirmed) { this.productos = this.productos.filter(p => p.id !== id); this.persistir(); }
                     });
                 },
 
@@ -579,14 +467,14 @@
                 },
 
                 guardarPaquete() {
-                    const pack = {
-                        id: Date.now(),
-                        nombre: this.paqueteNuevo.nombre,
-                        precioVenta: this.paqueteNuevo.precioVenta,
-                        esPaquete: true,
-                        componentesIds: [...this.paqueteSeleccionadosIds]
-                    };
-                    this.productos.push(pack);
+                    if (!this.paqueteNuevo.nombre || this.paqueteSeleccionadosIds.length === 0) return;
+                    this.productos.push({ 
+                        id: Date.now(), 
+                        nombre: this.paqueteNuevo.nombre, 
+                        precioVenta: this.paqueteNuevo.precioVenta, 
+                        esPaquete: true, 
+                        componentesIds: [...this.paqueteSeleccionadosIds] 
+                    });
                     this.mostrarModalPaquete = false;
                     this.paqueteNuevo = { nombre: '', precioVenta: null };
                     this.paqueteSeleccionadosIds = [];
@@ -594,40 +482,55 @@
                     Swal.fire('Paquete Creado', '', 'success');
                 },
 
-                generarGrafica() {
+                finalizarVentaInmediata() {
+                    this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), cliente: 'Cliente Mostrador', productos: [...this.carrito], total: this.totalVenta, tipo: 'inmediata', devuelta: false });
+                    this.carrito = [];
+                    this.persistir();
+                    Swal.fire('Venta Realizada', '', 'success');
+                },
+
+                finalizarVentaAgendada() {
+                    this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), fechaEntrega: this.agenda.fecha, cliente: this.agenda.cliente || 'Sin Nombre', lugar: this.agenda.lugar, productos: [...this.carrito], total: this.totalVenta, tipo: 'agendado', completado: false, devuelta: false });
+                    this.carrito = [];
+                    this.mostrarModalAgenda = false;
+                    this.persistir();
+                    Swal.fire('Agendado', '', 'success');
+                },
+
+                completarPedido(id) {
+                    const v = this.ventasDia.find(v => v.id === id);
+                    if (v) v.completado = true;
+                    this.persistir();
+                },
+
+                devolverVenta(id) {
+                    const v = this.ventasDia.find(v => v.id === id);
+                    if (v) {
+                        v.devuelta = true;
+                        v.productos.forEach(pCarrito => this.actualizarStock(pCarrito, pCarrito.cantidad));
+                        this.persistir();
+                        if (this.vista === 'reportes') this.initChart();
+                    }
+                },
+
+                fFecha(iso) { return new Date(iso).toLocaleString('es-MX', { hour12: true }); },
+
+                initChart() {
                     const ctx = document.getElementById('graficaVentas');
                     if (!ctx) return;
                     if (this.chartInstance) this.chartInstance.destroy();
-
                     const ultimos7 = [...Array(7)].map((_, i) => {
-                        const d = new Date();
-                        d.setDate(d.getDate() - i);
+                        const d = new Date(); d.setDate(d.getDate() - i);
                         return d.toISOString().split('T')[0];
                     }).reverse();
-
                     const dataVentas = ultimos7.map(fecha => {
-                        return this.ventasDia
-                            .filter(v => !v.devuelta && v.fechaReal.startsWith(fecha))
-                            .reduce((acc, v) => acc + v.total, 0);
+                        return this.ventasDia.filter(v => !v.devuelta && v.fechaReal.startsWith(fecha)).reduce((acc, v) => acc + v.total, 0);
                     });
-
                     this.chartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
                             labels: ultimos7.map(f => f.split('-').slice(1).reverse().join('/')),
-                            datasets: [{
-                                label: 'Ventas $',
-                                data: dataVentas,
-                                borderColor: '#4f46e5',
-                                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                                fill: true,
-                                tension: 0.4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true } }
+                            datasets: [{ label: 'Ventas $', data: dataVentas, borderColor: '#4f46e5', tension: 0.4 }]
                         }
                     });
                 }
