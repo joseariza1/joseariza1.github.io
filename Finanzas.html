@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NanoWallet V25.0 - Final</title>
+    <title>NanoWallet V25.0 - Final con MSI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
@@ -44,7 +44,11 @@
             <p class="text-red-400/60 text-[9px] font-bold uppercase tracking-widest">Deuda Total</p>
             <h2 id="deudaTotalLabel" class="text-3xl font-extrabold text-red-500">$0.00</h2>
         </div>
-        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Tarjetas de Crédito</h3>
+
+        <h3 class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Planes a Meses (MSI)</h3>
+        <div id="listaMSI" class="space-y-2"></div>
+
+        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest pt-4">Tarjetas de Crédito</h3>
         <div id="listaTDC" class="space-y-2"></div>
         <div class="flex justify-between items-center pt-4">
             <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Otras Deudas</h3>
@@ -54,6 +58,24 @@
     </main>
 
     <button onclick="abrirModalMovimiento()" class="fixed bottom-8 right-6 w-16 h-16 bg-blue-600 text-white rounded-2xl shadow-2xl flex items-center justify-center text-3xl font-bold z-50 active:scale-90 transition-transform">+</button>
+
+    <div id="modalPagoMSI" class="modal">
+        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
+            <h2 class="text-xl font-bold mb-2 text-amber-500 italic">Pagar Mensualidad</h2>
+            <p id="msiInfoTxt" class="text-[10px] font-bold uppercase text-slate-400 mb-6"></p>
+            <div class="space-y-4">
+                <input type="hidden" id="msiMovId">
+                <p class="text-[9px] font-bold text-slate-500 uppercase">Pagar desde:</p>
+                <select id="msiCuentaOrigen" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+                    <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Monto de la cuota</p>
+                    <p id="msiMontoCuota" class="text-3xl font-black text-white">$0.00</p>
+                </div>
+                <button onclick="confirmarPagoMSI()" class="w-full bg-amber-600 p-4 rounded-xl font-bold uppercase text-xs text-white">Confirmar Pago de Mes</button>
+                <button onclick="cerrarModal('modalPagoMSI')" class="w-full text-slate-500 text-[10px] font-bold uppercase mt-2">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modalCuenta" class="modal">
         <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
@@ -121,7 +143,19 @@
                 <button onclick="setModo('Transfer')" id="btnT" class="flex-1 py-2 rounded-lg text-[9px] font-bold uppercase">Transfer</button>
             </div>
             <div class="space-y-4">
-                <select id="movOrigen" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
+                <input id="movNombre" type="text" placeholder="Concepto (Opcional)" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700 mb-2">
+                <select id="movOrigen" onchange="verificarSiEsTDC()" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
+                
+                <div id="capaMSI" class="hidden bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" id="checkMSI" onchange="toggleInputMSI()">
+                        <span class="text-[10px] font-bold uppercase text-amber-500">¿Es a Meses Sin Intereses?</span>
+                    </label>
+                    <div id="inputMSICont" class="hidden mt-3">
+                        <input id="mesesMSI" type="number" placeholder="Número de meses" class="w-full bg-slate-900 p-3 rounded-lg text-xs text-white border border-slate-700">
+                    </div>
+                </div>
+
                 <div id="capaDestino" class="hidden">
                     <select id="movDestino" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-blue-600"></select>
                 </div>
@@ -137,6 +171,7 @@
 
     <script>
         let db = JSON.parse(localStorage.getItem('nanowallet_v25')) || { cuentas: [], movimientos: [], deudas: [] };
+        let modoActual = 'Gasto';
 
         function guardarLocal() { localStorage.setItem('nanowallet_v25', JSON.stringify(db)); render(); }
         function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -151,6 +186,51 @@
 
         function mostrarLimite() {
             document.getElementById('capaLimite').classList.toggle('hidden', document.getElementById('tipoCuenta').value !== 'TDC');
+        }
+
+        // --- FUNCIONES MSI ---
+        function verificarSiEsTDC() {
+            const ori = db.cuentas.find(c => c.id == document.getElementById('movOrigen').value);
+            const capa = document.getElementById('capaMSI');
+            if(ori && ori.tipo === 'TDC' && modoActual === 'Gasto') capa.classList.remove('hidden');
+            else { capa.classList.add('hidden'); document.getElementById('checkMSI').checked = false; toggleInputMSI(); }
+        }
+
+        function toggleInputMSI() {
+            document.getElementById('inputMSICont').classList.toggle('hidden', !document.getElementById('checkMSI').checked);
+        }
+
+        function abrirModalPagoMSI(movId) {
+            const m = db.movimientos.find(x => x.id == movId);
+            const tdc = db.cuentas.find(c => c.id == m.oId);
+            const cuota = m.val / m.msi.total;
+            document.getElementById('msiMovId').value = movId;
+            document.getElementById('msiInfoTxt').innerText = `${m.txt || 'Gasto'} (${tdc.nombre})`;
+            document.getElementById('msiMontoCuota').innerText = `$${cuota.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+            document.getElementById('msiCuentaOrigen').innerHTML = db.cuentas.filter(c => c.tipo === 'Debito').map(c => `<option value="${c.id}">${c.nombre} ($${c.saldo})</option>`).join('');
+            mostrarModal('modalPagoMSI');
+        }
+
+        function confirmarPagoMSI() {
+            const movId = document.getElementById('msiMovId').value;
+            const idOrigen = document.getElementById('msiCuentaOrigen').value;
+            const ori = db.cuentas.find(c => c.id == idOrigen);
+            const m = db.movimientos.find(x => x.id == movId);
+            const tdc = db.cuentas.find(c => c.id == m.oId);
+            const cuota = m.val / m.msi.total;
+
+            if(!ori) return;
+
+            // 1. Restar de efectivo, 2. Restar de deuda TDC, 3. Bajar contador MSI
+            ori.saldo -= cuota;
+            tdc.saldo -= cuota;
+            m.msi.restantes--;
+
+            // Registrar en historial como un gasto normal para que el saldo real cuadre
+            db.movimientos.unshift({ id: Date.now(), txt: `PAGO MSI: ${m.txt || 'Gasto'}`, val: cuota, t: 'Gasto', oId: idOrigen });
+
+            cerrarModal('modalPagoMSI');
+            guardarLocal();
         }
 
         // --- GESTIÓN DE CUENTAS ---
@@ -196,26 +276,17 @@
         function abrirModalAbonoUniversal(id, tipo) {
             document.getElementById('pagoIdDestino').value = id;
             document.getElementById('pagoTipoDestino').value = tipo;
-            
-            let nombre = "";
-            let montoActual = 0;
-
+            let nombre = ""; let montoActual = 0;
             if(tipo === 'TDC') {
                 const c = db.cuentas.find(x => x.id == id);
-                nombre = "Abonar a: " + c.nombre;
-                montoActual = c.saldo;
+                nombre = "Abonar a: " + c.nombre; montoActual = c.saldo;
             } else {
                 const d = db.deudas.find(x => x.id == id);
-                nombre = "Pagar a: " + d.nombre;
-                montoActual = d.monto;
+                nombre = "Pagar a: " + d.nombre; montoActual = d.monto;
             }
-
             document.getElementById('pagoDestinoNombre').innerText = nombre;
             document.getElementById('pagoMontoInput').value = montoActual;
-            
-            // Selector de cuenta de origen: Se permiten todas (Débito resta, TDC suma deuda)
             document.getElementById('pagoCuentaOrigen').innerHTML = db.cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
-            
             mostrarModal('modalPagarUniversal');
         }
 
@@ -224,30 +295,18 @@
             const tipoDestino = document.getElementById('pagoTipoDestino').value;
             const idOrigen = document.getElementById('pagoCuentaOrigen').value;
             const monto = parseFloat(document.getElementById('pagoMontoInput').value);
-
             if(!monto || monto <= 0) return;
-
             const ori = db.cuentas.find(c => c.id == idOrigen);
-
-            // 1. Descontar o aumentar deuda de la cuenta de origen
-            if(ori.tipo === 'TDC') ori.saldo += monto;
-            else ori.saldo -= monto;
-
-            // 2. Aplicar abono al destino
+            if(ori.tipo === 'TDC') ori.saldo += monto; else ori.saldo -= monto;
             if(tipoDestino === 'TDC') {
-                const tdc = db.cuentas.find(c => c.id == idDestino);
-                tdc.saldo -= monto;
+                db.cuentas.find(c => c.id == idDestino).saldo -= monto;
             } else {
                 const deuda = db.deudas.find(d => d.id == idDestino);
                 deuda.monto -= monto;
                 if(deuda.monto <= 0) db.deudas = db.deudas.filter(d => d.id != idDestino);
             }
-
-            // Registrar en historial
             db.movimientos.unshift({ id: Date.now(), txt: `PAGO/ABONO DEUDA`, val: monto, t: 'Gasto', oId: idOrigen });
-
-            cerrarModal('modalPagarUniversal');
-            guardarLocal();
+            cerrarModal('modalPagarUniversal'); guardarLocal();
         }
 
         // --- MOVIMIENTOS GENERALES ---
@@ -263,6 +322,7 @@
                 const deb = db.cuentas.filter(c => c.tipo !== 'TDC').map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
                 if(m === 'Ingreso') origen.innerHTML = deb; else destino.innerHTML = deb;
             }
+            verificarSiEsTDC();
         }
 
         function abrirModalMovimiento(id = null) {
@@ -271,6 +331,7 @@
                 const m = db.movimientos.find(x => x.id == id);
                 document.getElementById('editMovId').value = m.id;
                 document.getElementById('movMonto').value = m.val;
+                document.getElementById('movNombre').value = m.txt || '';
                 setModo(m.t === 'Trans' ? 'Transfer' : m.t);
                 document.getElementById('movOrigen').value = m.oId;
                 if(m.t === 'Trans') document.getElementById('movDestino').value = m.dId;
@@ -278,6 +339,9 @@
             } else {
                 document.getElementById('editMovId').value = '';
                 document.getElementById('movMonto').value = '';
+                document.getElementById('movNombre').value = '';
+                document.getElementById('checkMSI').checked = false;
+                toggleInputMSI();
                 setModo('Gasto'); btnB.classList.add('hidden');
             }
             mostrarModal('modalMov');
@@ -287,20 +351,28 @@
             const id = document.getElementById('editMovId').value;
             const monto = parseFloat(document.getElementById('movMonto').value);
             const oId = document.getElementById('movOrigen').value;
+            const txt = document.getElementById('movNombre').value;
             if(!monto) return;
             if(id) revertirMov(id);
             const ori = db.cuentas.find(c => c.id == oId);
-            let mov = { id: id || Date.now(), val: monto, oId: oId };
+            let mov = { id: id || Date.now(), val: monto, oId: oId, txt: txt };
+            
+            // Lógica MSI
+            if(modoActual === 'Gasto' && ori.tipo === 'TDC' && document.getElementById('checkMSI').checked) {
+                const m = parseInt(document.getElementById('mesesMSI').value) || 1;
+                mov.msi = { total: m, restantes: m };
+            }
+
             if(modoActual === 'Transfer') {
                 const dId = document.getElementById('movDestino').value;
                 const des = db.cuentas.find(c => c.id == dId);
                 ori.saldo -= monto; des.saldo += monto;
-                mov = {...mov, t:'Trans', dId: dId, txt: `${ori.nombre} ➔ ${des.nombre}`};
+                mov = {...mov, t:'Trans', dId: dId, txt: txt || `${ori.nombre} ➔ ${des.nombre}`};
             } else if(modoActual === 'Ingreso') {
-                ori.saldo += monto; mov = {...mov, t:'Ingreso', txt: ori.nombre};
+                ori.saldo += monto; mov = {...mov, t:'Ingreso', txt: txt || ori.nombre};
             } else {
                 if(ori.tipo === 'TDC') ori.saldo += monto; else ori.saldo -= monto;
-                mov = {...mov, t:'Gasto', txt: ori.nombre};
+                mov = {...mov, t:'Gasto', txt: txt || ori.nombre};
             }
             if(id) db.movimientos[db.movimientos.findIndex(x=>x.id==id)] = mov;
             else db.movimientos.unshift(mov);
@@ -324,7 +396,7 @@
             cerrarModal('modalMov'); guardarLocal();
         }
 
-        // --- DEUDAS PERSONALES (GESTIÓN) ---
+        // --- DEUDAS PERSONALES ---
         function abrirModalDeuda(id = null) {
             const btnB = document.getElementById('btnBorrarD');
             document.getElementById('editDeudaId').value = id || '';
@@ -375,6 +447,17 @@
                 </div>`;
             }).join('');
 
+            // RENDER LISTA MSI
+            const msiActivos = db.movimientos.filter(m => m.msi && m.msi.restantes > 0);
+            document.getElementById('listaMSI').innerHTML = msiActivos.length ? msiActivos.map(m => `
+                <div class="bg-slate-900 p-4 rounded-2xl border border-amber-500/20 flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-bold text-white uppercase">${m.txt || 'Gasto'} (${m.msi.restantes}/${m.msi.total})</p>
+                        <p class="text-xs text-amber-500 font-bold">$${(m.val/m.msi.total).toLocaleString('es-MX')} p/mes</p>
+                    </div>
+                    <button onclick="abrirModalPagoMSI(${m.id})" class="bg-amber-600 text-white px-3 py-2 rounded-lg text-[9px] font-bold uppercase shadow-lg">Pagar Mes</button>
+                </div>`).join('') : '<p class="text-[9px] text-slate-600 italic">No hay planes activos</p>';
+
             document.getElementById('listaTDC').innerHTML = db.cuentas.filter(c => c.tipo === 'TDC').map(c => `
                 <div class="bg-slate-900 p-4 rounded-2xl flex justify-between items-center border border-slate-800">
                     <div><p class="text-xs font-bold">${c.nombre}</p><p class="text-[9px] text-red-500 font-bold uppercase">$${c.saldo.toLocaleString('es-MX')} deuda</p></div>
@@ -389,7 +472,7 @@
 
             document.getElementById('historial').innerHTML = db.movimientos.slice(0, 10).map(m => `
                 <div onclick="abrirModalMovimiento(${m.id})" class="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-800/50">
-                    <span class="text-slate-400 text-[10px] uppercase font-bold">${m.txt}</span>
+                    <span class="text-slate-400 text-[10px] uppercase font-bold">${m.txt || 'Sin concepto'} ${m.msi ? '🏷️' : ''}</span>
                     <span class="font-bold ${m.t === 'Ingreso' ? 'text-green-500' : m.t === 'Trans' ? 'text-blue-400' : 'text-red-500'}">
                         ${m.t === 'Ingreso' ? '+' : '-'}$${m.val.toLocaleString('es-MX')}
                     </span>
