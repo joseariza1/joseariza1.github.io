@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NanoWallet V25.0 - Final con MSI</title>
+    <title>NanoWallet V33.5 - MSI Inteligente</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding-bottom: 100px; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
         .modal.active { display: flex; }
         .tab-btn.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body>
@@ -32,151 +33,158 @@
     </nav>
 
     <main id="seccionMain" class="px-6 space-y-6">
+        <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-[2.5rem] space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">Pronóstico</h3>
+                <select id="selectorMesProg" onchange="render()" class="bg-slate-800 text-blue-400 text-[10px] font-bold px-3 py-1 rounded-full border-none outline-none ring-1 ring-white/10">
+                    <option value="0">Este Mes</option>
+                    <option value="1">Próximo Mes</option>
+                    <option value="2">En 2 Meses</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-white/5">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">Cuotas MSI</p>
+                    <p id="resumenMSI" class="text-lg font-black text-amber-500">$0.00</p>
+                </div>
+                <div class="bg-slate-800/40 p-4 rounded-2xl border border-white/5">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">Gastos TDC</p>
+                    <p id="resumenCorrientes" class="text-lg font-black text-red-400">$0.00</p>
+                </div>
+            </div>
+            <div class="bg-blue-600/10 p-5 rounded-2xl border border-blue-500/20 flex justify-between items-center">
+                <div><p class="text-[8px] text-blue-400 font-bold uppercase">Total a pagar</p><p id="resumenTotalMes" class="text-2xl font-black tracking-tighter">$0.00</p></div>
+                <div class="text-right"><p class="text-[9px] font-black text-blue-500 uppercase italic tracking-widest">Realidad</p></div>
+            </div>
+        </div>
+
         <div id="listaCuentas" class="flex gap-4 overflow-x-auto pb-4 snap-x"></div>
+        
         <div class="space-y-4">
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Actividad</h3>
-            <div id="historial" class="space-y-2 text-sm"></div>
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Actividad Reciente</h3>
+            <div id="historial" class="space-y-2"></div>
         </div>
     </main>
 
     <main id="seccionDebts" class="hidden px-6 space-y-6">
-        <div class="bg-red-950/20 border border-red-500/20 p-6 rounded-[2rem] text-center">
-            <p class="text-red-400/60 text-[9px] font-bold uppercase tracking-widest">Deuda Total</p>
-            <h2 id="deudaTotalLabel" class="text-3xl font-extrabold text-red-500">$0.00</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-amber-950/20 border border-amber-500/30 p-5 rounded-[2rem] text-center">
+                <p class="text-amber-400/60 text-[8px] font-bold uppercase tracking-widest italic">MSI Activos</p>
+                <h2 id="pagoProximoMes" class="text-2xl font-black text-amber-500">$0.00</h2>
+            </div>
+            <div class="bg-red-950/20 border border-red-500/20 p-5 rounded-[2rem] text-center">
+                <p class="text-red-400/60 text-[8px] font-bold uppercase tracking-widest">Pasivos Totales</p>
+                <h2 id="deudaTotalLabel" class="text-2xl font-black text-red-500">$0.00</h2>
+            </div>
         </div>
 
-        <h3 class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Planes a Meses (MSI)</h3>
+        <h3 class="text-[10px] font-bold text-amber-500 uppercase tracking-widest italic">Planes a Meses (MSI)</h3>
         <div id="listaMSI" class="space-y-2"></div>
 
-        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest pt-4">Tarjetas de Crédito</h3>
+        <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest pt-4 italic">Tarjetas de Crédito</h3>
         <div id="listaTDC" class="space-y-2"></div>
+        
         <div class="flex justify-between items-center pt-4">
-            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Otras Deudas</h3>
-            <button onclick="abrirModalDeuda()" class="text-blue-400 text-[10px] font-bold uppercase">+ NUEVA</button>
+            <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">Otras Deudas</h3>
+            <button onclick="abrirModalDeuda()" class="text-blue-400 text-[10px] font-bold uppercase tracking-widest">+ NUEVA</button>
         </div>
         <div id="listaDeudasPersonales" class="space-y-2"></div>
     </main>
 
-    <button onclick="abrirModalMovimiento()" class="fixed bottom-8 right-6 w-16 h-16 bg-blue-600 text-white rounded-2xl shadow-2xl flex items-center justify-center text-3xl font-bold z-50 active:scale-90 transition-transform">+</button>
-
-    <div id="modalPagoMSI" class="modal">
-        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
-            <h2 class="text-xl font-bold mb-2 text-amber-500 italic">Pagar Mensualidad</h2>
-            <p id="msiInfoTxt" class="text-[10px] font-bold uppercase text-slate-400 mb-6"></p>
-            <div class="space-y-4">
-                <input type="hidden" id="msiMovId">
-                <p class="text-[9px] font-bold text-slate-500 uppercase">Pagar desde:</p>
-                <select id="msiCuentaOrigen" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
-                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
-                    <p class="text-[9px] text-slate-500 uppercase font-bold mb-1">Monto de la cuota</p>
-                    <p id="msiMontoCuota" class="text-3xl font-black text-white">$0.00</p>
-                </div>
-                <button onclick="confirmarPagoMSI()" class="w-full bg-amber-600 p-4 rounded-xl font-bold uppercase text-xs text-white">Confirmar Pago de Mes</button>
-                <button onclick="cerrarModal('modalPagoMSI')" class="w-full text-slate-500 text-[10px] font-bold uppercase mt-2">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modalCuenta" class="modal">
-        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
-            <h2 class="text-xl font-bold mb-6 italic">Cuenta</h2>
-            <div class="space-y-4">
-                <input type="hidden" id="editId">
-                <select id="tipoCuenta" onchange="mostrarLimite()" class="w-full bg-slate-800 p-4 rounded-xl text-sm border border-slate-700 text-white">
-                    <option value="Debito">Débito / Efectivo</option>
-                    <option value="TDC">Tarjeta de Crédito</option>
-                </select>
-                <input id="nombreCuenta" type="text" placeholder="Nombre" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
-                <input id="saldoCuenta" type="number" placeholder="Saldo o Deuda actual" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
-                <div id="capaLimite" class="hidden">
-                    <input id="limiteCuenta" type="number" placeholder="Límite Total" class="w-full bg-slate-800 p-4 rounded-xl border border-amber-900 text-white">
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="guardarCuenta()" class="flex-1 bg-white text-black p-4 rounded-xl font-bold uppercase text-xs">Guardar</button>
-                    <button id="btnBorrarAcc" onclick="borrarCuenta()" class="hidden bg-red-600 px-5 rounded-xl">✕</button>
-                </div>
-                <button onclick="cerrarModal('modalCuenta')" class="w-full text-slate-500 text-[10px] font-bold uppercase">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modalDeuda" class="modal">
-        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2rem] border border-slate-800">
-            <input type="hidden" id="editDeudaId">
-            <h2 class="text-xl font-bold mb-6 text-red-400 italic">Deuda Personal</h2>
-            <div class="space-y-4">
-                <input id="deudaNombre" type="text" placeholder="¿A quién le debes?" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white">
-                <input id="deudaMonto" type="number" placeholder="Monto" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white">
-                <div class="flex gap-2">
-                    <button onclick="guardarDeuda()" class="flex-1 bg-blue-600 p-4 rounded-xl font-bold uppercase text-[10px]">Guardar</button>
-                    <button id="btnBorrarD" onclick="borrarDeuda()" class="hidden bg-red-600 px-4 rounded-xl">✕</button>
-                </div>
-                <button onclick="cerrarModal('modalDeuda')" class="w-full text-slate-500 text-[10px] font-bold uppercase">Cerrar</button>
-            </div>
-        </div>
-    </div>
+    <button onclick="abrirModalMovimiento()" class="fixed bottom-8 right-6 w-16 h-16 bg-blue-600 text-white rounded-2xl shadow-2xl flex items-center justify-center text-3xl font-bold z-50 active:scale-90">+</button>
 
     <div id="modalPagarUniversal" class="modal">
         <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
-            <h2 class="text-xl font-bold mb-2 italic text-green-500">Realizar Pago</h2>
-            <p id="pagoDestinoNombre" class="text-xs font-bold uppercase text-slate-400 mb-6"></p>
+            <h2 class="text-xl font-bold mb-1 italic text-green-500">Liquidar Mensualidad</h2>
+            <p id="pagoDestinoNombre" class="text-[10px] font-bold uppercase text-slate-400 mb-6 tracking-widest"></p>
             <div class="space-y-4">
                 <input type="hidden" id="pagoIdDestino">
-                <input type="hidden" id="pagoTipoDestino"> <p class="text-[9px] font-bold text-slate-500 uppercase">Pagar con:</p>
+                <input type="hidden" id="pagoTipoDestino">
+                <p class="text-[8px] text-slate-500 font-bold uppercase ml-1">Pagar con:</p>
                 <select id="pagoCuentaOrigen" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
-                
-                <p class="text-[9px] font-bold text-slate-500 uppercase">Monto a abonar:</p>
-                <input id="pagoMontoInput" type="number" placeholder="0.00" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
-                
-                <button onclick="procesarPagoUniversal()" class="w-full bg-green-600 p-4 rounded-xl font-bold uppercase text-xs">Confirmar Pago</button>
+                <div class="space-y-2">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase ml-1 text-center">Monto a abonar</p>
+                    <input id="pagoMontoInput" type="number" step="0.01" class="w-full bg-transparent text-center text-5xl font-black py-4 outline-none text-white">
+                </div>
+                <button onclick="procesarPagoUniversal()" class="w-full bg-green-600 p-4 rounded-xl font-bold uppercase text-xs text-white shadow-lg shadow-green-900/20">Confirmar Abono</button>
                 <button onclick="cerrarModal('modalPagarUniversal')" class="w-full text-slate-500 text-[10px] font-bold uppercase">Cancelar</button>
             </div>
         </div>
     </div>
 
     <div id="modalMov" class="modal">
-        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2rem] border border-slate-800">
+        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
             <input type="hidden" id="editMovId">
             <div id="modoSelector" class="flex gap-1 mb-6 bg-slate-800 p-1 rounded-xl">
                 <button onclick="setModo('Gasto')" id="btnG" class="flex-1 py-2 rounded-lg text-[9px] font-bold uppercase bg-blue-600">Gasto</button>
                 <button onclick="setModo('Ingreso')" id="btnI" class="flex-1 py-2 rounded-lg text-[9px] font-bold uppercase">Ingreso</button>
-                <button onclick="setModo('Transfer')" id="btnT" class="flex-1 py-2 rounded-lg text-[9px] font-bold uppercase">Transfer</button>
+                <button onclick="setModo('Transfer')" id="btnT" class="flex-1 py-2 rounded-lg text-[9px] font-bold uppercase">Traspaso</button>
             </div>
             <div class="space-y-4">
-                <input id="movNombre" type="text" placeholder="Concepto (Opcional)" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700 mb-2">
-                <select id="movOrigen" onchange="verificarSiEsTDC()" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
-                
-                <div id="capaMSI" class="hidden bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" id="checkMSI" onchange="toggleInputMSI()">
-                        <span class="text-[10px] font-bold uppercase text-amber-500">¿Es a Meses Sin Intereses?</span>
-                    </label>
-                    <div id="inputMSICont" class="hidden mt-3">
-                        <input id="mesesMSI" type="number" placeholder="Número de meses" class="w-full bg-slate-900 p-3 rounded-lg text-xs text-white border border-slate-700">
-                    </div>
+                <input id="movNombre" type="text" placeholder="Concepto" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
+                <div class="space-y-1">
+                    <p id="labelOrigen" class="text-[8px] text-slate-500 font-bold uppercase ml-1">Origen:</p>
+                    <select id="movOrigen" onchange="verificarSiEsTDC()" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
                 </div>
-
-                <div id="capaDestino" class="hidden">
+                <div id="capaDestino" class="hidden space-y-1">
+                    <p class="text-[8px] text-blue-500 font-bold uppercase ml-1">Destino:</p>
                     <select id="movDestino" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-blue-600"></select>
+                </div>
+                <div id="capaMSI" class="hidden bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                    <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="checkMSI" onchange="toggleInputMSI()"><span class="text-[10px] font-bold uppercase text-amber-500">¿Diferir a MSI?</span></label>
+                    <div id="inputMSICont" class="hidden mt-3"><input id="mesesMSI" type="number" placeholder="¿Cuántos meses?" class="w-full bg-slate-900 p-3 rounded-lg text-xs text-white"></div>
                 </div>
                 <input id="movMonto" type="number" placeholder="0.00" class="w-full bg-transparent text-center text-5xl font-black py-4 outline-none text-white">
                 <div class="flex gap-2">
-                    <button onclick="guardarMovimiento()" class="flex-1 bg-white text-black p-4 rounded-xl font-bold uppercase text-xs">Confirmar</button>
-                    <button id="btnBorrarMov" onclick="borrarMovimiento()" class="hidden bg-red-600 px-5 rounded-xl">✕</button>
+                    <button onclick="guardarMovimiento()" class="flex-1 bg-white text-black p-4 rounded-xl font-bold uppercase text-xs">Guardar</button>
+                    <button id="btnBorrarMov" onclick="borrarMovimiento()" class="hidden bg-red-600 px-5 rounded-xl text-white font-bold">✕</button>
                 </div>
                 <button onclick="cerrarModal('modalMov')" class="w-full text-slate-500 text-[10px] font-bold uppercase">Cerrar</button>
             </div>
         </div>
     </div>
 
+    <div id="modalCuenta" class="modal"><div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
+        <h2 class="text-xl font-bold mb-6 italic text-white">Gestionar Cuenta</h2>
+        <div class="space-y-4">
+            <input type="hidden" id="editAccId">
+            <select id="tipoCuenta" onchange="mostrarLimite()" class="w-full bg-slate-800 p-4 rounded-xl text-sm border border-slate-700 text-white"><option value="Debito">Efectivo / Débito</option><option value="TDC">Tarjeta de Crédito</option></select>
+            <input id="nombreCuenta" type="text" placeholder="Ej. Banamex" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
+            <input id="saldoCuenta" type="number" placeholder="Saldo Inicial" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
+            <div id="capaLimite" class="hidden space-y-1"><p class="text-[8px] text-amber-600 font-bold uppercase ml-1">Línea de Crédito:</p><input id="limiteCuenta" type="number" placeholder="Límite TDC" class="w-full bg-slate-800 p-4 rounded-xl border border-amber-900 text-white"></div>
+            <div class="flex gap-2">
+                <button onclick="guardarCuenta()" class="flex-1 bg-white text-black p-4 rounded-xl font-bold uppercase text-xs">Guardar</button>
+                <button id="btnBorrarAcc" onclick="borrarCuenta()" class="hidden bg-red-600 px-5 rounded-xl text-white font-bold">✕</button>
+            </div>
+            <button onclick="cerrarModal('modalCuenta')" class="w-full text-slate-500 text-[10px] font-bold uppercase">Cerrar</button>
+        </div>
+    </div></div>
+
+    <div id="modalDeuda" class="modal"><div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2rem] border border-slate-800">
+        <input type="hidden" id="editDeudaId"><h2 class="text-xl font-bold mb-6 text-red-400 italic uppercase">Nueva Deuda</h2>
+        <div class="space-y-4">
+            <input id="deudaNombre" type="text" placeholder="¿A quién le debes?" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white">
+            <input id="deudaMonto" type="number" placeholder="Monto Total" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="deudaCheckMSI" onchange="toggleDeudaMSI()"><span class="text-[10px] font-bold uppercase text-amber-500">¿Es en pagos/meses?</span></label>
+                <div id="deudaInputMSICont" class="hidden mt-3"><input id="deudaMeses" type="number" placeholder="Meses" class="w-full bg-slate-900 p-3 rounded-lg text-xs text-white"></div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="guardarDeuda()" class="flex-1 bg-blue-600 p-4 rounded-xl font-bold uppercase text-xs text-white">Guardar</button>
+                <button id="btnBorrarDeuda" onclick="borrarDeuda()" class="hidden bg-red-600 px-5 rounded-xl text-white font-bold">✕</button>
+            </div>
+            <button onclick="cerrarModal('modalDeuda')" class="w-full text-slate-500 text-[10px] font-bold uppercase">Cerrar</button>
+        </div>
+    </div></div>
+
     <script>
-        let db = JSON.parse(localStorage.getItem('nanowallet_v25')) || { cuentas: [], movimientos: [], deudas: [] };
+        let db = JSON.parse(localStorage.getItem('nanowallet_v33_5')) || { cuentas: [], movimientos: [], deudas: [] };
         let modoActual = 'Gasto';
 
-        function guardarLocal() { localStorage.setItem('nanowallet_v25', JSON.stringify(db)); render(); }
+        function guardarLocal() { localStorage.setItem('nanowallet_v33_5', JSON.stringify(db)); render(); }
         function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
         function mostrarModal(id) { document.getElementById(id).classList.add('active'); }
-
+        
         function verTab(v) {
             document.getElementById('seccionMain').classList.toggle('hidden', v !== 'main');
             document.getElementById('seccionDebts').classList.toggle('hidden', v !== 'debts');
@@ -184,197 +192,63 @@
             document.getElementById('tabDebts').classList.toggle('active', v === 'debts');
         }
 
-        function mostrarLimite() {
-            document.getElementById('capaLimite').classList.toggle('hidden', document.getElementById('tipoCuenta').value !== 'TDC');
-        }
-
-        // --- FUNCIONES MSI ---
-        function verificarSiEsTDC() {
-            const ori = db.cuentas.find(c => c.id == document.getElementById('movOrigen').value);
-            const capa = document.getElementById('capaMSI');
-            if(ori && ori.tipo === 'TDC' && modoActual === 'Gasto') capa.classList.remove('hidden');
-            else { capa.classList.add('hidden'); document.getElementById('checkMSI').checked = false; toggleInputMSI(); }
-        }
-
-        function toggleInputMSI() {
-            document.getElementById('inputMSICont').classList.toggle('hidden', !document.getElementById('checkMSI').checked);
-        }
-
-        function abrirModalPagoMSI(movId) {
-            const m = db.movimientos.find(x => x.id == movId);
-            const tdc = db.cuentas.find(c => c.id == m.oId);
-            const cuota = m.val / m.msi.total;
-            document.getElementById('msiMovId').value = movId;
-            document.getElementById('msiInfoTxt').innerText = `${m.txt || 'Gasto'} (${tdc.nombre})`;
-            document.getElementById('msiMontoCuota').innerText = `$${cuota.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
-            document.getElementById('msiCuentaOrigen').innerHTML = db.cuentas.filter(c => c.tipo === 'Debito').map(c => `<option value="${c.id}">${c.nombre} ($${c.saldo})</option>`).join('');
-            mostrarModal('modalPagoMSI');
-        }
-
-        function confirmarPagoMSI() {
-            const movId = document.getElementById('msiMovId').value;
-            const idOrigen = document.getElementById('msiCuentaOrigen').value;
-            const ori = db.cuentas.find(c => c.id == idOrigen);
-            const m = db.movimientos.find(x => x.id == movId);
-            const tdc = db.cuentas.find(c => c.id == m.oId);
-            const cuota = m.val / m.msi.total;
-
-            if(!ori) return;
-
-            // 1. Restar de efectivo, 2. Restar de deuda TDC, 3. Bajar contador MSI
-            ori.saldo -= cuota;
-            tdc.saldo -= cuota;
-            m.msi.restantes--;
-
-            // Registrar en historial como un gasto normal para que el saldo real cuadre
-            db.movimientos.unshift({ id: Date.now(), txt: `PAGO MSI: ${m.txt || 'Gasto'}`, val: cuota, t: 'Gasto', oId: idOrigen });
-
-            cerrarModal('modalPagoMSI');
-            guardarLocal();
-        }
-
-        // --- GESTIÓN DE CUENTAS ---
-        function abrirModalCuenta(id = null) {
-            const btnB = document.getElementById('btnBorrarAcc');
-            document.getElementById('editId').value = id || '';
-            if(id) {
-                const a = db.cuentas.find(x => x.id == id);
-                document.getElementById('nombreCuenta').value = a.nombre;
-                document.getElementById('saldoCuenta').value = a.saldo;
-                document.getElementById('tipoCuenta').value = a.tipo;
-                document.getElementById('limiteCuenta').value = a.limite || 0;
-                btnB.classList.remove('hidden');
-            } else {
-                document.getElementById('nombreCuenta').value = '';
-                document.getElementById('saldoCuenta').value = 0;
-                document.getElementById('limiteCuenta').value = 0;
-                btnB.classList.add('hidden');
-            }
-            mostrarLimite(); mostrarModal('modalCuenta');
-        }
-
-        function guardarCuenta() {
-            const id = document.getElementById('editId').value;
-            const n = document.getElementById('nombreCuenta').value;
-            const s = parseFloat(document.getElementById('saldoCuenta').value) || 0;
-            const t = document.getElementById('tipoCuenta').value;
-            const l = parseFloat(document.getElementById('limiteCuenta').value) || 0;
-            if(!n) return;
-            if(id) {
-                const a = db.cuentas.find(x => x.id == id);
-                a.nombre = n; a.saldo = s; a.tipo = t; a.limite = l;
-            } else { db.cuentas.push({ id: Date.now(), nombre: n, saldo: s, tipo: t, limite: l }); }
-            cerrarModal('modalCuenta'); guardarLocal();
-        }
-
-        function borrarCuenta() {
-            db.cuentas = db.cuentas.filter(x => x.id != document.getElementById('editId').value);
-            cerrarModal('modalCuenta'); guardarLocal();
-        }
-
-        // --- LÓGICA DE ABONOS / PAGOS ---
-        function abrirModalAbonoUniversal(id, tipo) {
-            document.getElementById('pagoIdDestino').value = id;
-            document.getElementById('pagoTipoDestino').value = tipo;
-            let nombre = ""; let montoActual = 0;
-            if(tipo === 'TDC') {
-                const c = db.cuentas.find(x => x.id == id);
-                nombre = "Abonar a: " + c.nombre; montoActual = c.saldo;
-            } else {
-                const d = db.deudas.find(x => x.id == id);
-                nombre = "Pagar a: " + d.nombre; montoActual = d.monto;
-            }
-            document.getElementById('pagoDestinoNombre').innerText = nombre;
-            document.getElementById('pagoMontoInput').value = montoActual;
-            document.getElementById('pagoCuentaOrigen').innerHTML = db.cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.tipo})</option>`).join('');
-            mostrarModal('modalPagarUniversal');
-        }
-
-        function procesarPagoUniversal() {
-            const idDestino = document.getElementById('pagoIdDestino').value;
-            const tipoDestino = document.getElementById('pagoTipoDestino').value;
-            const idOrigen = document.getElementById('pagoCuentaOrigen').value;
-            const monto = parseFloat(document.getElementById('pagoMontoInput').value);
-            if(!monto || monto <= 0) return;
-            const ori = db.cuentas.find(c => c.id == idOrigen);
-            if(ori.tipo === 'TDC') ori.saldo += monto; else ori.saldo -= monto;
-            if(tipoDestino === 'TDC') {
-                db.cuentas.find(c => c.id == idDestino).saldo -= monto;
-            } else {
-                const deuda = db.deudas.find(d => d.id == idDestino);
-                deuda.monto -= monto;
-                if(deuda.monto <= 0) db.deudas = db.deudas.filter(d => d.id != idDestino);
-            }
-            db.movimientos.unshift({ id: Date.now(), txt: `PAGO/ABONO DEUDA`, val: monto, t: 'Gasto', oId: idOrigen });
-            cerrarModal('modalPagarUniversal'); guardarLocal();
-        }
-
-        // --- MOVIMIENTOS GENERALES ---
-        function setModo(m) {
-            modoActual = m;
+        function setModo(m) { 
+            modoActual = m; 
             ['btnG', 'btnI', 'btnT'].forEach(b => document.getElementById(b).classList.remove('bg-blue-600'));
-            document.getElementById(m === 'Gasto' ? 'btnG' : m === 'Ingreso' ? 'btnI' : 'btnT').classList.add('bg-blue-600');
-            document.getElementById('capaDestino').classList.toggle('hidden', m !== 'Transfer');
-            const origen = document.getElementById('movOrigen');
-            const destino = document.getElementById('movDestino');
-            origen.innerHTML = db.cuentas.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
-            if(m === 'Ingreso' || m === 'Transfer') {
-                const deb = db.cuentas.filter(c => c.tipo !== 'TDC').map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
-                if(m === 'Ingreso') origen.innerHTML = deb; else destino.innerHTML = deb;
+            document.getElementById(m==='Gasto'?'btnG':m==='Ingreso'?'btnI':'btnT').classList.add('bg-blue-600');
+            const ori = document.getElementById('movOrigen');
+            const des = document.getElementById('movDestino');
+            const capaD = document.getElementById('capaDestino');
+
+            if(m === 'Transfer') {
+                const soloDebito = db.cuentas.filter(c => c.tipo === 'Debito').map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+                ori.innerHTML = soloDebito; des.innerHTML = soloDebito;
+                capaD.classList.remove('hidden');
+            } else {
+                ori.innerHTML = db.cuentas.filter(c => m === 'Ingreso' ? c.tipo !== 'TDC' : true).map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+                capaD.classList.add('hidden');
             }
             verificarSiEsTDC();
         }
 
-        function abrirModalMovimiento(id = null) {
-            const btnB = document.getElementById('btnBorrarMov');
-            if(id) {
-                const m = db.movimientos.find(x => x.id == id);
-                document.getElementById('editMovId').value = m.id;
-                document.getElementById('movMonto').value = m.val;
-                document.getElementById('movNombre').value = m.txt || '';
-                setModo(m.t === 'Trans' ? 'Transfer' : m.t);
-                document.getElementById('movOrigen').value = m.oId;
-                if(m.t === 'Trans') document.getElementById('movDestino').value = m.dId;
-                btnB.classList.remove('hidden');
-            } else {
-                document.getElementById('editMovId').value = '';
-                document.getElementById('movMonto').value = '';
-                document.getElementById('movNombre').value = '';
-                document.getElementById('checkMSI').checked = false;
-                toggleInputMSI();
-                setModo('Gasto'); btnB.classList.add('hidden');
-            }
-            mostrarModal('modalMov');
+        function verificarSiEsTDC() {
+            const ori = db.cuentas.find(c => c.id == document.getElementById('movOrigen').value);
+            document.getElementById('capaMSI').classList.toggle('hidden', !ori || ori.tipo !== 'TDC' || modoActual !== 'Gasto');
         }
+
+        function toggleInputMSI() { document.getElementById('inputMSICont').classList.toggle('hidden', !document.getElementById('checkMSI').checked); }
+        function toggleDeudaMSI() { document.getElementById('deudaInputMSICont').classList.toggle('hidden', !document.getElementById('deudaCheckMSI').checked); }
+        function mostrarLimite() { document.getElementById('capaLimite').classList.toggle('hidden', document.getElementById('tipoCuenta').value !== 'TDC'); }
 
         function guardarMovimiento() {
             const id = document.getElementById('editMovId').value;
-            const monto = parseFloat(document.getElementById('movMonto').value);
             const oId = document.getElementById('movOrigen').value;
-            const txt = document.getElementById('movNombre').value;
-            if(!monto) return;
-            if(id) revertirMov(id);
+            const monto = parseFloat(document.getElementById('movMonto').value);
             const ori = db.cuentas.find(c => c.id == oId);
-            let mov = { id: id || Date.now(), val: monto, oId: oId, txt: txt };
+            if(!monto || !ori) return;
+            if(id) revertirMov(id);
             
-            // Lógica MSI
-            if(modoActual === 'Gasto' && ori.tipo === 'TDC' && document.getElementById('checkMSI').checked) {
-                const m = parseInt(document.getElementById('mesesMSI').value) || 1;
-                mov.msi = { total: m, restantes: m };
-            }
-
+            let mov = { id: id ? parseInt(id) : Date.now(), val: monto, oId: oId, txt: document.getElementById('movNombre').value, t: modoActual };
+            
             if(modoActual === 'Transfer') {
                 const dId = document.getElementById('movDestino').value;
-                const des = db.cuentas.find(c => c.id == dId);
-                ori.saldo -= monto; des.saldo += monto;
-                mov = {...mov, t:'Trans', dId: dId, txt: txt || `${ori.nombre} ➔ ${des.nombre}`};
-            } else if(modoActual === 'Ingreso') {
-                ori.saldo += monto; mov = {...mov, t:'Ingreso', txt: txt || ori.nombre};
+                const dest = db.cuentas.find(c => c.id == dId);
+                ori.saldo -= monto; dest.saldo += monto;
+                mov.dId = dId; mov.txt = mov.txt || "Traspaso";
+            } else if(modoActual === 'Gasto') {
+                if(ori.tipo === 'TDC') {
+                    ori.saldo += monto;
+                    if(document.getElementById('checkMSI').checked) {
+                        const m = parseInt(document.getElementById('mesesMSI').value) || 1;
+                        mov.msi = { total: m, restantes: m };
+                    }
+                } else { ori.saldo -= monto; }
+                mov.txt = mov.txt || "Gasto";
             } else {
-                if(ori.tipo === 'TDC') ori.saldo += monto; else ori.saldo -= monto;
-                mov = {...mov, t:'Gasto', txt: txt || ori.nombre};
+                ori.saldo += monto; mov.txt = mov.txt || "Ingreso";
             }
-            if(id) db.movimientos[db.movimientos.findIndex(x=>x.id==id)] = mov;
+
+            if(id) db.movimientos = db.movimientos.map(m => m.id == id ? mov : m);
             else db.movimientos.unshift(mov);
             cerrarModal('modalMov'); guardarLocal();
         }
@@ -383,100 +257,265 @@
             const m = db.movimientos.find(x => x.id == id);
             const ori = db.cuentas.find(c => c.id == m.oId);
             if(!ori) return;
-            if(m.t === 'Trans') {
+            if(m.t === 'Transfer') {
                 const des = db.cuentas.find(c => c.id == m.dId);
                 ori.saldo += m.val; if(des) des.saldo -= m.val;
-            } else if(m.t === 'Ingreso') { ori.saldo -= m.val; }
-            else { if(ori.tipo === 'TDC') ori.saldo -= m.val; else ori.saldo += m.val; }
+            } else if(m.t === 'Gasto') {
+                if(ori.tipo === 'TDC') ori.saldo -= m.val; else ori.saldo += m.val;
+            } else { ori.saldo -= m.val; }
+        }
+
+        // --- LÓGICA DE ABONO MSI ACTUALIZADA ---
+        function abrirModalAbonoUniversal(id, tipo, movId = null) {
+            const item = tipo === 'TDC' ? db.cuentas.find(c => c.id == id) : db.deudas.find(d => d.id == id);
+            document.getElementById('pagoIdDestino').value = id;
+            document.getElementById('pagoTipoDestino').value = tipo;
+            
+            if(movId) {
+                const mov = db.movimientos.find(m => m.id == movId);
+                document.getElementById('pagoIdDestino').setAttribute('data-movid', movId);
+                document.getElementById('pagoDestinoNombre').innerText = `MSI: ${mov.txt}`;
+                // Sugerir la mensualidad exacta
+                document.getElementById('pagoMontoInput').value = (mov.val / mov.msi.restantes).toFixed(2);
+            } else {
+                document.getElementById('pagoIdDestino').removeAttribute('data-movid');
+                document.getElementById('pagoDestinoNombre').innerText = (item.nombre || item.txt || "Cuenta");
+                document.getElementById('pagoMontoInput').value = (tipo === 'TDC' ? item.saldo : item.monto);
+            }
+            
+            document.getElementById('pagoCuentaOrigen').innerHTML = db.cuentas.filter(c => c.tipo !== 'TDC' || tipo !== 'TDC').map(c => `<option value="${c.id}">${c.nombre} ($${c.saldo.toLocaleString()})</option>`).join('');
+            mostrarModal('modalPagarUniversal');
+        }
+
+        function procesarPagoUniversal() {
+            const idD = document.getElementById('pagoIdDestino').value;
+            const movId = document.getElementById('pagoIdDestino').getAttribute('data-movid');
+            const tipoD = document.getElementById('pagoTipoDestino').value;
+            const monto = parseFloat(document.getElementById('pagoMontoInput').value);
+            const ori = db.cuentas.find(c => c.id == document.getElementById('pagoCuentaOrigen').value);
+            
+            if(!monto || !ori) return;
+
+            // 1. Restar de la cuenta que paga
+            ori.saldo -= monto;
+
+            // 2. Aplicar a la deuda
+            if(movId) {
+                const m = db.movimientos.find(x => x.id == movId);
+                const tdc = db.cuentas.find(c => c.id == m.oId);
+                
+                // Cálculo de mensualidad actual
+                const cuotaMensual = m.val / m.msi.restantes;
+                
+                // Restamos de la deuda de la tarjeta
+                tdc.saldo -= monto;
+
+                // Lógica de salto de meses:
+                if (monto >= (cuotaMensual - 0.01)) { // Margen por decimales
+                    const mesesSaldados = Math.floor(monto / cuotaMensual);
+                    m.msi.restantes = Math.max(0, m.msi.restantes - mesesSaldados);
+                    m.val = Math.max(0, m.val - monto);
+                } else {
+                    // Abono parcial: baja la deuda total pero no descuenta el mes
+                    m.val -= monto;
+                }
+                
+                // Si ya no queda deuda o meses, eliminamos la marca de MSI
+                if(m.val <= 0.01 || m.msi.restantes <= 0) {
+                    m.msi.restantes = 0;
+                    m.val = 0;
+                }
+            } else if(tipoD === 'TDC') {
+                db.cuentas.find(c => c.id == idD).saldo -= monto;
+            } else {
+                const d = db.deudas.find(x => x.id == idD);
+                // Si es deuda personal con MSI
+                if(d.msi) {
+                    const cuota = d.monto / d.msi.restantes;
+                    if(monto >= (cuota - 0.01)) {
+                        const meses = Math.floor(monto / cuota);
+                        d.msi.restantes = Math.max(0, d.msi.restantes - meses);
+                    }
+                }
+                d.monto -= monto;
+                if(d.monto <= 0.1) db.deudas = db.deudas.filter(x => x.id != idD);
+            }
+            
+            db.movimientos.unshift({ id: Date.now(), txt: `Pago: ${document.getElementById('pagoDestinoNombre').innerText}`, val: monto, t: 'Gasto', oId: ori.id });
+            cerrarModal('modalPagarUniversal'); guardarLocal();
+        }
+
+        // --- RESTO DE UI ---
+        function abrirModalMovimiento(id = null) {
+            const btnB = document.getElementById('btnBorrarMov');
+            if(id) {
+                const m = db.movimientos.find(x => x.id == id);
+                document.getElementById('editMovId').value = id;
+                document.getElementById('movNombre').value = m.txt;
+                document.getElementById('movMonto').value = m.val;
+                setModo(m.t); document.getElementById('movOrigen').value = m.oId;
+                btnB.classList.remove('hidden');
+            } else {
+                document.getElementById('editMovId').value = '';
+                document.getElementById('movNombre').value = '';
+                document.getElementById('movMonto').value = '';
+                setModo('Gasto'); btnB.classList.add('hidden');
+            }
+            mostrarModal('modalMov');
         }
 
         function borrarMovimiento() {
             revertirMov(document.getElementById('editMovId').value);
-            db.movimientos = db.movimientos.filter(x => x.id != document.getElementById('editMovId').value);
+            db.movimientos = db.movimientos.filter(m => m.id != document.getElementById('editMovId').value);
             cerrarModal('modalMov'); guardarLocal();
         }
 
-        // --- DEUDAS PERSONALES ---
-        function abrirModalDeuda(id = null) {
-            const btnB = document.getElementById('btnBorrarD');
-            document.getElementById('editDeudaId').value = id || '';
+        function abrirModalCuenta(id = null) {
+            const btnB = document.getElementById('btnBorrarAcc');
             if(id) {
-                const d = db.deudas.find(x => x.id == id);
-                document.getElementById('deudaNombre').value = d.nombre;
-                document.getElementById('deudaMonto').value = d.monto;
+                const c = db.cuentas.find(x => x.id == id);
+                document.getElementById('editAccId').value = id;
+                document.getElementById('tipoCuenta').value = c.tipo;
+                document.getElementById('nombreCuenta').value = c.nombre;
+                document.getElementById('saldoCuenta').value = c.saldo;
+                document.getElementById('limiteCuenta').value = c.limite || 0;
                 btnB.classList.remove('hidden');
             } else {
-                document.getElementById('deudaNombre').value = '';
-                document.getElementById('deudaMonto').value = 0;
+                document.getElementById('editAccId').value = '';
+                document.getElementById('nombreCuenta').value = '';
+                document.getElementById('saldoCuenta').value = '';
                 btnB.classList.add('hidden');
             }
-            mostrarModal('modalDeuda');
+            mostrarLimite(); mostrarModal('modalCuenta');
+        }
+
+        function guardarCuenta() {
+            const id = document.getElementById('editAccId').value;
+            const n = document.getElementById('nombreCuenta').value;
+            const s = parseFloat(document.getElementById('saldoCuenta').value) || 0;
+            const t = document.getElementById('tipoCuenta').value;
+            const l = parseFloat(document.getElementById('limiteCuenta').value) || 0;
+            if(!n) return;
+            if(id) {
+                const c = db.cuentas.find(x => x.id == id);
+                c.nombre = n; c.saldo = s; c.tipo = t; c.limite = l;
+            } else { db.cuentas.push({ id: Date.now(), nombre: n, saldo: s, tipo: t, limite: l }); }
+            cerrarModal('modalCuenta'); guardarLocal();
+        }
+
+        function borrarCuenta() {
+            db.cuentas = db.cuentas.filter(c => c.id != document.getElementById('editAccId').value);
+            cerrarModal('modalCuenta'); guardarLocal();
+        }
+
+        function abrirModalDeuda(id = null) {
+            const btnB = document.getElementById('btnBorrarDeuda');
+            if(id) {
+                const d = db.deudas.find(x => x.id == id);
+                document.getElementById('editDeudaId').value = id;
+                document.getElementById('deudaNombre').value = d.nombre;
+                document.getElementById('deudaMonto').value = d.monto;
+                document.getElementById('deudaCheckMSI').checked = !!d.msi;
+                document.getElementById('deudaMeses').value = d.msi ? d.msi.total : '';
+                btnB.classList.remove('hidden');
+            } else {
+                document.getElementById('editDeudaId').value = '';
+                document.getElementById('deudaNombre').value = '';
+                document.getElementById('deudaMonto').value = '';
+                document.getElementById('deudaCheckMSI').checked = false;
+                btnB.classList.add('hidden');
+            }
+            toggleDeudaMSI(); mostrarModal('modalDeuda');
         }
 
         function guardarDeuda() {
             const id = document.getElementById('editDeudaId').value;
             const n = document.getElementById('deudaNombre').value;
-            const m = parseFloat(document.getElementById('deudaMonto').value) || 0;
-            if(!n) return;
-            if(id) {
-                const d = db.deudas.find(x => x.id == id);
-                d.nombre = n; d.monto = m;
-            } else { db.deudas.push({ id: Date.now(), nombre: n, monto: m }); }
+            const m = parseFloat(document.getElementById('deudaMonto').value);
+            if(!n || !m) return;
+            let d = { id: id ? parseInt(id) : Date.now(), nombre: n, monto: m };
+            if(document.getElementById('deudaCheckMSI').checked) {
+                const meses = parseInt(document.getElementById('deudaMeses').value) || 1;
+                d.msi = { total: meses, restantes: meses };
+            }
+            if(id) db.deudas = db.deudas.map(x => x.id == id ? d : x); else db.deudas.push(d);
             cerrarModal('modalDeuda'); guardarLocal();
         }
 
         function borrarDeuda() {
-            db.deudas = db.deudas.filter(x => x.id != document.getElementById('editDeudaId').value);
+            db.deudas = db.deudas.filter(d => d.id != document.getElementById('editDeudaId').value);
             cerrarModal('modalDeuda'); guardarLocal();
         }
 
         function render() {
-            const cash = db.cuentas.filter(c => c.tipo === 'Debito').reduce((s, c) => s + c.saldo, 0);
+            const mesesAdd = parseInt(document.getElementById('selectorMesProg').value);
+            const cash = db.cuentas.filter(c => c.tipo !== 'TDC').reduce((s, c) => s + c.saldo, 0);
             document.getElementById('grandTotal').innerText = `$${cash.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
-            const tdcD = db.cuentas.filter(c => c.tipo === 'TDC').reduce((s, c) => s + c.saldo, 0);
-            const persD = db.deudas.reduce((s, d) => s + d.monto, 0);
-            document.getElementById('deudaTotalLabel').innerText = `$${(tdcD + persD).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+            
+            let totalMSI = 0, totalCorrientes = 0;
+            
+            // Sumar abonos de deudas personales con MSI
+            db.deudas.forEach(d => {
+                if(d.msi && d.msi.restantes > mesesAdd) totalMSI += (d.monto / d.msi.restantes);
+                else if(!d.msi && mesesAdd === 0) totalCorrientes += d.monto;
+            });
 
-            document.getElementById('listaCuentas').innerHTML = db.cuentas.map(c => {
-                const disp = c.tipo === 'TDC' ? (c.limite - c.saldo) : c.saldo;
-                return `
-                <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[170px] p-5 rounded-3xl border ${c.tipo==='TDC'?'border-amber-500/20 bg-slate-900/40':'border-slate-800 bg-slate-900'}">
-                    <p class="text-[8px] font-bold uppercase ${c.tipo==='TDC'?'text-amber-500':'text-blue-500'}">${c.nombre}</p>
-                    <p class="text-xl font-black italic">$${disp.toLocaleString('es-MX')}</p>
-                    <p class="text-[7px] text-slate-500 font-bold uppercase">${c.tipo==='TDC'?'Disponible':'Saldo'}</p>
-                </div>`;
-            }).join('');
+            // Sumar MSI y deuda revolvente de TDC
+            db.cuentas.filter(c => c.tipo === 'TDC').forEach(tdc => {
+                let corriente = tdc.saldo;
+                db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0).forEach(m => {
+                    const cuota = m.val / m.msi.restantes;
+                    corriente -= m.val; // Restar toda la porción MSI para dejar solo lo corriente
+                    if(m.msi.restantes > mesesAdd) totalMSI += cuota;
+                });
+                if(mesesAdd === 0 && corriente > 0.01) totalCorrientes += corriente;
+            });
 
-            // RENDER LISTA MSI
-            const msiActivos = db.movimientos.filter(m => m.msi && m.msi.restantes > 0);
-            document.getElementById('listaMSI').innerHTML = msiActivos.length ? msiActivos.map(m => `
-                <div class="bg-slate-900 p-4 rounded-2xl border border-amber-500/20 flex justify-between items-center">
-                    <div>
-                        <p class="text-[10px] font-bold text-white uppercase">${m.txt || 'Gasto'} (${m.msi.restantes}/${m.msi.total})</p>
-                        <p class="text-xs text-amber-500 font-bold">$${(m.val/m.msi.total).toLocaleString('es-MX')} p/mes</p>
-                    </div>
-                    <button onclick="abrirModalPagoMSI(${m.id})" class="bg-amber-600 text-white px-3 py-2 rounded-lg text-[9px] font-bold uppercase shadow-lg">Pagar Mes</button>
-                </div>`).join('') : '<p class="text-[9px] text-slate-600 italic">No hay planes activos</p>';
+            document.getElementById('resumenMSI').innerText = `$${totalMSI.toLocaleString()}`;
+            document.getElementById('resumenCorrientes').innerText = `$${totalCorrientes.toLocaleString()}`;
+            document.getElementById('resumenTotalMes').innerText = `$${(totalMSI + totalCorrientes).toLocaleString()}`;
+
+            document.getElementById('listaCuentas').innerHTML = db.cuentas.map(c => `
+                <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[170px] p-5 rounded-[2rem] border border-slate-800 bg-slate-900 active:scale-95 transition-transform">
+                    <p class="text-[8px] font-bold uppercase text-blue-500 mb-1">${c.nombre}</p>
+                    <p class="text-xl font-black italic">$${(c.tipo==='TDC'?(c.limite-c.saldo):c.saldo).toLocaleString()}</p>
+                    <p class="text-[7px] text-slate-500 font-bold uppercase">${c.tipo==='TDC'?'Disponible':'Saldo Real'}</p>
+                </div>`).join('');
+
+            document.getElementById('historial').innerHTML = db.movimientos.slice(0, 12).map(m => `
+                <div onclick="abrirModalMovimiento(${m.id})" class="flex justify-between items-center p-4 bg-slate-900/50 rounded-2xl border border-white/5 active:bg-slate-800">
+                    <div><p class="text-[10px] font-bold uppercase">${m.txt}</p><p class="text-[7px] text-slate-500 font-bold uppercase">${m.t} ${m.msi?'• MSI':''}</p></div>
+                    <p class="font-black ${m.t==='Ingreso'?'text-green-500':'text-white'}">$${m.val.toLocaleString()}</p>
+                </div>`).join('');
 
             document.getElementById('listaTDC').innerHTML = db.cuentas.filter(c => c.tipo === 'TDC').map(c => `
                 <div class="bg-slate-900 p-4 rounded-2xl flex justify-between items-center border border-slate-800">
-                    <div><p class="text-xs font-bold">${c.nombre}</p><p class="text-[9px] text-red-500 font-bold uppercase">$${c.saldo.toLocaleString('es-MX')} deuda</p></div>
-                    <button onclick="abrirModalAbonoUniversal(${c.id}, 'TDC')" class="bg-white text-black text-[9px] font-extrabold px-3 py-2 rounded-lg uppercase">Pagar</button>
+                    <div><p class="text-xs font-bold uppercase">${c.nombre}</p><p class="text-[9px] text-red-500 font-bold">$${c.saldo.toLocaleString()} deuda total</p></div>
+                    <button onclick="abrirModalAbonoUniversal(${c.id}, 'TDC')" class="bg-white text-black text-[9px] font-bold px-3 py-2 rounded-lg uppercase italic">Abonar</button>
                 </div>`).join('');
 
             document.getElementById('listaDeudasPersonales').innerHTML = db.deudas.map(d => `
-                <div class="bg-slate-900 p-4 rounded-2xl flex justify-between items-center border border-slate-800">
-                    <div onclick="abrirModalDeuda(${d.id})"><p class="text-xs font-bold">${d.nombre}</p><p class="text-red-400 font-bold text-[10px]">$${d.monto.toLocaleString('es-MX')}</p></div>
-                    <button onclick="abrirModalAbonoUniversal(${d.id}, 'PERSONA')" class="bg-green-600 text-white text-[9px] font-extrabold px-3 py-2 rounded-lg uppercase">Abonar</button>
+                <div class="bg-slate-900 p-4 rounded-2xl flex justify-between items-center border border-slate-800" onclick="abrirModalDeuda(${d.id})">
+                    <div><p class="text-xs font-bold uppercase">${d.nombre} ${d.msi ? '🏷️' : ''}</p><p class="text-red-400 font-bold">$${d.monto.toLocaleString()}</p></div>
+                    <button onclick="event.stopPropagation(); abrirModalAbonoUniversal(${d.id}, 'PERSONA')" class="bg-green-600 text-white text-[9px] font-bold px-3 py-2 rounded-lg uppercase">Abonar</button>
                 </div>`).join('');
 
-            document.getElementById('historial').innerHTML = db.movimientos.slice(0, 10).map(m => `
-                <div onclick="abrirModalMovimiento(${m.id})" class="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-800/50">
-                    <span class="text-slate-400 text-[10px] uppercase font-bold">${m.txt || 'Sin concepto'} ${m.msi ? '🏷️' : ''}</span>
-                    <span class="font-bold ${m.t === 'Ingreso' ? 'text-green-500' : m.t === 'Trans' ? 'text-blue-400' : 'text-red-500'}">
-                        ${m.t === 'Ingreso' ? '+' : '-'}$${m.val.toLocaleString('es-MX')}
-                    </span>
-                </div>`).join('');
+            const msiTDC = db.movimientos.filter(m => m.msi && m.msi.restantes > 0);
+            document.getElementById('listaMSI').innerHTML = msiTDC.map(m => {
+                const cuota = m.val / m.msi.restantes;
+                return `
+                <div class="bg-slate-900/50 p-4 rounded-2xl border border-amber-500/20 flex justify-between items-center">
+                    <div>
+                        <p class="text-[9px] font-bold text-white uppercase mb-1">${m.txt} <span class="text-amber-500 italic">(${m.msi.restantes}/${m.msi.total} MESES)</span></p>
+                        <p class="text-lg text-amber-500 font-black tracking-tighter">$${cuota.toLocaleString()} <span class="text-[8px] font-normal text-slate-500">al mes</span></p>
+                        <p class="text-[7px] text-slate-500 uppercase font-bold">Resta: $${m.val.toLocaleString()}</p>
+                    </div>
+                    <button onclick="abrirModalAbonoUniversal(${m.oId}, 'TDC', ${m.id})" class="bg-amber-600 text-white px-3 py-2 rounded-lg text-[9px] font-bold uppercase italic">Saldar Mes</button>
+                </div>`;
+            }).join('');
+
+            document.getElementById('pagoProximoMes').innerText = `$${totalMSI.toLocaleString()}`;
+            document.getElementById('deudaTotalLabel').innerText = `$${(db.deudas.reduce((s,d)=>s+d.monto,0) + db.cuentas.filter(c=>c.tipo==='TDC').reduce((s,c)=>s+c.saldo,0)).toLocaleString()}`;
         }
         render();
     </script>
