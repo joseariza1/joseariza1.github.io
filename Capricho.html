@@ -28,7 +28,7 @@
         <div v-if="cargando" class="loading-overlay">
             <div class="text-center">
                 <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent mb-2"></div>
-                <p>Sincronizando datos...</p>
+                <p>Sincronizando...</p>
             </div>
         </div>
 
@@ -47,7 +47,7 @@
                         <h2 class="text-xl font-bold">Cesta Actual</h2>
                     </div>
                     
-                    <div v-if="carrito.length === 0" class="text-gray-400 py-6 text-center border-2 border-dashed rounded-xl italic">Selecciona productos</div>
+                    <div v-if="carrito.length === 0" class="text-gray-400 py-6 text-center border-2 border-dashed rounded-xl italic">Carrito vacío</div>
 
                     <div class="flex flex-col gap-2 mb-6">
                         <div v-for="(item, index) in carrito" :key="item.id" class="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-xl flex items-center justify-between shadow-sm">
@@ -66,15 +66,15 @@
                     <div class="flex flex-col md:flex-row justify-between items-center border-t pt-4 gap-4">
                         <span class="text-3xl font-black">Total: ${{ totalVenta }}</span>
                         <div class="flex gap-2 w-full md:w-auto font-bold">
-                            <button @click="finalizarVentaInmediata" :disabled="carrito.length === 0" class="flex-1 bg-green-500 text-white px-6 py-3 rounded-xl hover:bg-green-600 transition disabled:opacity-50 shadow-md">Vender Ya</button>
-                            <button @click="mostrarModalAgenda = true" :disabled="carrito.length === 0" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition disabled:opacity-50 shadow-md">Agendar</button>
+                            <button @click="finalizarVentaInmediata" :disabled="carrito.length === 0" class="flex-1 bg-green-500 text-white px-6 py-3 rounded-xl shadow-md">Vender Ya</button>
+                            <button @click="abrirModalAgenda" :disabled="carrito.length === 0" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-xl shadow-md">Agendar</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-6 relative">
                     <i class="bi bi-search absolute left-4 top-3.5 text-gray-400"></i>
-                    <input type="text" v-model="busqueda" placeholder="Buscar por nombre..." class="w-full pl-12 pr-4 py-3 rounded-xl shadow-md border-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="text" v-model="busqueda" placeholder="Buscar productos..." class="w-full pl-12 pr-4 py-3 rounded-xl shadow-md border-none focus:ring-2 focus:ring-indigo-500">
                 </div>
 
                 <div class="grid-products">
@@ -101,21 +101,39 @@
             </section>
 
             <section v-if="vista === 'agendados'">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div v-for="v in ventasDia.filter(v => v.tipo === 'agendado')" :key="v.id" class="bg-white p-5 rounded-2xl shadow border-l-4 border-blue-500">
-                        <div class="flex justify-between items-start">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div v-for="v in ventasDia.filter(v => v.tipo === 'agendado')" :key="v.id" 
+                         class="bg-white p-5 rounded-2xl shadow-md border-l-4 transition-all"
+                         :class="v.completado ? 'border-green-400 opacity-60' : 'border-blue-500 shadow-indigo-100'">
+                        <div class="flex justify-between items-start mb-2">
                             <div>
-                                <h3 class="font-bold text-lg text-indigo-900">{{ v.cliente }}</h3>
-                                <p class="text-xs text-gray-500 font-bold">Entrega: {{ v.fechaEntrega }}</p>
-                                <p class="text-xs text-indigo-600 font-bold">Lugar: {{ v.lugar }}</p>
+                                <h3 class="font-black text-indigo-900 leading-tight">{{ v.cliente }}</h3>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">{{ fFecha(v.fechaEntrega) }}</p>
                             </div>
-                            <div class="text-right">
-                                <span class="block font-black text-xl text-indigo-600">${{ v.total }}</span>
-                                <button v-if="!v.completado" @click="completarPedido(v.id)" class="text-[10px] bg-green-500 text-white px-3 py-1 rounded-lg font-bold uppercase mt-1">Marcar Entregado</button>
-                                <span v-else class="text-[10px] bg-green-100 text-green-700 px-3 py-1 rounded-lg font-bold uppercase mt-1 block">✓ Entregado</span>
-                            </div>
+                            <span class="text-lg font-black text-indigo-600">${{ v.total }}</span>
+                        </div>
+                        <div class="text-[11px] text-blue-600 font-bold mb-3 italic">
+                            <i class="bi bi-geo-alt-fill"></i> {{ v.lugar || 'Lugar no especificado' }}
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-xl mb-4 text-[10px] text-gray-500 max-h-24 overflow-y-auto">
+                            <span v-for="p in v.productos" class="block">• {{ p.nombre }} (x{{ p.cantidad }})</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button v-if="!v.completado" @click="completarPedido(v.id)" class="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-[10px] uppercase">Entregado</button>
+                            <span v-else class="flex-1 bg-green-100 text-green-700 py-2 rounded-lg font-bold text-[10px] text-center uppercase">✓ Listo</span>
+                            
+                            <button @click="editarAgendado(v)" class="bg-blue-100 text-blue-600 p-2 rounded-lg" title="Editar detalles">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button @click="eliminarVenta(v.id)" class="bg-red-50 text-red-400 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
+                                <i class="bi bi-trash3"></i>
+                            </button>
                         </div>
                     </div>
+                </div>
+                <div v-if="ventasDia.filter(v => v.tipo === 'agendado').length === 0" class="text-center py-20 text-gray-400">
+                    <i class="bi bi-calendar-x text-5xl mb-4 block"></i>
+                    <p class="font-bold">No hay pedidos agendados</p>
                 </div>
             </section>
 
@@ -123,20 +141,19 @@
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-black italic">Inventario</h2>
                     <div class="flex gap-2">
-                        <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">Crear Paquete</button>
+                        <button @click="mostrarModalPaquete = true" class="bg-purple-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">Crear Pack</button>
                         <button @click="generarVentanaStock" class="bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">Ver Nombres</button>
                     </div>
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl shadow-md mb-8 border-t-4 border-indigo-400">
-                    <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-4">Registro / Edición</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-4">
-                            <input type="text" v-model="nuevoProd.nombre" placeholder="Nombre" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
+                            <input type="text" v-model="nuevoProd.nombre" placeholder="Nombre del Producto" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
                             <input type="number" v-model.number="nuevoProd.costo" placeholder="Costo Unitario ($)" class="w-full border p-3 rounded-xl outline-none">
-                            <input type="number" v-model.number="nuevoProd.piezas" placeholder="Stock inicial" class="w-full border p-3 rounded-xl outline-none">
+                            <input type="number" v-model.number="nuevoProd.piezas" placeholder="Stock Inicial" class="w-full border p-3 rounded-xl outline-none">
                             
-                            <div class="grid grid-cols-2 gap-2 mt-2">
+                            <div class="grid grid-cols-2 gap-2">
                                 <div class="bg-blue-50 p-2 rounded-lg text-center border border-blue-100">
                                     <p class="text-[9px] font-bold text-blue-500 uppercase">Sugerido 50%</p>
                                     <p class="text-sm font-black text-blue-700">${{ (nuevoProd.costo * 1.5).toFixed(2) }}</p>
@@ -153,19 +170,19 @@
                         </div>
                     </div>
                     <div class="flex gap-2 mt-6">
-                        <button @click="guardarProducto" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg">GUARDAR PRODUCTO</button>
-                        <button v-if="editandoId" @click="cancelarEdicion" class="px-6 bg-gray-200 py-4 rounded-xl font-bold">CANCELAR</button>
+                        <button @click="guardarProducto" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg">GUARDAR EN STOCK</button>
+                        <button v-if="editandoId" @click="cancelarEdicion" class="px-6 bg-gray-200 py-4 rounded-xl font-bold uppercase text-xs">Cancelar</button>
                     </div>
                 </div>
 
                 <div class="mb-4 relative">
-                    <i class="bi bi-filter-left absolute left-4 top-3 text-gray-400"></i>
-                    <input type="text" v-model="busquedaStock" placeholder="Filtrar inventario..." class="w-full pl-12 pr-4 py-3 rounded-xl shadow-sm border border-gray-100 focus:ring-2 focus:ring-indigo-300">
+                    <i class="bi bi-funnel absolute left-4 top-3.5 text-gray-400"></i>
+                    <input type="text" v-model="busquedaStock" placeholder="Filtrar inventario por nombre..." class="w-full pl-12 pr-4 py-3 rounded-xl shadow-sm border border-gray-100 focus:ring-2 focus:ring-indigo-300">
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-md overflow-x-auto">
                     <table class="w-full text-sm">
-                        <thead class="bg-gray-50 border-b font-bold text-[10px] uppercase">
+                        <thead class="bg-gray-50 border-b font-bold text-[10px] uppercase text-gray-500">
                             <tr>
                                 <th class="p-4 text-left">Producto</th>
                                 <th class="p-4 text-center">Stock</th>
@@ -182,7 +199,7 @@
                                 <td class="p-4 text-center">
                                     <div v-if="p.precioOferta" class="flex flex-col items-center">
                                         <span class="text-[10px] font-black text-red-600">${{ p.precioOferta }}</span>
-                                        <button @click="quitarOferta(p)" class="text-[9px] text-red-400 underline">Quitar</button>
+                                        <button @click="quitarOferta(p)" class="text-[9px] text-red-400 underline font-bold">Quitar</button>
                                     </div>
                                     <button v-else @click="activarOferta(p)" class="text-gray-300 hover:text-orange-500">
                                         <i class="bi bi-lightning-charge-fill"></i>
@@ -201,16 +218,16 @@
 
             <section v-if="vista === 'reportes'">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-red-500 text-center">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Inversión Actual</h4>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-red-500">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Inversión Actual</h4>
                         <p class="text-2xl font-black text-red-600">${{ inversionTotalActual }}</p>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-orange-400 text-center">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Productos</h4>
-                        <p class="text-2xl font-black text-orange-600">{{ productos.length }} ítems</p>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-orange-400">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Productos</h4>
+                        <p class="text-2xl font-black text-orange-600">{{ productos.length }}</p>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-indigo-500 text-center">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Ventas 7 Días</h4>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-indigo-500">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Ventas 7 Días</h4>
                         <p class="text-2xl font-black text-indigo-600">${{ totalSemanal }}</p>
                     </div>
                 </div>
@@ -223,17 +240,16 @@
                             <tr>
                                 <th class="p-3 text-left">Fecha</th>
                                 <th class="p-3 text-left">Cliente</th>
-                                <th class="p-3 text-left">Artículos</th>
                                 <th class="p-3 text-center">Total</th>
                                 <th class="p-3 text-right">Acción</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="v in ventasDia.slice().reverse().slice(0,10)" :key="v.id" :class="{'bg-red-50 opacity-60': v.devuelta}">
+                            <tr v-for="v in ventasDia.slice().reverse().slice(0,15)" :key="v.id" :class="{'bg-red-50 opacity-60': v.devuelta}">
                                 <td class="p-3 text-[10px]">{{ fFecha(v.fechaReal) }}</td>
-                                <td class="p-3 font-bold text-indigo-700">{{ v.cliente }}</td>
-                                <td class="p-3 italic text-[11px] text-gray-600">
-                                    <div v-for="p in v.productos">• {{ p.nombre }} (x{{ p.cantidad }})</div>
+                                <td class="p-3 font-bold text-indigo-700">
+                                    {{ v.cliente }}
+                                    <span v-if="v.tipo === 'agendado'" class="text-[8px] bg-blue-100 text-blue-600 px-1 rounded ml-1">AGENDA</span>
                                 </td>
                                 <td class="p-3 text-center font-black">${{ v.total }}</td>
                                 <td class="p-3 text-right">
@@ -246,24 +262,52 @@
             </section>
         </main>
 
+        <div v-if="mostrarModalAgenda" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+            <div class="bg-white p-8 rounded-3xl w-full max-w-md shadow-2xl">
+                <h2 class="text-xl font-bold mb-6 text-indigo-700 italic text-center">
+                    {{ editandoAgendaId ? 'Editar Pedido' : 'Agendar Pedido' }}
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Nombre del Cliente</label>
+                        <input type="text" v-model="agenda.cliente" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fecha y Hora de Entrega</label>
+                        <input type="datetime-local" v-model="agenda.fecha" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Lugar de Entrega</label>
+                        <input type="text" v-model="agenda.lugar" placeholder="Ej. Plaza, Domicilio..." class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-8">
+                    <button @click="finalizarVentaAgendada" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-black shadow-lg uppercase text-sm">
+                        {{ editandoAgendaId ? 'Guardar Cambios' : 'Confirmar Agenda' }}
+                    </button>
+                    <button @click="cerrarModalAgenda" class="bg-gray-100 px-6 py-4 rounded-xl text-gray-400 font-bold uppercase text-[10px]">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
         <div v-if="mostrarModalPaquete" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-            <div class="bg-white p-8 rounded-3xl w-full max-w-2xl shadow-2xl">
-                <h2 class="text-xl font-black text-purple-700 mb-6 italic">Crear Pack</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white p-8 rounded-3xl w-full max-w-2xl shadow-2xl text-center">
+                <h2 class="text-xl font-black text-purple-700 mb-6 italic">Nuevo Pack</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-left">
                     <input type="text" v-model="paqueteNuevo.nombre" placeholder="Nombre del Pack" class="border p-3 rounded-xl outline-none">
-                    <input type="number" v-model.number="paqueteNuevo.precioVenta" placeholder="Precio Venta" class="border-2 border-purple-200 p-3 rounded-xl font-bold outline-none">
+                    <input type="number" v-model.number="paqueteNuevo.precioVenta" placeholder="Precio Final" class="border-2 border-purple-200 p-3 rounded-xl font-bold outline-none">
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto p-2 border rounded-xl bg-gray-50">
                     <div v-for="p in productos.filter(x => !x.esPaquete)" 
                          @click="toggleProdEnPaquete(p.id)" 
                          :class="paqueteSeleccionadosIds.includes(p.id) ? 'bg-purple-600 text-white' : 'bg-white text-gray-500'"
-                         class="border p-2 rounded-lg text-[11px] font-bold cursor-pointer text-center truncate shadow-sm transition-colors">
+                         class="border p-2 rounded-lg text-[11px] font-bold cursor-pointer truncate shadow-sm transition-colors">
                         {{ p.nombre }}
                     </div>
                 </div>
                 <div class="flex gap-3 mt-8">
-                    <button @click="guardarPaquete" class="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold">GUARDAR PACK</button>
-                    <button @click="mostrarModalPaquete = false" class="px-8 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold">CERRAR</button>
+                    <button @click="guardarPaquete" class="flex-1 bg-purple-600 text-white py-4 rounded-xl font-bold uppercase text-sm">Crear Pack</button>
+                    <button @click="mostrarModalPaquete = false" class="px-8 bg-gray-100 text-gray-400 py-4 rounded-xl font-bold uppercase text-xs">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -285,6 +329,9 @@
                     ventasDia: [],
                     nuevoProd: { nombre: '', costo: null, piezas: null, precioVenta: null, precioOferta: null },
                     editandoId: null,
+                    editandoAgendaId: null, // NUEVO: Para saber qué pedido editamos
+                    agenda: { cliente: '', fecha: '', lugar: '' },
+                    mostrarModalAgenda: false,
                     mostrarModalPaquete: false,
                     paqueteNuevo: { nombre: '', precioVenta: null },
                     paqueteSeleccionadosIds: [],
@@ -399,7 +446,11 @@
 
                 editarProducto(p) { this.editandoId = p.id; this.nuevoProd = { ...p }; window.scrollTo(0,0); },
                 cancelarEdicion() { this.editandoId = null; this.nuevoProd = { nombre: '', costo: null, piezas: null, precioVenta: null, precioOferta: null }; },
-                eliminarProducto(id) { this.productos = this.productos.filter(p => p.id !== id); this.persistir(); },
+                eliminarProducto(id) { 
+                    Swal.fire({ title: '¿Eliminar producto?', icon: 'warning', showCancelButton: true }).then(r => {
+                        if(r.isConfirmed) { this.productos = this.productos.filter(p => p.id !== id); this.persistir(); }
+                    });
+                },
 
                 toggleProdEnPaquete(id) {
                     const idx = this.paqueteSeleccionadosIds.indexOf(id);
@@ -414,10 +465,72 @@
 
                 finalizarVentaInmediata() {
                     this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), cliente: 'Mostrador', productos: [...this.carrito], total: this.totalVenta, tipo: 'inmediata', devuelta: false });
-                    this.carrito = []; this.persistir();
+                    this.carrito = []; this.persistir(); Swal.fire('Venta registrada', '', 'success');
+                },
+
+                // Lógica de Agenda Corregida
+                abrirModalAgenda() {
+                    this.editandoAgendaId = null;
+                    this.agenda = { cliente: '', fecha: '', lugar: '' };
+                    this.mostrarModalAgenda = true;
+                },
+
+                editarAgendado(v) {
+                    this.editandoAgendaId = v.id;
+                    this.agenda = { cliente: v.cliente, fecha: v.fechaEntrega, lugar: v.lugar };
+                    this.mostrarModalAgenda = true;
+                },
+
+                cerrarModalAgenda() {
+                    this.mostrarModalAgenda = false;
+                    this.editandoAgendaId = null;
+                    this.agenda = { cliente: '', fecha: '', lugar: '' };
+                },
+
+                finalizarVentaAgendada() {
+                    if (this.editandoAgendaId) {
+                        const v = this.ventasDia.find(v => v.id === this.editandoAgendaId);
+                        if (v) {
+                            v.cliente = this.agenda.cliente || 'Sin nombre';
+                            v.fechaEntrega = this.agenda.fecha;
+                            v.lugar = this.agenda.lugar;
+                        }
+                        Swal.fire('Pedido actualizado', '', 'success');
+                    } else {
+                        this.ventasDia.push({ 
+                            id: Date.now(), 
+                            fechaReal: new Date().toISOString(), 
+                            fechaEntrega: this.agenda.fecha, 
+                            cliente: this.agenda.cliente || 'Sin Nombre', 
+                            lugar: this.agenda.lugar, 
+                            productos: [...this.carrito], 
+                            total: this.totalVenta, 
+                            tipo: 'agendado', 
+                            completado: false, 
+                            devuelta: false 
+                        });
+                        this.carrito = [];
+                        Swal.fire('Pedido agendado', '', 'success');
+                    }
+                    this.cerrarModalAgenda();
+                    this.persistir();
                 },
 
                 completarPedido(id) { const v = this.ventasDia.find(v => v.id === id); if (v) v.completado = true; this.persistir(); },
+                
+                eliminarVenta(id) {
+                    Swal.fire({ title: '¿Eliminar este pedido?', text: 'El stock se devolverá automáticamente', icon: 'warning', showCancelButton: true }).then(r => {
+                        if(r.isConfirmed) {
+                            const v = this.ventasDia.find(x => x.id === id);
+                            if (v && !v.completado && !v.devuelta) {
+                                // Devolver stock si era un pedido pendiente
+                                v.productos.forEach(p => this.actualizarStock(p, p.cantidad));
+                            }
+                            this.ventasDia = this.ventasDia.filter(v => v.id !== id);
+                            this.persistir();
+                        }
+                    });
+                },
                 
                 devolverVenta(id) {
                     const v = this.ventasDia.find(v => v.id === id);
@@ -426,10 +539,11 @@
                         v.productos.forEach(pCarrito => this.actualizarStock(pCarrito, pCarrito.cantidad));
                         this.persistir();
                         if (this.vista === 'reportes') this.initChart();
+                        Swal.fire('Venta cancelada', 'Stock devuelto', 'info');
                     }
                 },
 
-                fFecha(iso) { return new Date(iso).toLocaleString('es-MX', { hour12: true }); },
+                fFecha(iso) { return iso ? new Date(iso).toLocaleString('es-MX', { hour12: true }) : 'Sin fecha'; },
 
                 generarVentanaStock() {
                     const lista = this.productosOrdenados.map(p => `<li class="py-1 border-b text-xs text-left">${p.nombre}</li>`).join('');
@@ -452,7 +566,8 @@
                         data: {
                             labels: ultimos7.map(f => f.split('-').slice(1).reverse().join('/')),
                             datasets: [{ label: 'Ventas $', data: dataVentas, borderColor: '#4f46e5', tension: 0.4, fill: true, backgroundColor: 'rgba(79, 70, 229, 0.05)' }]
-                        }
+                        },
+                        options: { plugins: { legend: { display: false } } }
                     });
                 }
             }
