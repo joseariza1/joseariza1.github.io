@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voz Studio Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #F8F9FA; 
+            color: #1A1A1A;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass-card { 
+            background: #FFFFFF; 
+            border-radius: 24px; 
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        /* Estilización del Slider (Input Range) */
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            background: #E9ECEF;
+            border-radius: 8px;
+            accent-color: #000000;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #000000;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #FFF;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn-main {
+            transition: all 0.2s ease;
+        }
+
+        .btn-main:active {
+            transform: scale(0.97);
+        }
+
+        /* Ocultar scrollbar */
+        textarea::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center p-6 min-h-screen">
+
+    <div class="w-full max-w-md space-y-6">
+      
+
+        <div class="glass-card p-6">
+            <textarea id="textInput" 
+                class="w-full h-44 bg-transparent border-none text-[17px] text-gray-800 placeholder-gray-300 focus:outline-none resize-none leading-snug" 
+                placeholder="Escribe lo que quieras que diga la voz..."></textarea>
+        </div>
+
+        <div class="glass-card p-6 space-y-6">
+            <div class="relative">
+                <label class="text-[11px] font-700 text-gray-400 uppercase tracking-widest mb-3 block">Motor de Voz</label>
+                <select id="voiceSelect" class="w-full p-3 bg-gray-50 border-none rounded-xl text-[14px] font-500 text-gray-700 appearance-none outline-none focus:ring-1 focus:ring-black"></select>
+            </div>
+
+            <div class="space-y-5">
+                <div class="space-y-2">
+                    <div class="flex justify-between text-[12px] font-600">
+                        <span class="text-gray-400">Velocidad</span>
+                        <span id="val-rate" class="text-black">1.0x</span>
+                    </div>
+                    <input type="range" id="rate" class="w-full" min="0.5" max="2" step="0.1" value="1">
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between text-[12px] font-600">
+                        <span class="text-gray-400">Tono (Género)</span>
+                        <span id="val-pitch" class="text-black">1.0</span>
+                    </div>
+                    <input type="range" id="pitch" class="w-full" min="0" max="2" step="0.1" value="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <button id="btnPlay" class="btn-main bg-black text-white py-4 rounded-2xl font-600 shadow-xl flex items-center justify-center gap-2">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                Escuchar
+            </button>
+            <button id="btnDownload" class="btn-main bg-white text-black py-4 rounded-2xl font-600 border border-gray-100 flex items-center justify-center gap-2">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Guardar
+            </button>
+        </div>
+
+        <p class="text-center text-[11px] text-gray-300 font-500 uppercase tracking-widest">PWA Ilimitada • Procesamiento Local</p>
+    </div>
+
+    <script>
+        const synth = window.speechSynthesis;
+        const textInput = document.getElementById('textInput');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateInput = document.getElementById('rate');
+        const pitchInput = document.getElementById('pitch');
+        
+        let voices = [];
+
+        function updateLabels() {
+            document.getElementById('val-rate').textContent = parseFloat(rateInput.value).toFixed(1) + 'x';
+            document.getElementById('val-pitch').textContent = parseFloat(pitchInput.value).toFixed(1);
+        }
+
+        function loadVoices() {
+            voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+
+            // Filtrar por Español de México principalmente, luego otros españoles
+            const sortedVoices = voices.filter(v => v.lang.startsWith('es')).sort((a,b) => {
+                if(a.lang.includes('MX')) return -1;
+                return 0;
+            });
+
+            if (sortedVoices.length === 0) {
+                const opt = document.createElement('option');
+                opt.textContent = "Sin voces detectadas";
+                voiceSelect.appendChild(opt);
+                return;
+            }
+
+            sortedVoices.forEach(voice => {
+                const option = document.createElement('option');
+                const label = voice.lang.includes('MX') ? '🇲🇽 ' : '🌐 ';
+                option.textContent = `${label} ${voice.name}`;
+                option.value = voice.name;
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        function talk() {
+            if (synth.speaking) synth.cancel();
+            if (!textInput.value) return;
+
+            const utterance = new SpeechSynthesisUtterance(textInput.value);
+            const selectedVoice = voices.find(v => v.name === voiceSelect.value);
+            
+            utterance.voice = selectedVoice;
+            utterance.rate = rateInput.value;
+            utterance.pitch = pitchInput.value;
+
+            synth.speak(utterance);
+            return utterance;
+        }
+
+        document.getElementById('btnPlay').addEventListener('click', talk);
+        rateInput.addEventListener('input', updateLabels);
+        pitchInput.addEventListener('input', updateLabels);
+
+        document.getElementById('btnDownload').addEventListener('click', async () => {
+            if (!textInput.value) return;
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+                const mediaRecorder = new MediaRecorder(stream);
+                const chunks = [];
+
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `locucion-mx.webm`;
+                    a.click();
+                    stream.getTracks().forEach(t => t.stop());
+                };
+
+                alert("Instrucciones de Descarga:\n1. Selecciona 'Esta pestaña'.\n2. Activa 'Compartir audio del sistema'.\n3. Presiona Compartir.");
+                
+                mediaRecorder.start();
+                const utter = talk();
+                utter.onend = () => {
+                    setTimeout(() => mediaRecorder.stop(), 500);
+                };
+            } catch (err) {
+                console.log("Acción cancelada");
+            }
+        });
+
+        loadVoices();
+        updateLabels();
+    </script>
+</body>
+</html>
