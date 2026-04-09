@@ -81,12 +81,12 @@
                     <div v-for="prod in productosFiltrados" :key="prod.id" 
                          @click="agregarAlCarrito(prod)" 
                          :class="{'opacity-50 grayscale cursor-not-allowed': obtenerStockReal(prod) <= 0}"
-                         class="bg-white p-4 rounded-2xl shadow hover:shadow-xl transition-all cursor-pointer border border-transparent hover:border-indigo-200 relative overflow-hidden text-center">
+                         class="bg-white p-4 rounded-2xl shadow hover:shadow-xl transition-all cursor-pointer border border-transparent hover:border-indigo-200 relative overflow-hidden text-center text-sm">
                         <div v-if="prod.esPaquete" class="absolute top-2 right-2 bg-purple-600 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">PACK</div>
                         <div v-if="prod.precioOferta" class="absolute top-0 left-0 bg-red-500 text-white text-[8px] px-3 py-1 font-black uppercase">OFERTA</div>
                         
                         <div class="pt-2">
-                            <h3 class="font-bold text-sm h-10 overflow-hidden leading-tight mb-1">{{ prod.nombre }}</h3>
+                            <h3 class="font-bold h-10 overflow-hidden leading-tight mb-1">{{ prod.nombre }}</h3>
                             <div v-if="prod.precioOferta">
                                 <p class="text-gray-400 line-through text-xs">${{ prod.precioVenta }}</p>
                                 <p class="text-red-600 font-black text-xl">${{ prod.precioOferta }}</p>
@@ -102,9 +102,8 @@
 
             <section v-if="vista === 'agendados'">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div v-for="v in ventasDia.filter(v => v.tipo === 'agendado')" :key="v.id" 
-                         class="bg-white p-5 rounded-2xl shadow-md border-l-4 transition-all"
-                         :class="v.completado ? 'border-green-400 opacity-60' : 'border-blue-500 shadow-indigo-100'">
+                    <div v-for="v in ventasDia.filter(v => v.tipo === 'agendado' && !v.completado)" :key="v.id" 
+                         class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-blue-500 transition-all">
                         <div class="flex justify-between items-start mb-2">
                             <div>
                                 <h3 class="font-black text-indigo-900 leading-tight">{{ v.cliente }}</h3>
@@ -119,21 +118,15 @@
                             <span v-for="p in v.productos" class="block">• {{ p.nombre }} (x{{ p.cantidad }})</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button v-if="!v.completado" @click="completarPedido(v.id)" class="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-[10px] uppercase">Entregado</button>
-                            <span v-else class="flex-1 bg-green-100 text-green-700 py-2 rounded-lg font-bold text-[10px] text-center uppercase">✓ Listo</span>
-                            
-                            <button @click="editarAgendado(v)" class="bg-blue-100 text-blue-600 p-2 rounded-lg" title="Editar detalles">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button @click="eliminarVenta(v.id)" class="bg-red-50 text-red-400 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
-                                <i class="bi bi-trash3"></i>
-                            </button>
+                            <button @click="completarPedido(v.id)" class="flex-1 bg-green-500 text-white py-2 rounded-lg font-bold text-[10px] uppercase">Marcar Entregado</button>
+                            <button @click="editarAgendado(v)" class="bg-blue-100 text-blue-600 p-2 rounded-lg"><i class="bi bi-pencil-square"></i></button>
+                            <button @click="eliminarVenta(v.id)" class="bg-red-50 text-red-400 p-2 rounded-lg"><i class="bi bi-trash3"></i></button>
                         </div>
                     </div>
                 </div>
-                <div v-if="ventasDia.filter(v => v.tipo === 'agendado').length === 0" class="text-center py-20 text-gray-400">
-                    <i class="bi bi-calendar-x text-5xl mb-4 block"></i>
-                    <p class="font-bold">No hay pedidos agendados</p>
+                <div v-if="ventasDia.filter(v => v.tipo === 'agendado' && !v.completado).length === 0" class="text-center py-20 text-gray-400">
+                    <i class="bi bi-calendar-check text-5xl mb-4 block"></i>
+                    <p class="font-bold">No hay pedidos pendientes en la agenda</p>
                 </div>
             </section>
 
@@ -152,7 +145,6 @@
                             <input type="text" v-model="nuevoProd.nombre" placeholder="Nombre del Producto" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
                             <input type="number" v-model.number="nuevoProd.costo" placeholder="Costo Unitario ($)" class="w-full border p-3 rounded-xl outline-none">
                             <input type="number" v-model.number="nuevoProd.piezas" placeholder="Stock Inicial" class="w-full border p-3 rounded-xl outline-none">
-                            
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="bg-blue-50 p-2 rounded-lg text-center border border-blue-100">
                                     <p class="text-[9px] font-bold text-blue-500 uppercase">Sugerido 50%</p>
@@ -222,38 +214,47 @@
                         <h4 class="text-gray-400 text-[10px] font-bold uppercase">Inversión Actual</h4>
                         <p class="text-2xl font-black text-red-600">${{ inversionTotalActual }}</p>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-orange-400">
-                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Productos</h4>
-                        <p class="text-2xl font-black text-orange-600">{{ productos.length }}</p>
+                    <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-orange-400 text-center">
+                        <h4 class="text-gray-400 text-[10px] font-bold uppercase">Ventas (Total Histórico)</h4>
+                        <p class="text-2xl font-black text-orange-600">${{ totalVentasHistorico }}</p>
                     </div>
                     <div class="bg-white p-5 rounded-2xl shadow border-b-4 border-indigo-500">
                         <h4 class="text-gray-400 text-[10px] font-bold uppercase">Ventas 7 Días</h4>
                         <p class="text-2xl font-black text-indigo-600">${{ totalSemanal }}</p>
                     </div>
                 </div>
+
                 <div class="bg-white p-6 rounded-2xl shadow-md mb-8">
                     <canvas id="graficaVentas" height="120"></canvas>
                 </div>
+
                 <div class="bg-white rounded-2xl shadow-md overflow-hidden">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 border-b font-bold text-[10px] uppercase text-gray-400">
+                    <table class="w-full text-xs">
+                        <thead class="bg-gray-100 border-b font-bold uppercase text-gray-500">
                             <tr>
-                                <th class="p-3 text-left">Fecha</th>
-                                <th class="p-3 text-left">Cliente</th>
-                                <th class="p-3 text-center">Total</th>
-                                <th class="p-3 text-right">Acción</th>
+                                <th class="p-4 text-left">Fecha / Cliente</th>
+                                <th class="p-4 text-left">Productos Vendidos</th>
+                                <th class="p-4 text-center">Total</th>
+                                <th class="p-4 text-right">Acción</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                            <tr v-for="v in ventasDia.slice().reverse().slice(0,15)" :key="v.id" :class="{'bg-red-50 opacity-60': v.devuelta}">
-                                <td class="p-3 text-[10px]">{{ fFecha(v.fechaReal) }}</td>
-                                <td class="p-3 font-bold text-indigo-700">
-                                    {{ v.cliente }}
-                                    <span v-if="v.tipo === 'agendado'" class="text-[8px] bg-blue-100 text-blue-600 px-1 rounded ml-1">AGENDA</span>
+                            <tr v-for="v in ventasDia.slice().reverse()" :key="v.id" :class="{'bg-red-50 opacity-60': v.devuelta}">
+                                <td class="p-4">
+                                    <div class="font-bold text-indigo-700">{{ v.cliente }}</div>
+                                    <div class="text-[9px] text-gray-400">{{ fFecha(v.fechaReal) }}</div>
+                                    <span v-if="v.tipo === 'agendado'" class="text-[8px] bg-blue-100 text-blue-600 px-1 rounded uppercase font-bold">Agenda</span>
                                 </td>
-                                <td class="p-3 text-center font-black">${{ v.total }}</td>
-                                <td class="p-3 text-right">
-                                    <button v-if="!v.devuelta" @click="devolverVenta(v.id)" class="text-red-400"><i class="bi bi-arrow-counterclockwise text-lg"></i></button>
+                                <td class="p-4">
+                                    <div v-for="p in v.productos" class="mb-1">
+                                        <span class="font-bold text-gray-700">• {{ p.nombre }}</span> 
+                                        <span class="text-indigo-500 font-bold ml-1">x{{ p.cantidad }}</span>
+                                    </div>
+                                </td>
+                                <td class="p-4 text-center font-black text-lg">${{ v.total }}</td>
+                                <td class="p-4 text-right">
+                                    <button v-if="!v.devuelta" @click="devolverVenta(v.id)" class="text-red-400" title="Devolver Venta"><i class="bi bi-arrow-counterclockwise text-xl"></i></button>
+                                    <span v-else class="text-red-500 font-bold text-[9px] uppercase">Devuelta</span>
                                 </td>
                             </tr>
                         </tbody>
@@ -269,22 +270,20 @@
                 </h2>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Nombre del Cliente</label>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Cliente</label>
                         <input type="text" v-model="agenda.cliente" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fecha y Hora de Entrega</label>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Fecha de Entrega</label>
                         <input type="datetime-local" v-model="agenda.fecha" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Lugar de Entrega</label>
-                        <input type="text" v-model="agenda.lugar" placeholder="Ej. Plaza, Domicilio..." class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Lugar</label>
+                        <input type="text" v-model="agenda.lugar" placeholder="Ej. Local, Domicilio..." class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
                     </div>
                 </div>
                 <div class="flex gap-2 mt-8">
-                    <button @click="finalizarVentaAgendada" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-black shadow-lg uppercase text-sm">
-                        {{ editandoAgendaId ? 'Guardar Cambios' : 'Confirmar Agenda' }}
-                    </button>
+                    <button @click="finalizarVentaAgendada" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-black uppercase text-sm">Guardar</button>
                     <button @click="cerrarModalAgenda" class="bg-gray-100 px-6 py-4 rounded-xl text-gray-400 font-bold uppercase text-[10px]">Cerrar</button>
                 </div>
             </div>
@@ -301,7 +300,7 @@
                     <div v-for="p in productos.filter(x => !x.esPaquete)" 
                          @click="toggleProdEnPaquete(p.id)" 
                          :class="paqueteSeleccionadosIds.includes(p.id) ? 'bg-purple-600 text-white' : 'bg-white text-gray-500'"
-                         class="border p-2 rounded-lg text-[11px] font-bold cursor-pointer truncate shadow-sm transition-colors">
+                         class="border p-2 rounded-lg text-[11px] font-bold cursor-pointer truncate shadow-sm">
                         {{ p.nombre }}
                     </div>
                 </div>
@@ -329,7 +328,7 @@
                     ventasDia: [],
                     nuevoProd: { nombre: '', costo: null, piezas: null, precioVenta: null, precioOferta: null },
                     editandoId: null,
-                    editandoAgendaId: null, // NUEVO: Para saber qué pedido editamos
+                    editandoAgendaId: null,
                     agenda: { cliente: '', fecha: '', lugar: '' },
                     mostrarModalAgenda: false,
                     mostrarModalPaquete: false,
@@ -354,6 +353,7 @@
                     }, 0); 
                 },
                 inversionTotalActual() { return this.productos.filter(p => !p.esPaquete).reduce((acc, p) => acc + ( (p.costo || 0) * (p.piezas || 0) ), 0); },
+                totalVentasHistorico() { return this.ventasDia.filter(v => !v.devuelta).reduce((acc, v) => acc + v.total, 0); },
                 totalSemanal() {
                     const sieteDias = new Date(); sieteDias.setDate(sieteDias.getDate() - 7);
                     return this.ventasDia.filter(v => !v.devuelta && new Date(v.fechaReal) >= sieteDias).reduce((acc, v) => acc + v.total, 0);
@@ -464,68 +464,40 @@
                 },
 
                 finalizarVentaInmediata() {
-                    this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), cliente: 'Mostrador', productos: [...this.carrito], total: this.totalVenta, tipo: 'inmediata', devuelta: false });
+                    this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), cliente: 'Mostrador', productos: [...this.carrito], total: this.totalVenta, tipo: 'inmediata', devuelta: false, completado: true });
                     this.carrito = []; this.persistir(); Swal.fire('Venta registrada', '', 'success');
                 },
 
-                // Lógica de Agenda Corregida
-                abrirModalAgenda() {
-                    this.editandoAgendaId = null;
-                    this.agenda = { cliente: '', fecha: '', lugar: '' };
-                    this.mostrarModalAgenda = true;
-                },
-
-                editarAgendado(v) {
-                    this.editandoAgendaId = v.id;
-                    this.agenda = { cliente: v.cliente, fecha: v.fechaEntrega, lugar: v.lugar };
-                    this.mostrarModalAgenda = true;
-                },
-
-                cerrarModalAgenda() {
-                    this.mostrarModalAgenda = false;
-                    this.editandoAgendaId = null;
-                    this.agenda = { cliente: '', fecha: '', lugar: '' };
-                },
+                abrirModalAgenda() { this.editandoAgendaId = null; this.agenda = { cliente: '', fecha: '', lugar: '' }; this.mostrarModalAgenda = true; },
+                editarAgendado(v) { this.editandoAgendaId = v.id; this.agenda = { cliente: v.cliente, fecha: v.fechaEntrega, lugar: v.lugar }; this.mostrarModalAgenda = true; },
+                cerrarModalAgenda() { this.mostrarModalAgenda = false; this.editandoAgendaId = null; },
 
                 finalizarVentaAgendada() {
                     if (this.editandoAgendaId) {
                         const v = this.ventasDia.find(v => v.id === this.editandoAgendaId);
-                        if (v) {
-                            v.cliente = this.agenda.cliente || 'Sin nombre';
-                            v.fechaEntrega = this.agenda.fecha;
-                            v.lugar = this.agenda.lugar;
-                        }
-                        Swal.fire('Pedido actualizado', '', 'success');
+                        if (v) { v.cliente = this.agenda.cliente; v.fechaEntrega = this.agenda.fecha; v.lugar = this.agenda.lugar; }
                     } else {
-                        this.ventasDia.push({ 
-                            id: Date.now(), 
-                            fechaReal: new Date().toISOString(), 
-                            fechaEntrega: this.agenda.fecha, 
-                            cliente: this.agenda.cliente || 'Sin Nombre', 
-                            lugar: this.agenda.lugar, 
-                            productos: [...this.carrito], 
-                            total: this.totalVenta, 
-                            tipo: 'agendado', 
-                            completado: false, 
-                            devuelta: false 
-                        });
+                        this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), fechaEntrega: this.agenda.fecha, cliente: this.agenda.cliente || 'Sin Nombre', lugar: this.agenda.lugar, productos: [...this.carrito], total: this.totalVenta, tipo: 'agendado', completado: false, devuelta: false });
                         this.carrito = [];
-                        Swal.fire('Pedido agendado', '', 'success');
                     }
-                    this.cerrarModalAgenda();
-                    this.persistir();
+                    this.cerrarModalAgenda(); this.persistir();
                 },
 
-                completarPedido(id) { const v = this.ventasDia.find(v => v.id === id); if (v) v.completado = true; this.persistir(); },
+                // Lógica corregida: Al marcar entregado, se "elimina" de la vista de agenda
+                completarPedido(id) { 
+                    const v = this.ventasDia.find(v => v.id === id); 
+                    if (v) {
+                        v.completado = true; 
+                        this.persistir(); 
+                        Swal.fire('¡Entregado!', 'El pedido se ha movido a los reportes de venta.', 'success');
+                    }
+                },
                 
                 eliminarVenta(id) {
-                    Swal.fire({ title: '¿Eliminar este pedido?', text: 'El stock se devolverá automáticamente', icon: 'warning', showCancelButton: true }).then(r => {
+                    Swal.fire({ title: '¿Eliminar pedido?', text: 'El stock se devolverá', icon: 'warning', showCancelButton: true }).then(r => {
                         if(r.isConfirmed) {
                             const v = this.ventasDia.find(x => x.id === id);
-                            if (v && !v.completado && !v.devuelta) {
-                                // Devolver stock si era un pedido pendiente
-                                v.productos.forEach(p => this.actualizarStock(p, p.cantidad));
-                            }
+                            if (v && !v.completado && !v.devuelta) v.productos.forEach(p => this.actualizarStock(p, p.cantidad));
                             this.ventasDia = this.ventasDia.filter(v => v.id !== id);
                             this.persistir();
                         }
@@ -536,14 +508,14 @@
                     const v = this.ventasDia.find(v => v.id === id);
                     if (v) {
                         v.devuelta = true;
-                        v.productos.forEach(pCarrito => this.actualizarStock(pCarrito, pCarrito.cantidad));
+                        v.productos.forEach(p => this.actualizarStock(p, p.cantidad));
                         this.persistir();
                         if (this.vista === 'reportes') this.initChart();
-                        Swal.fire('Venta cancelada', 'Stock devuelto', 'info');
+                        Swal.fire('Venta devuelta', 'Stock restaurado', 'info');
                     }
                 },
 
-                fFecha(iso) { return iso ? new Date(iso).toLocaleString('es-MX', { hour12: true }) : 'Sin fecha'; },
+                fFecha(iso) { return iso ? new Date(iso).toLocaleString('es-MX', { hour12: true }) : '---'; },
 
                 generarVentanaStock() {
                     const lista = this.productosOrdenados.map(p => `<li class="py-1 border-b text-xs text-left">${p.nombre}</li>`).join('');
