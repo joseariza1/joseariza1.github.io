@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Insumos Pro - Legible</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; color: #0f172a; }
+        
+        /* Modales: Ajuste de profundidad */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0, 0, 0, 0.8); 
+            z-index: 100; 
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex !important; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Estados de tarjetas */
+        .bought { opacity: 0.4; filter: grayscale(1); border: 1px solid #e2e8f0 !important; }
+        .best-deal { border-left: 4px solid #0891b2 !important; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .not-best-deal { background: #f8fafc; border: 1px dashed #cbd5e1 !important; }
+        
+        /* Visibilidad del presupuesto */
+        .budget-zone { display: none; }
+        .is-list .budget-zone { display: block; animation: fadeIn 0.2s ease; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        input, select, textarea { font-size: 16px !important; } /* Evita zoom en iOS */
+    </style>
+</head>
+<body class="bg-[#f1f5f9] min-h-screen pb-32 is-list">
+
+    <header class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-lg">
+        <div class="budget-zone mb-4 border-b border-slate-700 pb-4">
+            <div class="flex justify-between items-center mb-2">
+                <div>
+                    <span class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Saldo Restante</span>
+                    <div id="budget-display" class="text-2xl font-extrabold text-cyan-400 leading-none">$0.00</div>
+                </div>
+                <button onclick="setBudget()" class="bg-cyan-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">Ajustar</button>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="budget-progress" class="bg-cyan-500 h-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="relative">
+            <input type="text" id="global-search" oninput="updateUI()" placeholder="Buscar..." class="w-full py-2 px-4 pl-10 rounded-xl bg-slate-800 border border-slate-700 text-sm outline-none focus:bg-white focus:text-slate-900 transition-all">
+            <span class="absolute left-3 top-2.5 text-slate-500">🔍</span>
+        </div>
+    </header>
+
+    <main class="p-3 max-w-xl mx-auto">
+        <div class="flex gap-2 mb-6">
+            <button onclick="openModal('modal-producto')" class="flex-1 bg-white border border-slate-300 py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm active:bg-slate-100">
+                <span class="text-sm">➕</span>
+                <span class="text-[10px] font-bold text-slate-800 uppercase">Producto</span>
+            </button>
+            <button onclick="openModal('modal-proveedor')" class="flex-1 bg-white border border-slate-300 py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm active:bg-slate-100">
+                <span class="text-sm">🏢</span>
+                <span class="text-[10px] font-bold text-slate-800 uppercase">Proveedor</span>
+            </button>
+        </div>
+
+        <div id="compras" class="tab-content active"><div id="grouped-product-list" class="space-y-6"></div></div>
+        <div id="comparativa" class="tab-content"><div id="comparison-list" class="grid gap-2"></div></div>
+        <div id="proveedores" class="tab-content"><div id="vendor-list" class="space-y-3"></div></div>
+    </main>
+
+    <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-sm bg-slate-900 shadow-2xl rounded-2xl p-1 flex justify-between z-[60]">
+        <button onclick="showTab('compras')" id="btn-compras" class="flex-1 py-3 text-cyan-400 font-bold text-[10px] uppercase tracking-tighter transition-all border-r border-slate-800">Lista</button>
+        <button onclick="showTab('comparativa')" id="btn-comparativa" class="flex-1 py-3 text-slate-500 font-bold text-[10px] uppercase tracking-tighter transition-all border-r border-slate-800">Precios</button>
+        <button onclick="showTab('proveedores')" id="btn-proveedores" class="flex-1 py-3 text-slate-500 font-bold text-[10px] uppercase tracking-tighter transition-all">Tiendas</button>
+    </nav>
+
+    <div id="modal-producto" class="modal px-4" onclick="closeIfOutside(event, 'modal-producto')">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl" onclick="event.stopPropagation()">
+            <h2 id="title-prod" class="text-lg font-extrabold text-slate-900 mb-4 border-b pb-2 uppercase">Nuevo Producto</h2>
+            <div class="space-y-4">
+                <input type="hidden" id="edit-p-id">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">Nombre</label>
+                    <input type="text" id="p-nombre" class="w-full bg-slate-100 p-3 rounded-lg text-sm font-bold border-2 border-transparent focus:border-cyan-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 uppercase">¿Dónde se compra?</label>
+                    <select id="p-proveedor-sucursal" class="w-full bg-slate-100 p-3 rounded-lg text-sm font-bold outline-none"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Costo Unitario</label>
+                        <input type="number" id="p-costo-unitario" class="w-full bg-slate-100 p-3 rounded-lg text-sm font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Cantidad</label>
+                        <input type="number" id="p-piezas" class="w-full bg-slate-100 p-3 rounded-lg text-sm font-bold outline-none">
+                    </div>
+                </div>
+                <button onclick="saveProduct()" class="w-full bg-cyan-700 text-white py-4 rounded-xl font-bold text-sm uppercase shadow-lg mt-2">Guardar</button>
+                <button onclick="closeModal('modal-producto')" class="w-full text-slate-400 font-bold text-[11px] uppercase pt-2">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-proveedor" class="modal px-4" onclick="closeIfOutside(event, 'modal-proveedor')">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <h2 id="title-vendor" class="text-lg font-extrabold text-slate-900 mb-4 border-b pb-2 uppercase">Proveedor</h2>
+            <div class="space-y-3">
+                <input type="hidden" id="edit-v-id">
+                <input type="text" id="v-nombre" placeholder="Nombre de la tienda" class="w-full bg-slate-100 p-3 rounded-lg text-sm font-bold outline-none">
+                <input type="text" id="v-fb" placeholder="Facebook (Opcional)" class="w-full bg-slate-100 p-3 rounded-lg text-xs font-bold outline-none">
+                <textarea id="v-notas" placeholder="Notas/Horarios" class="w-full bg-slate-100 p-3 rounded-lg text-xs font-bold outline-none h-16"></textarea>
+                <div id="sucursales-container" class="max-h-32 overflow-y-auto space-y-2"></div>
+                <button onclick="addSucursalInput()" class="text-[10px] font-extrabold text-cyan-700 uppercase">+ Añadir Dirección</button>
+                <button onclick="saveVendor()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm uppercase shadow-lg mt-4">Registrar</button>
+                <button onclick="closeModal('modal-proveedor')" class="w-full text-slate-400 font-bold text-[11px] uppercase pt-2 text-center">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = { budget: 0, products: [], vendors: [] };
+
+        window.onload = () => {
+            const saved = localStorage.getItem('quesa_v12_prod');
+            if (saved) db = JSON.parse(saved);
+            updateUI();
+        };
+
+        function saveData() { localStorage.setItem('quesa_v12_prod', JSON.stringify(db)); updateUI(); }
+        
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { 
+            document.getElementById(id).classList.remove('active');
+            if(id === 'modal-producto') resetProductForm();
+            if(id === 'modal-proveedor') resetVendorForm();
+        }
+
+        function closeIfOutside(event, id) { if (event.target.id === id) closeModal(id); }
+
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            // Alternar clase en body para mostrar presupuesto
+            if(id === 'compras') document.body.classList.add('is-list');
+            else document.body.classList.remove('is-list');
+
+            document.querySelectorAll('nav button').forEach(b => b.classList.replace('text-cyan-400', 'text-slate-500'));
+            document.getElementById('btn-' + id).classList.replace('text-slate-500', 'text-cyan-400');
+        }
+
+        function setBudget() {
+            const b = prompt("Presupuesto disponible:", db.budget);
+            if(b !== null) { db.budget = parseFloat(b) || 0; saveData(); }
+        }
+
+        function addSucursalInput(val = "") {
+            const container = document.getElementById('sucursales-container');
+            const div = document.createElement('div');
+            div.className = "flex gap-2";
+            div.innerHTML = `<input type="text" value="${val}" placeholder="Sucursal" class="sucursal-input flex-1 bg-slate-100 p-2 rounded-lg text-xs font-bold outline-none border border-slate-200"><button onclick="this.parentElement.remove()" class="text-red-500 px-2 font-bold">✕</button>`;
+            container.appendChild(div);
+        }
+
+        function saveProduct() {
+            const id = document.getElementById('edit-p-id').value;
+            const name = document.getElementById('p-nombre').value.trim();
+            const shop = document.getElementById('p-proveedor-sucursal').value;
+            const unit = parseFloat(document.getElementById('p-costo-unitario').value);
+            const qty = parseInt(document.getElementById('p-piezas').value);
+
+            if (!name || !shop || isNaN(unit)) return alert("Faltan datos");
+
+            const data = { id: id || Date.now().toString(), name, shop, unit, qty, total: unit * qty, bought: false };
+            if (id) { const idx = db.products.findIndex(p => p.id === id); db.products[idx] = data; }
+            else { db.products.push(data); }
+
+            closeModal('modal-producto');
+            saveData();
+        }
+
+        function saveVendor() {
+            const id = document.getElementById('edit-v-id').value;
+            const name = document.getElementById('v-nombre').value.trim();
+            const fb = document.getElementById('v-fb').value.trim();
+            const notes = document.getElementById('v-notas').value.trim();
+            const sucs = Array.from(document.querySelectorAll('.sucursal-input')).map(i => i.value.trim()).filter(i => i !== "");
+
+            if (!name) return alert("Nombre de tienda necesario");
+
+            const data = { id: id || Date.now().toString(), name, fb, notes, sucursales: sucs };
+            if (id) { const idx = db.vendors.findIndex(v => v.id === id); db.vendors[idx] = data; }
+            else { db.vendors.push(data); }
+
+            closeModal('modal-proveedor');
+            saveData();
+        }
+
+        function updateUI() {
+            const query = document.getElementById('global-search').value.toLowerCase();
+            const best = {};
+            db.products.forEach(p => {
+                const k = p.name.toLowerCase();
+                if (!best[k] || p.unit < best[k].unit) best[k] = p;
+            });
+
+            const spent = Object.values(best).reduce((s, p) => s + p.total, 0);
+            const rem = db.budget - spent;
+            document.getElementById('budget-display').innerText = `$${rem.toLocaleString('es-MX', {minimumFractionDigits: 2})}`;
+            document.getElementById('budget-progress').style.width = (db.budget > 0 ? (rem / db.budget) * 100 : 0) + '%';
+
+            // Lista Compras (Compacta y contrastada)
+            const list = document.getElementById('grouped-product-list');
+            list.innerHTML = '';
+            const filtered = db.products.filter(p => p.name.toLowerCase().includes(query) || p.shop.toLowerCase().includes(query));
+            
+            [...new Set(filtered.map(p => p.shop))].sort().forEach(shop => {
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="text-[10px] font-extrabold text-slate-800 uppercase tracking-widest mb-2 border-l-4 border-slate-800 pl-2 bg-slate-200 py-1">${shop}</h3>`;
+                filtered.filter(p => p.shop === shop).forEach(p => {
+                    const isB = best[p.name.toLowerCase()].id === p.id;
+                    div.innerHTML += `
+                        <div class="bg-white p-3 rounded-lg flex items-center gap-3 mb-2 border border-slate-300 ${p.bought ? 'bought' : ''} ${!isB ? 'not-best-deal' : 'best-deal'}">
+                            <input type="checkbox" ${p.bought ? 'checked' : ''} onchange="toggleB('${p.id}')" class="w-5 h-5 rounded accent-cyan-700">
+                            <div class="flex-1">
+                                <span class="font-extrabold text-xs uppercase text-slate-900 block">${p.name}</span>
+                                <span class="text-[10px] text-slate-600 font-bold">$${p.unit.toFixed(2)} p/u × ${p.qty}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-extrabold text-slate-900 text-xs">$${p.total.toFixed(2)}</div>
+                                <div class="flex gap-3 mt-1">
+                                    <button onclick="editP('${p.id}')" class="text-[9px] font-extrabold text-blue-700">EDITAR</button>
+                                    <button onclick="delP('${p.id}')" class="text-[9px] font-extrabold text-red-700">BORRAR</button>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+                list.appendChild(div);
+            });
+
+            // Tiendas (Compactas)
+            const sel = document.getElementById('p-proveedor-sucursal');
+            let opts = '<option value="">Elegir tienda...</option>';
+            const vList = document.getElementById('vendor-list');
+            vList.innerHTML = '';
+
+            db.vendors.forEach(v => {
+                v.sucursales.forEach(s => opts += `<option value="${v.name} - ${s}">${v.name} (${s})</option>`);
+                if(v.sucursales.length === 0) opts += `<option value="${v.name}">${v.name}</option>`;
+                if (v.name.toLowerCase().includes(query)) {
+                    vList.innerHTML += `
+                        <div class="bg-white p-4 rounded-xl border border-slate-300 shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-extrabold text-xs uppercase text-slate-900">${v.name}</h3>
+                                <div class="flex gap-3">
+                                    <button onclick="editV('${v.id}')" class="text-[9px] font-bold text-blue-700">EDITAR</button>
+                                    <button onclick="delV('${v.id}')" class="text-[9px] font-bold text-red-700">BORRAR</button>
+                                </div>
+                            </div>
+                            <div class="mt-2 space-y-1">${v.sucursales.map(s => `<div class="text-[10px] text-slate-700 font-bold">📍 ${s}</div>`).join('')}</div>
+                            ${v.notes ? `<div class="mt-2 p-2 bg-slate-100 rounded text-[9px] text-slate-800 font-bold">${v.notes}</div>` : ''}
+                        </div>`;
+                }
+            });
+            sel.innerHTML = opts;
+
+            // Comparativa
+            const comp = document.getElementById('comparison-list');
+            comp.innerHTML = Object.keys(best).sort().map(n => {
+                const vs = db.products.filter(p => p.name.toLowerCase() === n).sort((a,b) => a.unit - b.unit);
+                return `<div class="bg-white p-3 rounded-lg border border-slate-300">
+                    <h4 class="font-extrabold text-[10px] uppercase text-slate-900 mb-2 border-b pb-1">${n}</h4>
+                    ${vs.map((it, i) => `<div class="flex justify-between text-[10px] py-0.5 ${i === 0 ? 'text-cyan-700 font-extrabold' : 'text-slate-600 font-bold'}"><span>${it.shop}</span><span>$${it.unit.toFixed(2)}</span></div>`).join('')}
+                </div>`;
+            }).join('');
+        }
+
+        function resetProductForm() { document.getElementById('edit-p-id').value = ""; document.getElementById('p-nombre').value = ""; document.getElementById('p-costo-unitario').value = ""; document.getElementById('p-piezas').value = ""; }
+        function resetVendorForm() { document.getElementById('edit-v-id').value = ""; document.getElementById('v-nombre').value = ""; document.getElementById('v-fb').value = ""; document.getElementById('v-notas').value = ""; document.getElementById('sucursales-container').innerHTML = ''; addSucursalInput(); }
+        function editP(id) { const p = db.products.find(x => x.id === id); document.getElementById('edit-p-id').value = p.id; document.getElementById('p-nombre').value = p.name; document.getElementById('p-proveedor-sucursal').value = p.shop; document.getElementById('p-costo-unitario').value = p.unit; document.getElementById('p-piezas').value = p.qty; openModal('modal-producto'); }
+        function editV(id) { const v = db.vendors.find(x => x.id === id); document.getElementById('edit-v-id').value = v.id; document.getElementById('v-nombre').value = v.name; document.getElementById('v-fb').value = v.fb; document.getElementById('v-notas').value = v.notes || ""; const c = document.getElementById('sucursales-container'); c.innerHTML = ''; v.sucursales.forEach(s => addSucursalInput(s)); openModal('modal-proveedor'); }
+        function delP(id) { if(confirm("¿Eliminar producto?")) { db.products = db.products.filter(x => x.id !== id); saveData(); } }
+        function delV(id) { if(confirm("¿Eliminar tienda?")) { db.vendors = db.vendors.filter(x => x.id !== id); saveData(); } }
+        function toggleB(id) { const p = db.products.find(x => x.id === id); p.bought = !p.bought; saveData(); }
+    </script>
+</body>
+</html>
