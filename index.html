@@ -1,336 +1,300 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Heimaux OS Ultra Fix</title>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
-
-<style>
-:root {
-    --glass: rgba(255, 255, 255, 0.2);
-    --glass-heavy: rgba(255, 255, 255, 0.35);
-    --glass-border: rgba(255, 255, 255, 0.3);
-    --accent: #A0EEFF;
-}
-
-body, html {
-    margin: 0; padding: 0; width: 100%; height: 100%;
-    overflow: hidden; font-family: 'Segoe UI', Roboto, sans-serif;
-    color: white; user-select: none; -webkit-user-select: none;
-}
-
-/* Capa de Fondo */
-#bg-layer {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: -2; background-size: cover; background-position: center;
-    background-color: #E0CFFC;
-}
-
-.orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5; z-index: -1; pointer-events: none; }
-.orb-1 { width: 400px; height: 400px; background: white; top: -100px; left: -100px; }
-.orb-2 { width: 500px; height: 500px; background: var(--accent); bottom: -100px; right: -100px; }
-
-#desktop {
-    position: relative; z-index: 10;
-    width: 100%; height: 100%;
-    display: flex; flex-direction: column; align-items: center;
-}
-
-/* Barra de Categorías Superior (CORREGIDA) */
-#category-bar {
-    margin-top: 50px; display: flex; gap: 12px; width: 90%;
-    overflow-x: auto; white-space: nowrap; scrollbar-width: none; 
-    padding: 10px; z-index: 30;
-}
-#category-bar::-webkit-scrollbar { display: none; }
-
-.cat-pill {
-    padding: 10px 22px; background: rgba(0, 0, 0, 0.1);
-    border-radius: 25px; border: 1px solid var(--glass-border);
-    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-    cursor: pointer; font-size: 14px; color: white; transition: 0.3s;
-}
-.cat-pill.active { background: white; color: #333; font-weight: bold; transform: scale(1.05); }
-
-/* Contenedor Principal */
-.glass-panel {
-    width: 92%; max-width: 400px; height: 70vh;
-    background: var(--glass); backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border-radius: 35px; border: 1px solid var(--glass-border);
-    padding: 25px; box-sizing: border-box; overflow-y: auto;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-top: 15px;
-}
-
-.icon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-
-.icon-item {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 15px; border-radius: 25px; transition: 0.2s;
-}
-.icon-item:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
-.icon-item.dragging { opacity: 0.3; }
-
-.icon-box {
-    width: 75px; height: 75px; background: var(--glass-heavy);
-    border-radius: 24px; display: flex; align-items: center;
-    justify-content: center; font-size: 34px; margin-bottom: 10px;
-    border: 1px solid var(--glass-border);
-}
-.icon-label { font-size: 13px; font-weight: 400; text-align: center; }
-
-/* Drawer de Gestión */
-#drawer {
-    position: fixed; bottom: -100%; left: 0; width: 100%; height: 90vh;
-    background: rgba(15, 15, 15, 0.97); backdrop-filter: blur(25px);
-    z-index: 100; transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-    padding: 30px; box-sizing: border-box; border-radius: 40px 40px 0 0;
-    overflow-y: auto; color: white;
-}
-#drawer.open { bottom: 0; }
-.handle { width: 50px; height: 6px; background: #444; border-radius: 3px; margin: 0 auto 30px; }
-
-h3 { font-weight: 300; color: var(--accent); margin-bottom: 15px; font-size: 14px; text-transform: uppercase; }
-
-input, select {
-    width: 100%; padding: 15px; margin-bottom: 15px;
-    background: rgba(255,255,255,0.1); border: 1px solid #333; color: white;
-    border-radius: 15px; font-size: 16px; box-sizing: border-box;
-}
-
-.btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
-.btn { flex: 1; padding: 16px; border: none; border-radius: 15px; font-weight: 600; cursor: pointer; }
-.btn-save { background: var(--accent); color: #111; }
-.btn-del { background: #ff4d4d; color: white; }
-.btn-close { background: #333; color: #ccc; }
-
-.cat-mgmt-item {
-    display: flex; justify-content: space-between; align-items: center;
-    background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; margin-bottom: 8px;
-}
-
-#hint { position: fixed; bottom: 15px; width: 100%; text-align: center; font-size: 11px; opacity: 0.5; pointer-events: none; }
-</style>
-</head>
-<body>
-
-    <div id="bg-layer"></div>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-
-    <div id="desktop">
-        <div id="category-bar"></div>
-        <div class="glass-panel">
-            <div class="icon-grid" id="main-grid"></div>
-        </div>
-    </div>
-
-    <div id="hint">Desliza ↑ ajustes | Mantén presionado icono para editar</div>
-
-    <div id="drawer">
-        <div class="handle"></div>
-        
-        <h3>Fondo de Pantalla</h3>
-        <input type="text" id="bg-input" placeholder="Color (#000) o URL de imagen" onchange="updateBg(this.value)">
-        
-        <hr style="border: 0.1px solid #333; margin: 20px 0;">
-
-        <h3>Categorías</h3>
-        <div class="btn-group">
-            <input type="text" id="new-cat-name" placeholder="Nueva Categoría" style="margin-bottom:0">
-            <button class="btn btn-save" onclick="addCat()" style="flex:0.4">Añadir</button>
-        </div>
-        <div id="cat-list-mgmt"></div>
-
-        <hr style="border: 0.1px solid #333; margin: 20px 0;">
-
-        <h3 id="form-title">Nuevo Icono</h3>
-        <input type="hidden" id="i-id">
-        <input type="text" id="i-name" placeholder="Nombre (ej: TikTok)">
-        <input type="text" id="i-html" placeholder='Icono (ej: <i class="fa-brands fa-tiktok"></i>)'>
-        <input type="text" id="i-url" placeholder="URL Destino">
-        <select id="i-cat-select"></select>
-
-        <div class="btn-group">
-            <button class="btn btn-save" onclick="saveIcon()">Guardar Cambios</button>
-            <button class="btn btn-del" id="del-btn" style="display:none;" onclick="removeIcon()">Eliminar</button>
-        </div>
-        <button class="btn btn-close" onclick="closeDrawer()">Cerrar Ajustes</button>
-    </div>
-
-<script>
-const DB_KEY = 'heimaux_final_fix';
-let db = JSON.parse(localStorage.getItem(DB_KEY)) || {
-    bg: 'linear-gradient(135deg, #E0CFFC 0%, #A0EEFF 100%)',
-    cats: ['Todo', 'Social', 'Apps'],
-    activeCat: 'Todo',
-    icons: [
-        { id: 1, name: 'Google', html: '<i class="fa-brands fa-google" style="color:#4285F4"></i>', url: 'https://google.com', cat: 'Apps' },
-        { id: 2, name: 'TikTok', html: '<i class="fa-brands fa-tiktok" style="color:white"></i>', url: 'https://tiktok.com', cat: 'Social' }
-    ]
-};
-
-function persist() { localStorage.setItem(DB_KEY, JSON.stringify(db)); render(); }
-
-function updateBg(val) {
-    db.bg = val;
-    const layer = document.getElementById('bg-layer');
-    if(val.includes('http')) {
-        layer.style.background = `url('${val}')`;
-        layer.style.backgroundSize = 'cover';
-    } else {
-        layer.style.background = val;
-    }
-    persist();
-}
-
-/** CATEGORIAS **/
-function addCat() {
-    const v = document.getElementById('new-cat-name').value.trim();
-    if(v && !db.cats.includes(v)) { db.cats.push(v); document.getElementById('new-cat-name').value = ''; persist(); }
-}
-
-function deleteCat(n) {
-    if(n === 'Todo') return;
-    if(confirm(`¿Borrar "${n}"?`)) {
-        db.cats = db.cats.filter(c => c !== n);
-        db.icons.forEach(i => { if(i.cat === n) i.cat = 'Todo'; });
-        persist();
-    }
-}
-
-function renameCat(old) {
-    const n = prompt("Nuevo nombre:", old);
-    if(n && n !== old) {
-        db.cats = db.cats.map(c => c === old ? n : c);
-        db.icons.forEach(i => { if(i.cat === old) i.cat = n; });
-        persist();
-    }
-}
-
-/** RENDER **/
-function render() {
-    // Fondo
-    const layer = document.getElementById('bg-layer');
-    if(db.bg.includes('http')) layer.style.background = `url('${db.bg}') center/cover`;
-    else layer.style.background = db.bg;
-
-    // Categorías
-    const bar = document.getElementById('category-bar');
-    const select = document.getElementById('i-cat-select');
-    const mgmt = document.getElementById('cat-list-mgmt');
-    bar.innerHTML = ''; select.innerHTML = ''; mgmt.innerHTML = '';
-
-    db.cats.forEach(c => {
-        const pill = document.createElement('div');
-        pill.className = `cat-pill ${db.activeCat === c ? 'active' : ''}`;
-        pill.innerText = c;
-        pill.onclick = (e) => { e.stopPropagation(); db.activeCat = c; render(); };
-        bar.appendChild(pill);
-
-        const opt = document.createElement('option');
-        opt.value = opt.innerText = c;
-        select.appendChild(opt);
-
-        if(c !== 'Todo') {
-            const d = document.createElement('div');
-            d.className = 'cat-mgmt-item';
-            d.innerHTML = `<span>${c}</span><div><i class="fa-solid fa-pen" onclick="renameCat('${c}')"></i> <i class="fa-solid fa-trash" onclick="deleteCat('${c}')" style="margin-left:10px"></i></div>`;
-            mgmt.appendChild(d);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Toolbox OS - Gradient Edition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
+    <style>
+        :root {
+            --win-bg: #ffffff;
+            --win-accent: #0078d4;
+            --win-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
         }
-    });
 
-    // Iconos
-    const grid = document.getElementById('main-grid');
-    grid.innerHTML = '';
-    const list = db.activeCat === 'Todo' ? db.icons : db.icons.filter(i => i.cat === db.activeCat);
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            font-family: 'Segoe UI Variable Display', system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    list.forEach(i => {
-        const el = document.createElement('div');
-        el.className = 'icon-item';
-        el.draggable = true;
-        el.dataset.id = i.id;
-        el.innerHTML = `<div class="icon-box">${i.html}</div><div class="icon-label">${i.name}</div>`;
-        
-        let timer;
-        el.addEventListener('touchstart', () => timer = setTimeout(() => openEdit(i.id), 800));
-        el.addEventListener('touchend', () => clearTimeout(timer));
-        el.addEventListener('mousedown', () => timer = setTimeout(() => openEdit(i.id), 800));
-        el.addEventListener('mouseup', () => clearTimeout(timer));
-        el.addEventListener('click', () => { if(i.url !== '#') window.open(i.url, '_blank') });
+        body {
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            background-size: cover;
+            background-position: center;
+            transition: background 0.5s ease;
+        }
 
-        grid.appendChild(el);
-    });
-    initDrag();
-}
+        #desktop {
+            height: 100%;
+            padding: 40px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            grid-template-rows: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 15px;
+            z-index: 1;
+        }
 
-/** DRAG & DROP **/
-let dragEl = null;
-function initDrag() {
-    const grid = document.getElementById('main-grid');
-    grid.querySelectorAll('.icon-item').forEach(item => {
-        item.addEventListener('dragstart', () => { dragEl = item; item.classList.add('dragging'); });
-        item.addEventListener('dragend', () => {
-            item.classList.remove('dragging');
-            const ids = Array.from(grid.querySelectorAll('.icon-item')).map(el => Number(el.dataset.id));
-            db.icons.sort((a,b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-        });
-        item.addEventListener('dragover', e => {
-            e.preventDefault();
-            const box = item.getBoundingClientRect();
-            const offset = e.clientY - box.top - box.height/2;
-            if(offset < 0) grid.insertBefore(dragEl, item);
-            else grid.insertBefore(dragEl, item.nextSibling);
-        });
-    });
-}
+        .tool-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 12px;
+        }
 
-/** GESTION **/
-function openDrawer() { document.getElementById('drawer').classList.add('open'); }
-function closeDrawer() { document.getElementById('drawer').classList.remove('open'); resetForm(); }
-function resetForm() {
-    document.getElementById('i-id').value = '';
-    document.getElementById('i-name').value = '';
-    document.getElementById('i-html').value = '';
-    document.getElementById('i-url').value = '';
-    document.getElementById('del-btn').style.display = 'none';
-    document.getElementById('form-title').innerText = 'Nuevo Icono';
-}
+        .tool-icon i { font-size: 42px; margin-bottom: 8px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
+        .tool-icon span { font-size: 0.85rem; font-weight: 500; text-shadow: 0 2px 4px rgba(0,0,0,0.7); }
 
-function openEdit(id) {
-    const i = db.icons.find(x => x.id === id);
-    document.getElementById('i-id').value = i.id;
-    document.getElementById('i-name').value = i.name;
-    document.getElementById('i-html').value = i.html;
-    document.getElementById('i-url').value = i.url;
-    document.getElementById('i-cat-select').value = i.cat;
-    document.getElementById('del-btn').style.display = 'block';
-    document.getElementById('form-title').innerText = 'Editar Icono';
-    openDrawer();
-}
+        /* Barra de activación */
+        .drawer-handle {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%; height: 40px;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 999;
+        }
 
-function saveIcon() {
-    const id = document.getElementById('i-id').value;
-    const n = document.getElementById('i-name').value, h = document.getElementById('i-html').value, u = document.getElementById('i-url').value, c = document.getElementById('i-cat-select').value;
-    if(!n || !h || !u) return;
-    if(id) { const idx = db.icons.findIndex(x => x.id == id); db.icons[idx] = {id: Number(id), name:n, html:h, url:u, cat:c}; }
-    else { db.icons.push({id: Date.now(), name:n, html:h, url:u, cat:c}); }
-    persist(); closeDrawer();
-}
+        .handle-bar { width: 45px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 10px; }
 
-function removeIcon() {
-    const id = document.getElementById('i-id').value;
-    if(confirm("¿Eliminar?")) { db.icons = db.icons.filter(x => x.id != id); persist(); closeDrawer(); }
-}
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(15px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+        }
 
-let sy = 0;
-document.addEventListener('touchstart', e => sy = e.touches[0].clientY);
-document.addEventListener('touchend', e => { if(sy - e.changedTouches[0].clientY > 150) openDrawer(); });
+        .window {
+            background: var(--win-bg);
+            width: 100%;
+            max-width: 420px;
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: var(--win-shadow);
+            transform: scale(0.9);
+            transition: transform 0.2s ease;
+        }
 
-render();
-</script>
+        .window.active { transform: scale(1); }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; background: #f0f0f0; padding: 5px; border-radius: 12px; }
+        .tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+        .tab-btn.active { background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: var(--win-accent); }
+
+        input { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; user-select: auto; }
+
+        .gradient-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .color-circle {
+            width: 100%;
+            height: 50px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .btn { border: none; padding: 15px; border-radius: 12px; cursor: pointer; font-weight: 700; width: 100%; }
+        .btn-save { background: var(--win-accent); color: white; margin-top: 10px; }
+        .btn-delete { background: #ff4757; color: white; margin-top: 15px; font-size: 0.8rem; }
+        .btn-close { background: #eee; color: #333; margin-top: 10px; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body id="mainBody">
+
+    <div id="desktop"></div>
+
+    <div class="drawer-handle" onclick="openModal()">
+        <div class="handle-bar"></div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+        <div class="window" id="toolWindow" onclick="event.stopPropagation()">
+            <div class="tabs">
+                <button class="tab-btn active" id="btnApps" onclick="switchTab('apps')">Iconos</button>
+                <button class="tab-btn" id="btnBg" onclick="switchTab('bg')">Fondo</button>
+            </div>
+
+            <!-- Panel Iconos -->
+            <div id="pane-apps">
+                <h3 id="mTitle" style="margin-bottom:15px">Añadir</h3>
+                <input type="text" id="tName" placeholder="Nombre">
+                <input type="text" id="tUrl" placeholder="URL (https://...)">
+                <input type="text" id="tIcon" placeholder="Icono (fa-solid fa-...)">
+                <button class="btn btn-save" onclick="saveApp()">Guardar</button>
+                <button class="btn btn-delete hidden" id="delBtn" onclick="deleteApp()">Eliminar Herramienta</button>
+            </div>
+
+            <!-- Panel Fondo -->
+            <div id="pane-bg" class="hidden">
+                <h3 style="margin-bottom:15px">Personalización</h3>
+                
+                <p style="font-size: 0.8rem; margin-bottom: 5px; color: #666;">Degradado:</p>
+                <div class="gradient-controls">
+                    <input type="color" id="grad1" class="color-circle" value="#2c3e50" onchange="applyGradient()">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    <input type="color" id="grad2" class="color-circle" value="#000000" onchange="applyGradient()">
+                </div>
+
+                <p style="font-size: 0.8rem; margin-bottom: 5px; color: #666;">O Imagen (URL):</p>
+                <input type="text" id="bgImgInp" placeholder="https://...">
+                <button class="btn btn-save" onclick="setBgImg()">Aplicar Imagen</button>
+                
+                <button class="btn" style="background:#f9f9f9; margin-top:10px; border:1px solid #ddd" onclick="resetBg()">Restablecer</button>
+            </div>
+
+            <button class="btn btn-close" onclick="closeModal()">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        let config = JSON.parse(localStorage.getItem('toolbox_v4')) || {
+            apps: [{name: 'Configurar', url: '#', icon: 'fa-solid fa-gear'}],
+            bg: { type: 'gradient', val1: '#2c3e50', val2: '#000000' }
+        };
+
+        let editIdx = null;
+        let startY = 0;
+
+        function init() {
+            render();
+            updateVisuals();
+            
+            window.addEventListener('touchstart', e => startY = e.touches[0].clientY);
+            window.addEventListener('touchend', e => {
+                if (startY - e.changedTouches[0].clientY > 80) openModal();
+            });
+
+            new Sortable(document.getElementById('desktop'), {
+                animation: 200, delay: 100, delayOnTouchOnly: true,
+                onEnd: () => {
+                    const icons = [...document.querySelectorAll('.tool-icon')];
+                    config.apps = icons.map(el => config.apps[el.dataset.idx]);
+                    save();
+                }
+            });
+        }
+
+        // --- Lógica de Fondo ---
+        function applyGradient() {
+            const color1 = document.getElementById('grad1').value;
+            const color2 = document.getElementById('grad2').value;
+            config.bg = { type: 'gradient', val1: color1, val2: color2 };
+            updateVisuals();
+            save();
+        }
+
+        function setBgImg() {
+            const url = document.getElementById('bgImgInp').value;
+            if(url) {
+                config.bg = { type: 'image', val: url };
+                updateVisuals();
+                save();
+            }
+        }
+
+        function resetBg() {
+            config.bg = { type: 'gradient', val1: '#2c3e50', val2: '#000000' };
+            updateVisuals();
+            save();
+        }
+
+        function updateVisuals() {
+            const b = document.getElementById('mainBody');
+            if(config.bg.type === 'gradient') {
+                b.style.backgroundImage = `linear-gradient(135deg, ${config.bg.val1}, ${config.bg.val2})`;
+            } else {
+                b.style.backgroundImage = `url('${config.bg.val}')`;
+            }
+        }
+
+        // --- UI & Apps ---
+        function openModal(idx = null) {
+            editIdx = idx;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            if(idx !== null) {
+                const a = config.apps[idx];
+                document.getElementById('tName').value = a.name;
+                document.getElementById('tUrl').value = a.url;
+                document.getElementById('tIcon').value = a.icon;
+                document.getElementById('delBtn').classList.remove('hidden');
+                document.getElementById('mTitle').innerText = "Editar App";
+            } else {
+                document.getElementById('tName').value = '';
+                document.getElementById('tUrl').value = '';
+                document.getElementById('tIcon').value = 'fa-solid fa-star';
+                document.getElementById('delBtn').classList.add('hidden');
+                document.getElementById('mTitle').innerText = "Nuevo Icono";
+            }
+            setTimeout(() => document.getElementById('toolWindow').classList.add('active'), 10);
+        }
+
+        function closeModal() {
+            document.getElementById('toolWindow').classList.remove('active');
+            setTimeout(() => document.getElementById('modalOverlay').style.display = 'none', 200);
+        }
+
+        function switchTab(t) {
+            document.getElementById('pane-apps').classList.toggle('hidden', t !== 'apps');
+            document.getElementById('pane-bg').classList.toggle('hidden', t !== 'bg');
+            document.getElementById('btnApps').classList.toggle('active', t === 'apps');
+            document.getElementById('btnBg').classList.toggle('active', t === 'bg');
+        }
+
+        function saveApp() {
+            const app = {
+                name: document.getElementById('tName').value,
+                url: document.getElementById('tUrl').value,
+                icon: document.getElementById('tIcon').value
+            };
+            if(!app.name || !app.url) return;
+            if(editIdx !== null) config.apps[editIdx] = app;
+            else config.apps.push(app);
+            save(); render(); closeModal();
+        }
+
+        function deleteApp() {
+            if(confirm("¿Eliminar?")) {
+                config.apps.splice(editIdx, 1);
+                save(); render(); closeModal();
+            }
+        }
+
+        function render() {
+            const cont = document.getElementById('desktop');
+            cont.innerHTML = '';
+            config.apps.forEach((a, i) => {
+                const div = document.createElement('div');
+                div.className = 'tool-icon';
+                div.dataset.idx = i;
+                div.innerHTML = `<i class="${a.icon}"></i><span>${a.name}</span>`;
+                div.onclick = () => { if(a.url !== '#') window.open(a.url.startsWith('http') ? a.url : 'https://'+a.url, '_blank'); };
+                div.oncontextmenu = (e) => { e.preventDefault(); openModal(i); };
+                cont.appendChild(div);
+            });
+        }
+
+        function save() { localStorage.setItem('toolbox_v4', JSON.stringify(config)); }
+
+        init();
+    </script>
 </body>
 </html>
