@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NanoWallet V34.4 - Control de Fechas</title>
+    <title>NanoWallet V34.5 - Ordenar Cuentas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;700;800&display=swap');
@@ -12,7 +12,6 @@
         .modal.active { display: flex; }
         .tab-btn.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        /* Estilo minimalista para el input de fecha nativo en modo oscuro */
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
     </style>
 </head>
@@ -226,6 +225,23 @@
             document.getElementById('tabDebts').classList.toggle('active', v === 'debts');
         }
 
+        // NUEVA FUNCIÓN PARA MOVER CUENTAS DE POSICIÓN lateralmente
+        function moverCuenta(id, direccion, evento) {
+            evento.stopPropagation(); // Evita que se abra el modal de edición al presionar la flecha
+            const index = db.cuentas.findIndex(c => c.id == id);
+            if (index === -1) return;
+
+            let nuevoIndex = index + direccion;
+            if (nuevoIndex < 0 || nuevoIndex >= db.cuentas.length) return;
+
+            // Intercambiar las posiciones en el arreglo
+            const temp = db.cuentas[index];
+            db.cuentas[index] = db.cuentas[nuevoIndex];
+            db.cuentas[nuevoIndex] = temp;
+
+            guardarLocal();
+        }
+
         function setModo(m) { 
             ['btnG', 'btnI', 'btnT'].forEach(b => document.getElementById(b).classList.remove('bg-blue-600'));
             document.getElementById(m==='Gasto'?'btnG':m==='Ingreso'?'btnI':'btnT').classList.add('bg-blue-600');
@@ -262,7 +278,6 @@
             const ori = db.cuentas.find(c => c.id == oId);
             if(!monto || !ori || !fechaSeleccionada) return;
             
-            // Convertimos la fecha del input (YYYY-MM-DD) a un timestamp correcto local sin desfases horarios
             const partesFecha = fechaSeleccionada.split('-');
             const timestampEstablecido = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2], 12, 0, 0).getTime();
 
@@ -421,7 +436,6 @@
                 document.getElementById('movNombre').value = m.txt;
                 document.getElementById('movMonto').value = m.val;
                 
-                // Formatear el timestamp guardado para inyectarlo en el input HTML [YYYY-MM-DD]
                 const dObj = new Date(m.date || m.id);
                 const year = dObj.getFullYear();
                 const month = String(dObj.getMonth() + 1).padStart(2, '0');
@@ -435,7 +449,6 @@
                 document.getElementById('movNombre').value = '';
                 document.getElementById('movMonto').value = '';
                 
-                // Si es nuevo movimiento, por defecto asignamos la fecha de hoy en formato local
                 const dObj = new Date();
                 const year = dObj.getFullYear();
                 const month = String(dObj.getMonth() + 1).padStart(2, '0');
@@ -626,18 +639,26 @@
             document.getElementById('resumenCorrientes').innerText = `$${totalCorrientes.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             document.getElementById('resumenTotalMes').innerText = `$${(totalMSI + totalCorrientes).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
 
+            // CONTROLADORES DE REORDENAMIENTO LATERAL VISUALES EN LA RENDICIÓN
             document.getElementById('listaCuentas').innerHTML = db.cuentas.map(c => `
-                <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[180px] p-5 rounded-[2rem] border border-slate-800 bg-slate-900 active:scale-95 transition-transform">
-                    <div class="flex justify-between items-start mb-1">
-                        <p class="text-[8px] font-bold uppercase text-blue-500">${c.nombre}</p>
-                        ${c.tipo === 'TDC' && c.diaCorte ? `<span class="text-[7px] bg-slate-800 px-2 py-0.5 rounded text-amber-500 font-bold">Límite: ${c.diaLimite || 'S/D'}</span>` : ''}
+                <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[180px] p-5 rounded-[2rem] border border-slate-800 bg-slate-900 active:scale-95 transition-transform flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <p class="text-[8px] font-bold uppercase text-blue-500 max-w-[80px] truncate">${c.nombre}</p>
+                            <div class="flex gap-1 bg-slate-800/80 px-1.5 py-0.5 rounded-md">
+                                <button onclick="moverCuenta(${c.id}, -1, event)" class="text-[9px] font-bold text-slate-400 hover:text-white px-0.5">←</button>
+                                <button onclick="moverCuenta(${c.id}, 1, event)" class="text-[9px] font-bold text-slate-400 hover:text-white px-0.5">→</button>
+                            </div>
+                        </div>
+                        <p class="text-xl font-black italic mt-1">$${(c.tipo==='TDC'?(c.limite-c.saldo):c.saldo).toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
                     </div>
-                    <p class="text-xl font-black italic">$${(c.tipo==='TDC'?(c.limite-c.saldo):c.saldo).toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
-                    <p class="text-[7px] text-slate-500 font-bold uppercase">${c.tipo==='TDC'?'Disponible':'Saldo Real'}</p>
+                    <div class="flex justify-between items-center mt-3">
+                        <p class="text-[7px] text-slate-500 font-bold uppercase">${c.tipo==='TDC'?'Disponible':'Saldo Real'}</p>
+                        ${c.tipo === 'TDC' && c.diaCorte ? `<span class="text-[6px] bg-slate-800 px-1.5 py-0.5 rounded text-amber-500 font-bold">L: ${c.diaLimite || 'S/D'}</span>` : ''}
+                    </div>
                 </div>`).join('');
 
             document.getElementById('historial').innerHTML = db.movimientos.slice(0, 12).map(m => {
-                // Formatear fecha para el feed visual legible
                 const fObj = new Date(m.date || m.id);
                 const stringFechaVisual = `${fObj.getDate()}/${fObj.getMonth()+1}`;
                 return `
