@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NanoWallet V33.5 - MSI Inteligente</title>
+    <title>NanoWallet V34.3 - Abonos Correctos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
         .modal.active { display: flex; }
@@ -35,7 +35,7 @@
     <main id="seccionMain" class="px-6 space-y-6">
         <div class="bg-slate-900/50 border border-slate-800 p-6 rounded-[2.5rem] space-y-4">
             <div class="flex justify-between items-center">
-                <h3 class="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">Pronóstico</h3>
+                <h3 class="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">Obligaciones del Mes</h3>
                 <select id="selectorMesProg" onchange="render()" class="bg-slate-800 text-blue-400 text-[10px] font-bold px-3 py-1 rounded-full border-none outline-none ring-1 ring-white/10">
                     <option value="0">Este Mes</option>
                     <option value="1">Próximo Mes</option>
@@ -48,13 +48,13 @@
                     <p id="resumenMSI" class="text-lg font-black text-amber-500">$0.00</p>
                 </div>
                 <div class="bg-slate-800/40 p-4 rounded-2xl border border-white/5">
-                    <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">Gastos TDC</p>
+                    <p class="text-[8px] text-slate-500 font-bold uppercase mb-1">Gastos TDC Corrientes</p>
                     <p id="resumenCorrientes" class="text-lg font-black text-red-400">$0.00</p>
                 </div>
             </div>
             <div class="bg-blue-600/10 p-5 rounded-2xl border border-blue-500/20 flex justify-between items-center">
-                <div><p class="text-[8px] text-blue-400 font-bold uppercase">Total a pagar</p><p id="resumenTotalMes" class="text-2xl font-black tracking-tighter">$0.00</p></div>
-                <div class="text-right"><p class="text-[9px] font-black text-blue-500 uppercase italic tracking-widest">Realidad</p></div>
+                <div><p class="text-[8px] text-blue-400 font-bold uppercase">Total Real a Pagar</p><p id="resumenTotalMes" class="text-2xl font-black tracking-tighter">$0.00</p></div>
+                <div class="text-right"><p class="text-[9px] font-black text-blue-500 uppercase italic tracking-widest">Exigible</p></div>
             </div>
         </div>
 
@@ -96,16 +96,25 @@
     <div id="modalPagarUniversal" class="modal">
         <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-slate-800">
             <h2 class="text-xl font-bold mb-1 italic text-green-500">Liquidar Mensualidad</h2>
-            <p id="pagoDestinoNombre" class="text-[10px] font-bold uppercase text-slate-400 mb-6 tracking-widest"></p>
+            <p id="pagoDestinoNombre" class="text-[10px] font-bold uppercase text-slate-400 mb-4 tracking-widest"></p>
+            
             <div class="space-y-4">
                 <input type="hidden" id="pagoIdDestino">
                 <input type="hidden" id="pagoTipoDestino">
+                
+                <div id="capaSelectorSubDeudaTDC" class="hidden space-y-1">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase ml-1">Aplicar pago a:</p>
+                    <select id="pagoSubDeudaTDC" onchange="actualizarMontoSugeridoTDC()" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
+                </div>
+
                 <p class="text-[8px] text-slate-500 font-bold uppercase ml-1">Pagar con:</p>
                 <select id="pagoCuentaOrigen" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
+                
                 <div class="space-y-2">
                     <p class="text-[8px] text-slate-500 font-bold uppercase ml-1 text-center">Monto a abonar</p>
                     <input id="pagoMontoInput" type="number" step="0.01" class="w-full bg-transparent text-center text-5xl font-black py-4 outline-none text-white">
                 </div>
+                
                 <button onclick="procesarPagoUniversal()" class="w-full bg-green-600 p-4 rounded-xl font-bold uppercase text-xs text-white shadow-lg shadow-green-900/20">Confirmar Abono</button>
                 <button onclick="cerrarModal('modalPagarUniversal')" class="w-full text-slate-500 text-[10px] font-bold uppercase">Cancelar</button>
             </div>
@@ -151,7 +160,24 @@
             <select id="tipoCuenta" onchange="mostrarLimite()" class="w-full bg-slate-800 p-4 rounded-xl text-sm border border-slate-700 text-white"><option value="Debito">Efectivo / Débito</option><option value="TDC">Tarjeta de Crédito</option></select>
             <input id="nombreCuenta" type="text" placeholder="Ej. Banamex" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
             <input id="saldoCuenta" type="number" placeholder="Saldo Inicial" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
-            <div id="capaLimite" class="hidden space-y-1"><p class="text-[8px] text-amber-600 font-bold uppercase ml-1">Línea de Crédito:</p><input id="limiteCuenta" type="number" placeholder="Límite TDC" class="w-full bg-slate-800 p-4 rounded-xl border border-amber-900 text-white"></div>
+            
+            <div id="capaLimite" class="hidden space-y-4">
+                <div class="space-y-1">
+                    <p class="text-[8px] text-amber-600 font-bold uppercase ml-1">Línea de Crédito:</p>
+                    <input id="limiteCuenta" type="number" placeholder="Límite TDC" class="w-full bg-slate-800 p-4 rounded-xl border border-amber-900 text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="space-y-1">
+                        <p class="text-[8px] text-blue-400 font-bold uppercase ml-1">Día de Corte:</p>
+                        <input id="diaCorte" type="number" min="1" max="31" placeholder="Ej. 15" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-xs text-white">
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-[8px] text-green-400 font-bold uppercase ml-1">Día Límite Pago:</p>
+                        <input id="diaLimite" type="number" min="1" max="31" placeholder="Ej. 5" class="w-full bg-slate-800 p-3 rounded-xl border border-slate-700 text-xs text-white">
+                    </div>
+                </div>
+            </div>
+
             <div class="flex gap-2">
                 <button onclick="guardarCuenta()" class="flex-1 bg-white text-black p-4 rounded-xl font-bold uppercase text-xs">Guardar</button>
                 <button id="btnBorrarAcc" onclick="borrarCuenta()" class="hidden bg-red-600 px-5 rounded-xl text-white font-bold">✕</button>
@@ -178,10 +204,10 @@
     </div></div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('nanowallet_v33_5')) || { cuentas: [], movimientos: [], deudas: [] };
+        let db = JSON.parse(localStorage.getItem('nanowallet_v34_0')) || { cuentas: [], movimientos: [], deudas: [] };
         let modoActual = 'Gasto';
 
-        function guardarLocal() { localStorage.setItem('nanowallet_v33_5', JSON.stringify(db)); render(); }
+        function guardarLocal() { localStorage.setItem('nanowallet_v34_0', JSON.stringify(db)); render(); }
         function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
         function mostrarModal(id) { document.getElementById(id).classList.add('active'); }
         
@@ -193,9 +219,9 @@
         }
 
         function setModo(m) { 
-            modoActual = m; 
             ['btnG', 'btnI', 'btnT'].forEach(b => document.getElementById(b).classList.remove('bg-blue-600'));
             document.getElementById(m==='Gasto'?'btnG':m==='Ingreso'?'btnI':'btnT').classList.add('bg-blue-600');
+            modoActual = m;
             const ori = document.getElementById('movOrigen');
             const des = document.getElementById('movDestino');
             const capaD = document.getElementById('capaDestino');
@@ -228,7 +254,7 @@
             if(!monto || !ori) return;
             if(id) revertirMov(id);
             
-            let mov = { id: id ? parseInt(id) : Date.now(), val: monto, oId: oId, txt: document.getElementById('movNombre').value, t: modoActual };
+            let mov = { id: id ? parseInt(id) : Date.now(), date: id ? (db.movimientos.find(x => x.id == id).date || Date.now()) : Date.now(), val: monto, oId: oId, txt: document.getElementById('movNombre').value, t: modoActual };
             
             if(modoActual === 'Transfer') {
                 const dId = document.getElementById('movDestino').value;
@@ -265,71 +291,90 @@
             } else { ori.saldo -= m.val; }
         }
 
-        // --- LÓGICA DE ABONO MSI ACTUALIZADA ---
         function abrirModalAbonoUniversal(id, tipo, movId = null) {
             const item = tipo === 'TDC' ? db.cuentas.find(c => c.id == id) : db.deudas.find(d => d.id == id);
             document.getElementById('pagoIdDestino').value = id;
             document.getElementById('pagoTipoDestino').value = tipo;
             
-            if(movId) {
-                const mov = db.movimientos.find(m => m.id == movId);
-                document.getElementById('pagoIdDestino').setAttribute('data-movid', movId);
-                document.getElementById('pagoDestinoNombre').innerText = `MSI: ${mov.txt}`;
-                // Sugerir la mensualidad exacta
-                document.getElementById('pagoMontoInput').value = (mov.val / mov.msi.restantes).toFixed(2);
+            const capaSub = document.getElementById('capaSelectorSubDeudaTDC');
+            const selectSub = document.getElementById('pagoSubDeudaTDC');
+            
+            if(tipo === 'TDC') {
+                capaSub.classList.remove('hidden');
+                document.getElementById('pagoDestinoNombre').innerText = `Abono a: ${item.nombre}`;
+                
+                let subDeudasHtml = `<option value="CORRIENTE" data-monto="${item.saldo}">Saldo General / Revolvente</option>`;
+                
+                db.movimientos.filter(m => m.oId == id && m.msi && m.msi.restantes > 0).forEach(m => {
+                    let cuota = m.val / m.msi.restantes;
+                    subDeudasHtml += `<option value="MSI_${m.id}" data-monto="${cuota.toFixed(2)}">MSI: ${m.txt} (${m.msi.restantes}/${m.msi.total} mes)</option>`;
+                });
+                
+                selectSub.innerHTML = subDeudasHtml;
+                
+                if(movId) {
+                    selectSub.value = `MSI_${movId}`;
+                } else {
+                    selectSub.value = "CORRIENTE";
+                }
+                actualizarMontoSugeridoTDC();
             } else {
-                document.getElementById('pagoIdDestino').removeAttribute('data-movid');
+                capaSub.classList.add('hidden');
                 document.getElementById('pagoDestinoNombre').innerText = (item.nombre || item.txt || "Cuenta");
-                document.getElementById('pagoMontoInput').value = (tipo === 'TDC' ? item.saldo : item.monto);
+                document.getElementById('pagoMontoInput').value = item.monto;
             }
             
-            document.getElementById('pagoCuentaOrigen').innerHTML = db.cuentas.filter(c => c.tipo !== 'TDC' || tipo !== 'TDC').map(c => `<option value="${c.id}">${c.nombre} ($${c.saldo.toLocaleString()})</option>`).join('');
+            document.getElementById('pagoCuentaOrigen').innerHTML = db.cuentas.filter(c => c.tipo !== 'TDC').map(c => `<option value="${c.id}">${c.nombre} ($${c.saldo.toLocaleString()})</option>`).join('');
             mostrarModal('modalPagarUniversal');
+        }
+
+        function actualizarMontoSugeridoTDC() {
+            const selectSub = document.getElementById('pagoSubDeudaTDC');
+            const opcionSeleccionada = selectSub.options[selectSub.selectedIndex];
+            if(opcionSeleccionada) {
+                document.getElementById('pagoMontoInput').value = opcionSeleccionada.getAttribute('data-monto');
+            }
         }
 
         function procesarPagoUniversal() {
             const idD = document.getElementById('pagoIdDestino').value;
-            const movId = document.getElementById('pagoIdDestino').getAttribute('data-movid');
             const tipoD = document.getElementById('pagoTipoDestino').value;
             const monto = parseFloat(document.getElementById('pagoMontoInput').value);
             const ori = db.cuentas.find(c => c.id == document.getElementById('pagoCuentaOrigen').value);
             
             if(!monto || !ori) return;
-
-            // 1. Restar de la cuenta que paga
             ori.saldo -= monto;
 
-            // 2. Aplicar a la deuda
-            if(movId) {
-                const m = db.movimientos.find(x => x.id == movId);
-                const tdc = db.cuentas.find(c => c.id == m.oId);
-                
-                // Cálculo de mensualidad actual
-                const cuotaMensual = m.val / m.msi.restantes;
-                
-                // Restamos de la deuda de la tarjeta
-                tdc.saldo -= monto;
+            let conceptoMovimiento = `Pago: ${document.getElementById('pagoDestinoNombre').innerText}`;
 
-                // Lógica de salto de meses:
-                if (monto >= (cuotaMensual - 0.01)) { // Margen por decimales
-                    const mesesSaldados = Math.floor(monto / cuotaMensual);
-                    m.msi.restantes = Math.max(0, m.msi.restantes - mesesSaldados);
-                    m.val = Math.max(0, m.val - monto);
-                } else {
-                    // Abono parcial: baja la deuda total pero no descuenta el mes
-                    m.val -= monto;
+            if(tipoD === 'TDC') {
+                const tdc = db.cuentas.find(c => c.id == idD);
+                const destinoSub = document.getElementById('pagoSubDeudaTDC').value;
+
+                if (destinoSub === 'CORRIENTE') {
+                    tdc.saldo -= monto;
+                    conceptoMovimiento = `Pago a Saldo Corriente: ${tdc.nombre}`;
+                } else if (destinoSub.startsWith('MSI_')) {
+                    const mId = parseInt(destinoSub.replace('MSI_', ''));
+                    const m = db.movimientos.find(x => x.id == mId);
+                    
+                    if(m) {
+                        tdc.saldo -= monto; 
+                        const cuotaMensual = m.val / m.msi.restantes;
+                        conceptoMovimiento = `Abono MSI: ${m.txt}`;
+
+                        if (monto >= (cuotaMensual - 0.01)) {
+                            const mesesSaldados = Math.floor(monto / cuotaMensual);
+                            m.msi.restantes = Math.max(0, m.msi.restantes - mesesSaldados);
+                            m.val = Math.max(0, m.val - monto);
+                        } else {
+                            m.val -= monto;
+                        }
+                        if(m.val <= 0.01 || m.msi.restantes <= 0) { m.msi.restantes = 0; m.val = 0; }
+                    }
                 }
-                
-                // Si ya no queda deuda o meses, eliminamos la marca de MSI
-                if(m.val <= 0.01 || m.msi.restantes <= 0) {
-                    m.msi.restantes = 0;
-                    m.val = 0;
-                }
-            } else if(tipoD === 'TDC') {
-                db.cuentas.find(c => c.id == idD).saldo -= monto;
             } else {
                 const d = db.deudas.find(x => x.id == idD);
-                // Si es deuda personal con MSI
                 if(d.msi) {
                     const cuota = d.monto / d.msi.restantes;
                     if(monto >= (cuota - 0.01)) {
@@ -341,11 +386,10 @@
                 if(d.monto <= 0.1) db.deudas = db.deudas.filter(x => x.id != idD);
             }
             
-            db.movimientos.unshift({ id: Date.now(), txt: `Pago: ${document.getElementById('pagoDestinoNombre').innerText}`, val: monto, t: 'Gasto', oId: ori.id });
+            db.movimientos.unshift({ id: Date.now(), date: Date.now(), txt: conceptoMovimiento, val: monto, t: 'Gasto', oId: ori.id });
             cerrarModal('modalPagarUniversal'); guardarLocal();
         }
 
-        // --- RESTO DE UI ---
         function abrirModalMovimiento(id = null) {
             const btnB = document.getElementById('btnBorrarMov');
             if(id) {
@@ -379,11 +423,15 @@
                 document.getElementById('nombreCuenta').value = c.nombre;
                 document.getElementById('saldoCuenta').value = c.saldo;
                 document.getElementById('limiteCuenta').value = c.limite || 0;
+                document.getElementById('diaCorte').value = c.diaCorte || '';
+                document.getElementById('diaLimite').value = c.diaLimite || '';
                 btnB.classList.remove('hidden');
             } else {
                 document.getElementById('editAccId').value = '';
                 document.getElementById('nombreCuenta').value = '';
                 document.getElementById('saldoCuenta').value = '';
+                document.getElementById('diaCorte').value = '';
+                document.getElementById('diaLimite').value = '';
                 btnB.classList.add('hidden');
             }
             mostrarLimite(); mostrarModal('modalCuenta');
@@ -395,11 +443,17 @@
             const s = parseFloat(document.getElementById('saldoCuenta').value) || 0;
             const t = document.getElementById('tipoCuenta').value;
             const l = parseFloat(document.getElementById('limiteCuenta').value) || 0;
+            const dc = parseInt(document.getElementById('diaCorte').value) || 0;
+            const dl = parseInt(document.getElementById('diaLimite').value) || 0;
+            
             if(!n) return;
             if(id) {
                 const c = db.cuentas.find(x => x.id == id);
                 c.nombre = n; c.saldo = s; c.tipo = t; c.limite = l;
-            } else { db.cuentas.push({ id: Date.now(), nombre: n, saldo: s, tipo: t, limite: l }); }
+                c.diaCorte = dc; c.diaLimite = dl;
+            } else { 
+                db.cuentas.push({ id: Date.now(), nombre: n, saldo: s, tipo: t, limite: l, diaCorte: dc, diaLimite: dl }); 
+            }
             cerrarModal('modalCuenta'); guardarLocal();
         }
 
@@ -447,56 +501,125 @@
             cerrarModal('modalDeuda'); guardarLocal();
         }
 
+        function calcularFechaLimiteDeGasto(timestampMov, diaCorte, diaLimite) {
+            let fechaMov = new Date(timestampMov);
+            let y = fechaMov.getFullYear();
+            let m = fechaMov.getMonth();
+            let limiteCorteEsteMes = new Date(y, m, diaCorte, 23, 59, 59, 999);
+            
+            let mesAsociadoAlCorte = m;
+            if (timestampMov > limiteCorteEsteMes.getTime()) {
+                mesAsociadoAlCorte += 1;
+            }
+
+            let mesDePago = mesAsociadoAlCorte + 1;
+            let anioDePago = y;
+            if (mesDePago > 11) {
+                mesDePago -= 12;
+                anioDePago += 1;
+            }
+
+            if(diaLimite > diaCorte) {
+                mesDePago = mesAsociadoAlCorte;
+            }
+
+            return new Date(anioDePago, mesDePago, diaLimite, 23, 59, 59, 999).getTime();
+        }
+
         function render() {
             const mesesAdd = parseInt(document.getElementById('selectorMesProg').value);
+            
+            let hoy = new Date();
+            let mesConsultado = hoy.getMonth() + mesesAdd;
+            let anioConsultado = hoy.getFullYear();
+            let baseCalendar = new Date(anioConsultado, mesConsultado, 1);
+            
+            let timestampInicioMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth(), 1, 0, 0, 0, 0).getTime();
+            let timestampFinMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
             const cash = db.cuentas.filter(c => c.tipo !== 'TDC').reduce((s, c) => s + c.saldo, 0);
             document.getElementById('grandTotal').innerText = `$${cash.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             
             let totalMSI = 0, totalCorrientes = 0;
             
-            // Sumar abonos de deudas personales con MSI
             db.deudas.forEach(d => {
                 if(d.msi && d.msi.restantes > mesesAdd) totalMSI += (d.monto / d.msi.restantes);
                 else if(!d.msi && mesesAdd === 0) totalCorrientes += d.monto;
             });
 
-            // Sumar MSI y deuda revolvente de TDC
             db.cuentas.filter(c => c.tipo === 'TDC').forEach(tdc => {
-                let corriente = tdc.saldo;
-                db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0).forEach(m => {
-                    const cuota = m.val / m.msi.restantes;
-                    corriente -= m.val; // Restar toda la porción MSI para dejar solo lo corriente
-                    if(m.msi.restantes > mesesAdd) totalMSI += cuota;
+                let dc = tdc.diaCorte || 15;
+                let dl = tdc.diaLimite || 5;
+
+                db.movimientos.filter(m => m.oId == tdc.id && m.t === 'Gasto' && !m.msi).forEach(m => {
+                    let tMov = m.date || m.id;
+                    let tLimitePago = calcularFechaLimiteDeGasto(tMov, dc, dl);
+                    if (tLimitePago >= timestampInicioMes && tLimitePago <= timestampFinMes) {
+                        totalCorrientes += m.val;
+                    }
                 });
-                if(mesesAdd === 0 && corriente > 0.01) totalCorrientes += corriente;
+
+                // --- NUEVA LÓGICA DE SIMULACIÓN DE MSI LIBRE DE EXCESOS POR ADELANTOS ---
+                db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0).forEach(m => {
+                    let tMov = m.date || m.id;
+                    const cuota = m.val / m.msi.restantes;
+                    let primeraFechaLimite = calcularFechaLimiteDeGasto(tMov, dc, dl);
+                    
+                    // Contamos de atrás hacia adelante para descartar las cuotas saldadas
+                    let cuotasPorAsignar = m.msi.restantes;
+                    for(let i = m.msi.total - 1; i >= 0; i--) {
+                        let fLimiteMensualidad = new Date(primeraFechaLimite);
+                        fLimiteMensualidad.setMonth(fLimiteMensualidad.getMonth() + i);
+                        let tLimiteMensualidad = fLimiteMensualidad.getTime();
+
+                        // Si esta mensualidad pertenece al futuro o al mes actual evaluado
+                        if (tLimiteMensualidad >= timestampInicioMes && tLimiteMensualidad <= timestampFinMes) {
+                            if (cuotasPorAsignar > 0) {
+                                totalMSI += cuota;
+                            }
+                        }
+                        
+                        // Si la fecha límite evaluada es posterior o igual al inicio de este mes, reduce el contador de cuotas activas reales
+                        if (tLimiteMensualidad >= timestampInicioMes) {
+                            cuotasPorAsignar--;
+                        }
+                    }
+                });
             });
 
-            document.getElementById('resumenMSI').innerText = `$${totalMSI.toLocaleString()}`;
-            document.getElementById('resumenCorrientes').innerText = `$${totalCorrientes.toLocaleString()}`;
-            document.getElementById('resumenTotalMes').innerText = `$${(totalMSI + totalCorrientes).toLocaleString()}`;
+            document.getElementById('resumenMSI').innerText = `$${totalMSI.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+            document.getElementById('resumenCorrientes').innerText = `$${totalCorrientes.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+            document.getElementById('resumenTotalMes').innerText = `$${(totalMSI + totalCorrientes).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
 
             document.getElementById('listaCuentas').innerHTML = db.cuentas.map(c => `
-                <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[170px] p-5 rounded-[2rem] border border-slate-800 bg-slate-900 active:scale-95 transition-transform">
-                    <p class="text-[8px] font-bold uppercase text-blue-500 mb-1">${c.nombre}</p>
-                    <p class="text-xl font-black italic">$${(c.tipo==='TDC'?(c.limite-c.saldo):c.saldo).toLocaleString()}</p>
+                <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[180px] p-5 rounded-[2rem] border border-slate-800 bg-slate-900 active:scale-95 transition-transform">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-[8px] font-bold uppercase text-blue-500">${c.nombre}</p>
+                        ${c.tipo === 'TDC' && c.diaCorte ? `<span class="text-[7px] bg-slate-800 px-2 py-0.5 rounded text-amber-500 font-bold">Límite: ${c.diaLimite || 'S/D'}</span>` : ''}
+                    </div>
+                    <p class="text-xl font-black italic">$${(c.tipo==='TDC'?(c.limite-c.saldo):c.saldo).toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
                     <p class="text-[7px] text-slate-500 font-bold uppercase">${c.tipo==='TDC'?'Disponible':'Saldo Real'}</p>
                 </div>`).join('');
 
             document.getElementById('historial').innerHTML = db.movimientos.slice(0, 12).map(m => `
                 <div onclick="abrirModalMovimiento(${m.id})" class="flex justify-between items-center p-4 bg-slate-900/50 rounded-2xl border border-white/5 active:bg-slate-800">
                     <div><p class="text-[10px] font-bold uppercase">${m.txt}</p><p class="text-[7px] text-slate-500 font-bold uppercase">${m.t} ${m.msi?'• MSI':''}</p></div>
-                    <p class="font-black ${m.t==='Ingreso'?'text-green-500':'text-white'}">$${m.val.toLocaleString()}</p>
+                    <p class="font-black ${m.t==='Ingreso'?'text-green-500':'text-white'}">$${m.val.toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
                 </div>`).join('');
 
             document.getElementById('listaTDC').innerHTML = db.cuentas.filter(c => c.tipo === 'TDC').map(c => `
                 <div class="bg-slate-900 p-4 rounded-2xl flex justify-between items-center border border-slate-800">
-                    <div><p class="text-xs font-bold uppercase">${c.nombre}</p><p class="text-[9px] text-red-500 font-bold">$${c.saldo.toLocaleString()} deuda total</p></div>
+                    <div>
+                        <p class="text-xs font-bold uppercase">${c.nombre}</p>
+                        <p class="text-[9px] text-red-500 font-bold">$${c.saldo.toLocaleString('es-MX', {minimumFractionDigits:2})} deuda total</p>
+                        ${c.diaLimite ? `<p class="text-[7px] text-slate-400 uppercase mt-0.5">Límite de pago: Día ${c.diaLimite}</p>` : ''}
+                    </div>
                     <button onclick="abrirModalAbonoUniversal(${c.id}, 'TDC')" class="bg-white text-black text-[9px] font-bold px-3 py-2 rounded-lg uppercase italic">Abonar</button>
                 </div>`).join('');
 
             document.getElementById('listaDeudasPersonales').innerHTML = db.deudas.map(d => `
                 <div class="bg-slate-900 p-4 rounded-2xl flex justify-between items-center border border-slate-800" onclick="abrirModalDeuda(${d.id})">
-                    <div><p class="text-xs font-bold uppercase">${d.nombre} ${d.msi ? '🏷️' : ''}</p><p class="text-red-400 font-bold">$${d.monto.toLocaleString()}</p></div>
+                    <div><p class="text-xs font-bold uppercase">${d.nombre} ${d.msi ? '🏷️' : ''}</p><p class="text-red-400 font-bold">$${d.monto.toLocaleString('es-MX', {minimumFractionDigits:2})}</p></div>
                     <button onclick="event.stopPropagation(); abrirModalAbonoUniversal(${d.id}, 'PERSONA')" class="bg-green-600 text-white text-[9px] font-bold px-3 py-2 rounded-lg uppercase">Abonar</button>
                 </div>`).join('');
 
@@ -507,15 +630,15 @@
                 <div class="bg-slate-900/50 p-4 rounded-2xl border border-amber-500/20 flex justify-between items-center">
                     <div>
                         <p class="text-[9px] font-bold text-white uppercase mb-1">${m.txt} <span class="text-amber-500 italic">(${m.msi.restantes}/${m.msi.total} MESES)</span></p>
-                        <p class="text-lg text-amber-500 font-black tracking-tighter">$${cuota.toLocaleString()} <span class="text-[8px] font-normal text-slate-500">al mes</span></p>
-                        <p class="text-[7px] text-slate-500 uppercase font-bold">Resta: $${m.val.toLocaleString()}</p>
+                        <p class="text-lg text-amber-500 font-black tracking-tighter">$${cuota.toLocaleString('es-MX', {minimumFractionDigits:2})} <span class="text-[8px] font-normal text-slate-500">al mes</span></p>
+                        <p class="text-[7px] text-slate-500 uppercase font-bold">Resta: $${m.val.toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
                     </div>
                     <button onclick="abrirModalAbonoUniversal(${m.oId}, 'TDC', ${m.id})" class="bg-amber-600 text-white px-3 py-2 rounded-lg text-[9px] font-bold uppercase italic">Saldar Mes</button>
                 </div>`;
             }).join('');
 
-            document.getElementById('pagoProximoMes').innerText = `$${totalMSI.toLocaleString()}`;
-            document.getElementById('deudaTotalLabel').innerText = `$${(db.deudas.reduce((s,d)=>s+d.monto,0) + db.cuentas.filter(c=>c.tipo==='TDC').reduce((s,c)=>s+c.saldo,0)).toLocaleString()}`;
+            document.getElementById('pagoProximoMes').innerText = `$${totalMSI.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+            document.getElementById('deudaTotalLabel').innerText = `$${(db.deudas.reduce((s,d)=>s+d.monto,0) + db.cuentas.filter(c=>c.tipo==='TDC').reduce((s,c)=>s+c.saldo,0)).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
         }
         render();
     </script>
