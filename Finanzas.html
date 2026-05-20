@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NanoWallet V34.3 - Abonos Correctos</title>
+    <title>NanoWallet V34.4 - Control de Fechas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;700;800&display=swap');
@@ -12,6 +12,8 @@
         .modal.active { display: flex; }
         .tab-btn.active { color: #3b82f6; border-bottom: 2px solid #3b82f6; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        /* Estilo minimalista para el input de fecha nativo en modo oscuro */
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -131,6 +133,12 @@
             </div>
             <div class="space-y-4">
                 <input id="movNombre" type="text" placeholder="Concepto" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700">
+                
+                <div class="space-y-1">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase ml-1">Fecha del Movimiento:</p>
+                    <input id="movFecha" type="date" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700 outline-none">
+                </div>
+
                 <div class="space-y-1">
                     <p id="labelOrigen" class="text-[8px] text-slate-500 font-bold uppercase ml-1">Origen:</p>
                     <select id="movOrigen" onchange="verificarSiEsTDC()" class="w-full bg-slate-800 p-4 rounded-xl text-sm text-white border border-slate-700"></select>
@@ -250,11 +258,24 @@
             const id = document.getElementById('editMovId').value;
             const oId = document.getElementById('movOrigen').value;
             const monto = parseFloat(document.getElementById('movMonto').value);
+            const fechaSeleccionada = document.getElementById('movFecha').value;
             const ori = db.cuentas.find(c => c.id == oId);
-            if(!monto || !ori) return;
+            if(!monto || !ori || !fechaSeleccionada) return;
+            
+            // Convertimos la fecha del input (YYYY-MM-DD) a un timestamp correcto local sin desfases horarios
+            const partesFecha = fechaSeleccionada.split('-');
+            const timestampEstablecido = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2], 12, 0, 0).getTime();
+
             if(id) revertirMov(id);
             
-            let mov = { id: id ? parseInt(id) : Date.now(), date: id ? (db.movimientos.find(x => x.id == id).date || Date.now()) : Date.now(), val: monto, oId: oId, txt: document.getElementById('movNombre').value, t: modoActual };
+            let mov = { 
+                id: id ? parseInt(id) : Date.now(), 
+                date: timestampEstablecido, 
+                val: monto, 
+                oId: oId, 
+                txt: document.getElementById('movNombre').value, 
+                t: modoActual 
+            };
             
             if(modoActual === 'Transfer') {
                 const dId = document.getElementById('movDestino').value;
@@ -392,17 +413,35 @@
 
         function abrirModalMovimiento(id = null) {
             const btnB = document.getElementById('btnBorrarMov');
+            const inputFecha = document.getElementById('movFecha');
+            
             if(id) {
                 const m = db.movimientos.find(x => x.id == id);
                 document.getElementById('editMovId').value = id;
                 document.getElementById('movNombre').value = m.txt;
                 document.getElementById('movMonto').value = m.val;
+                
+                // Formatear el timestamp guardado para inyectarlo en el input HTML [YYYY-MM-DD]
+                const dObj = new Date(m.date || m.id);
+                const year = dObj.getFullYear();
+                const month = String(dObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dObj.getDate()).padStart(2, '0');
+                inputFecha.value = `${year}-${month}-${day}`;
+
                 setModo(m.t); document.getElementById('movOrigen').value = m.oId;
                 btnB.classList.remove('hidden');
             } else {
                 document.getElementById('editMovId').value = '';
                 document.getElementById('movNombre').value = '';
                 document.getElementById('movMonto').value = '';
+                
+                // Si es nuevo movimiento, por defecto asignamos la fecha de hoy en formato local
+                const dObj = new Date();
+                const year = dObj.getFullYear();
+                const month = String(dObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dObj.getDate()).padStart(2, '0');
+                inputFecha.value = `${year}-${month}-${day}`;
+
                 setModo('Gasto'); btnB.classList.add('hidden');
             }
             mostrarModal('modalMov');
@@ -559,27 +598,23 @@
                     }
                 });
 
-                // --- NUEVA LÓGICA DE SIMULACIÓN DE MSI LIBRE DE EXCESOS POR ADELANTOS ---
                 db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0).forEach(m => {
                     let tMov = m.date || m.id;
                     const cuota = m.val / m.msi.restantes;
                     let primeraFechaLimite = calcularFechaLimiteDeGasto(tMov, dc, dl);
                     
-                    // Contamos de atrás hacia adelante para descartar las cuotas saldadas
                     let cuotasPorAsignar = m.msi.restantes;
                     for(let i = m.msi.total - 1; i >= 0; i--) {
                         let fLimiteMensualidad = new Date(primeraFechaLimite);
                         fLimiteMensualidad.setMonth(fLimiteMensualidad.getMonth() + i);
                         let tLimiteMensualidad = fLimiteMensualidad.getTime();
 
-                        // Si esta mensualidad pertenece al futuro o al mes actual evaluado
                         if (tLimiteMensualidad >= timestampInicioMes && tLimiteMensualidad <= timestampFinMes) {
                             if (cuotasPorAsignar > 0) {
                                 totalMSI += cuota;
                             }
                         }
                         
-                        // Si la fecha límite evaluada es posterior o igual al inicio de este mes, reduce el contador de cuotas activas reales
                         if (tLimiteMensualidad >= timestampInicioMes) {
                             cuotasPorAsignar--;
                         }
@@ -601,11 +636,19 @@
                     <p class="text-[7px] text-slate-500 font-bold uppercase">${c.tipo==='TDC'?'Disponible':'Saldo Real'}</p>
                 </div>`).join('');
 
-            document.getElementById('historial').innerHTML = db.movimientos.slice(0, 12).map(m => `
+            document.getElementById('historial').innerHTML = db.movimientos.slice(0, 12).map(m => {
+                // Formatear fecha para el feed visual legible
+                const fObj = new Date(m.date || m.id);
+                const stringFechaVisual = `${fObj.getDate()}/${fObj.getMonth()+1}`;
+                return `
                 <div onclick="abrirModalMovimiento(${m.id})" class="flex justify-between items-center p-4 bg-slate-900/50 rounded-2xl border border-white/5 active:bg-slate-800">
-                    <div><p class="text-[10px] font-bold uppercase">${m.txt}</p><p class="text-[7px] text-slate-500 font-bold uppercase">${m.t} ${m.msi?'• MSI':''}</p></div>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase">${m.txt}</p>
+                        <p class="text-[7px] text-slate-500 font-bold uppercase">${stringFechaVisual} • ${m.t} ${m.msi?'• MSI':''}</p>
+                    </div>
                     <p class="font-black ${m.t==='Ingreso'?'text-green-500':'text-white'}">$${m.val.toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
-                </div>`).join('');
+                </div>`;
+            }).join('');
 
             document.getElementById('listaTDC').innerHTML = db.cuentas.filter(c => c.tipo === 'TDC').map(c => `
                 <div class="bg-slate-900 p-4 rounded-2xl flex justify-between items-center border border-slate-800">
