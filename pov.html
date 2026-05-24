@@ -3,36 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StockMaster PWA</title>
+    <title>NextGen POS & Stock Master</title>
     <!-- Librería para escanear códigos de barras -->
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- Google Fonts para tipografía moderna -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- VARIABLES DE DISEÑO DE ÚLTIMA GENERACIÓN --- */
         :root {
-            --bg-main: #f8fafc;
+            --bg-main: #f1f5f9;
             --bg-card: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --primary-light: #e0e7ff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #dbeafe;
+            --success: #10b981;
+            --success-light: #d1fae5;
             --danger: #ef4444;
             --danger-light: #fee2e2;
             --warning: #f59e0b;
             --warning-light: #fef3c7;
-            --success: #10b981;
-            --success-light: #d1fae5;
             --border: #e2e8f0;
             --radius-lg: 16px;
             --radius-md: 12px;
-            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
         }
 
         * {
@@ -40,411 +38,322 @@
             margin: 0;
             padding: 0;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
-            padding-bottom: 90px; /* Espacio para la barra de navegación inferior */
+            padding-bottom: 90px;
         }
 
-        /* --- CONTENEDOR PRINCIPAL --- */
         .app-container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 20px 16px;
+            padding: 16px;
         }
 
         header {
-            margin-bottom: 24px;
-        }
-
-        header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            color: var(--text-main);
-        }
-
-        header p {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-main);
-            margin: 24px 0 12px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* --- FORMULARIOS E INPUTS PREMIUM --- */
-        .form-group {
             margin-bottom: 16px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-main);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 12px 16px;
-            font-size: 0.95rem;
-            background-color: var(--bg-card);
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-md);
-            color: var(--text-main);
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow-sm);
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px var(--primary-light);
-        }
-
-        .flex-group {
-            display: flex;
-            gap: 12px;
-        }
-
-        .flex-group > div {
-            flex: 1;
-            min-width: 0;
-        }
-
-        /* --- BOTONES MODERNOS --- */
-        button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 20px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-radius: var(--radius-md);
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-        }
-
-        .btn-secondary {
-            background-color: var(--bg-card);
-            border: 1.5px solid var(--border);
-            color: var(--text-main);
-        }
-
-        .btn-secondary:hover {
-            background-color: var(--bg-main);
-        }
-
-        .btn-danger {
-            background-color: var(--danger-light);
-            color: var(--danger);
-        }
-
-        .btn-icon-only {
-            width: 48px;
-            height: 48px;
-            padding: 0;
-            flex-shrink: 0;
-        }
-
-        /* --- SISTEMA DE ALERTAS (CHIPS/TARJETAS) --- */
-        .alert-box {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .alert-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
-            font-size: 0.85rem;
-            font-weight: 500;
-            line-height: 1.4;
-        }
-
-        .alert-warning { background-color: var(--warning-light); color: #92400e; }
-        .alert-danger { background-color: var(--danger-light); color: #991b1b; }
-        .alert-success { background-color: var(--success-light); color: #065f46; padding: 16px; text-align: center; justify-content: center;}
-
-        /* --- TARJETAS DE PRODUCTOS (GRID-CARDS) --- */
-        .product-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .product-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .product-card:hover {
-            box-shadow: var(--shadow-lg);
-        }
-
-        .product-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .product-title {
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .badge-promo {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            color: white;
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 20px;
-            text-transform: uppercase;
-        }
-
-        .product-meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-
-        .product-stock {
-            display: inline-flex;
             align-items: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 4px 8px;
-            background-color: var(--bg-main);
-            border-radius: 6px;
-            margin-bottom: 12px;
         }
 
-        .price-section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 14px;
-        }
+        h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+        h2 { font-size: 1.1rem; font-weight: 600; margin: 20px 0 12px 0; display: flex; align-items: center; gap: 8px; }
 
-        .price-chip {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 6px 10px;
-            border-radius: 8px;
-            background-color: var(--bg-main);
-            border: 1px solid var(--border);
-        }
-
-        .price-chip.main {
-            background-color: var(--primary-light);
-            color: var(--primary);
-            border-color: transparent;
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            border-top: 1px solid var(--border);
-            padding-top: 12px;
-        }
-
-        .card-actions button {
-            padding: 8px 12px;
-            font-size: 0.85rem;
-        }
-
-        /* --- ESCÁNER DE CÁMARA FLOTANTE/ESTILIZADO --- */
-        .scanner-wrapper {
+        /* --- CONTENEDOR DE LA CÁMARA CONTINUA --- */
+        .scanner-card {
             background: #000;
             border-radius: var(--radius-lg);
             overflow: hidden;
-            margin: 12px 0;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-md);
+            display: none;
             position: relative;
-            box-shadow: var(--shadow-lg);
+        }
+        #interactive-reader { width: 100%; }
+        .scanner-status {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            z-index: 10;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+        /* --- SECCIÓN CESTA DE COMPRAS (POV) --- */
+        .cart-card {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+            border: 1.5px solid var(--border);
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .cart-item:last-child { border-bottom: none; }
+        .cart-item-info { flex: 1; min-width: 0; }
+        .cart-item-title { font-weight: 600; font-size: 0.95rem; }
+        .cart-item-meta { font-size: 0.8rem; color: var(--text-muted); }
+        
+        .cart-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background-color: var(--bg-main);
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- PANEL DE DESCUENTOS Y TOTALES --- */
+        .discount-section {
+            background-color: var(--bg-main);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin-top: 14px;
+        }
+        .discount-inputs {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
         }
         
-        /* --- BARRA DE NAVEGACIÓN INFERIOR (ESTILO APP NATIVA) --- */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
-            z-index: 1000;
+        input, select, text {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            background-color: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-main);
         }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main); text-transform: uppercase;}
 
-        .nav-item {
+        .totals-section {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 2px dashed var(--border);
+        }
+        .total-row {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: none;
-            border: none;
-            padding: 6px;
-            width: auto;
+            justify-content: space-between;
+            font-size: 0.9rem;
             color: var(--text-muted);
-            font-size: 0.75rem;
-            font-weight: 500;
-            gap: 4px;
-            box-shadow: none;
+            margin-bottom: 4px;
         }
-
-        .nav-item.active {
-            color: var(--primary);
-            font-weight: 700;
-        }
-
-        .nav-icon {
+        .total-row.final {
             font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-top: 6px;
         }
 
-        /* --- CONTROL DE VISTAS --- */
-        .page { display: none; animation: fadeIn 0.3s ease; }
+        /* --- ALERTAS DEL SISTEMA --- */
+        .alert-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 500; }
+        .alert-warning { background-color: var(--warning-light); color: #92400e; }
+        .alert-danger { background-color: var(--danger-light); color: #991b1b; }
+        .alert-success { background-color: var(--success-light); color: #065f46; text-align: center; justify-content: center; width: 100%;}
+
+        /* --- BOTONES --- */
+        button {
+            padding: 12px 16px; font-size: 0.95rem; font-weight: 600; border-radius: var(--radius-md); border: none; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;
+        }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
+        .btn-success { background-color: var(--success); color: white; width: 100%; font-size: 1.1rem; }
+        .btn-secondary { background-color: var(--bg-card); border: 1.5px solid var(--border); color: var(--text-main); }
+        .btn-danger { background-color: var(--danger-light); color: var(--danger); }
+        .btn-cam { background-color: #0f172a; color: white; }
+        .btn-cam.active { background-color: var(--danger); animation: pulse 2s infinite; }
+
+        /* --- SECCIÓN DE STOCK (PRODUCTOS) --- */
+        .product-list { display: flex; flex-direction: column; gap: 12px; }
+        .product-card {
+            background-color: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: 16px; box-shadow: var(--shadow-md); position: relative;
+        }
+        .product-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+        .product-title { font-size: 1.05rem; font-weight: 600; }
+        .badge-promo { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 20px; text-transform: uppercase; }
+        .product-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; }
+        .product-stock { display: inline-flex; align-items: center; font-size: 0.85rem; font-weight: 600; padding: 4px 8px; background-color: var(--bg-main); border-radius: 6px; margin-bottom: 12px; }
+        .price-section { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .price-chip { font-size: 0.75rem; font-weight: 600; padding: 6px 10px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); }
+        .price-chip.main { background-color: var(--primary-light); color: var(--primary); border-color: transparent; }
+        .card-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+        .card-actions button { padding: 8px 12px; font-size: 0.85rem; }
+
+        /* GRID RÁPIDO PARA EL POV */
+        .product-grid { display: flex; flex-direction: column; gap: 10px; }
+        .quick-item-card {
+            background-color: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow-md);
+        }
+        .quick-item-card:hover { border-color: var(--primary); }
+        .alert-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; }
+        .alert-low { background-color: var(--danger-light); color: var(--danger); }
+        .alert-exp { background-color: #fef3c7; color: #b45309; }
+
+        /* --- NAVEGACIÓN INFERIOR --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; background: none; border: none;
+            color: var(--text-muted); font-size: 0.75rem; font-weight: 500; gap: 2px; width: auto; padding: 0;
+        }
+        .nav-item.active { color: var(--primary); font-weight: 700; }
+        .page { display: none; }
         .page.active { display: block; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .flex-group { display: flex; gap: 12px; }
+        .flex-group > div { flex: 1; min-width: 0; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- HEADER DINÁMICO -->
         <header>
-            <h1 id="app-title">StockMaster</h1>
-            <p id="app-subtitle">Panel de control de inventario</p>
+            <div>
+                <h1 id="app-title">NextGen POS</h1>
+                <p id="app-subtitle" style="font-size:0.8rem; color:var(--text-muted)">Terminal Activa de Cobro</p>
+            </div>
+            <!-- Botón de cámara continua (Permanece encendido mientras vendes) -->
+            <button id="cam-toggle-btn" class="btn-cam" onclick="toggleContinuousScanner()">
+                📷 Escáner Apagado
+            </button>
         </header>
 
-        <!-- SECCIÓN 1: STOCK E INVENTARIO -->
-        <div id="stock-page" class="page active">
-            <h2>🚨 Alertas de atención</h2>
-            <div id="alerts-container"></div>
-
-            <h2>📦 Productos registrados</h2>
-            <div class="form-group flex-group" style="margin-bottom: 20px;">
-                <input type="text" id="search-input" placeholder="Buscar por nombre o código..." oninput= "renderProducts()">
-                <button class="btn-secondary btn-icon-only" onclick="startScan('search')" title="Escanear Código">🔍</button>
-            </div>
-            
-            <div id="scanner-container-search" style="display:none;" class="scanner-wrapper">
-                <div id="reader-search"></div>
-                <button onclick="stopScan('search')" class="btn-danger" style="border-radius:0;">Cerrar Cámara</button>
-            </div>
-
-            <div id="product-list-container" class="product-list"></div>
+        <!-- ÁREA DEL ESCÁNER DE CAMARA CONTINUO -->
+        <div id="scanner-wrapper" class="scanner-card">
+            <div class="scanner-status">🟢 Escáner Activo en Caja</div>
+            <div id="interactive-reader"></div>
         </div>
 
-        <!-- SECCIÓN 2: FORMULARIO AGREGAR / EDITAR -->
-        <div id="add-page" class="page">
-            <h2 id="form-title">Agregar Producto</h2>
-            <form id="product-form" onsubmit="saveProduct(event)">
-                <input type="hidden" id="edit-id">
-
-                <div class="form-group">
-                    <label>Nombre del Producto</label>
-                    <input type="text" id="prod-name" placeholder="Ej. Leche Entera 1L" required>
+        <!-- SECCIÓN 1: POV (VENTAS EN CAJA) -->
+        <div id="pos-page" class="page active">
+            <h2>🛒 Cesta de Compra Actual</h2>
+            <div class="cart-card">
+                <div id="cart-items-container">
+                    <p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido abajo.</p>
                 </div>
 
-                <div class="form-group">
-                    <label>Código de Barras</label>
-                    <div class="flex-group">
-                        <input type="text" id="prod-code" placeholder="Escribe o escanea" required>
-                        <button type="button" class="btn-secondary btn-icon-only" onclick="startScan('form')">📷</button>
+                <!-- DESCUENTO EN LA PROPIA CESTA -->
+                <div class="discount-section">
+                    <label>Descuento Directo al Cliente</label>
+                    <div class="discount-inputs">
+                        <select id="cart-discount-type" onchange="updateCartTotals()">
+                            <option value="percent">Porcentaje (%)</option>
+                            <option value="fixed">Monto Fijo ($)</option>
+                        </select>
+                        <input type="number" id="cart-discount-value" value="0" min="0" oninput="updateCartTotals()" placeholder="0">
                     </div>
                 </div>
-                
-                <div id="scanner-container-form" style="display:none;" class="scanner-wrapper">
-                    <div id="reader-form"></div>
-                    <button type="button" onclick="stopScan('form')" class="btn-danger" style="border-radius:0;">Cerrar Cámara</button>
-                </div>
 
-                <div class="form-group flex-group">
+                <!-- TOTALES -->
+                <div class="totals-section">
+                    <div class="total-row"><span>Subtotal:</span><span id="total-sub">$0.00</span></div>
+                    <div class="total-row"><span>Descuento Aplicado:</span><span id="total-disc">-$0.00</span></div>
+                    <div class="total-row final"><span>Total Neto:</span><span id="total-final">$0.00</span></div>
+                </div>
+                <button class="btn-success" style="margin-top: 14px;" onclick="checkoutSale()">💳 FINALIZAR COBRO</button>
+            </div>
+
+            <h2>📦 Catálogo de Selección Rápida</h2>
+            <div style="margin-bottom: 12px;">
+                <input type="text" id="pos-search-input" placeholder="Buscar producto en venta..." oninput="renderPOSCatalog()">
+            </div>
+            <div id="pos-catalog-container" class="product-grid"></div>
+        </div>
+
+        <!-- SECCIÓN 2: CONTROL DE STOCK (ALFABÉTICO, BUSCADOR Y ALERTAS) -->
+        <div id="stock-page" class="page">
+            <h2>🚨 Alertas de Control (Próximos a Caducar / Rezago)</h2>
+            <div id="alerts-container"></div>
+
+            <h2>📦 Inventario en Stock</h2>
+            <div style="margin-bottom: 16px;">
+                <input type="text" id="stock-search-input" placeholder="Buscar por nombre o código en stock..." oninput="renderStockInventory()">
+            </div>
+            <div id="stock-inventory-container" class="product-list"></div>
+        </div>
+
+        <!-- SECCIÓN 3: GESTIÓN / AGREGAR / EDITAR -->
+        <div id="add-page" class="page">
+            <h2 id="form-title">Agregar Nuevo Producto</h2>
+            <form id="product-form" onsubmit="saveProduct(event)" style="background: white; padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+                <input type="hidden" id="edit-id">
+                
+                <div style="margin-bottom: 12px;">
+                    <label>Nombre del Producto</label>
+                    <input type="text" id="prod-name" required>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label>Código de Barras</label>
+                    <input type="text" id="prod-code" required>
+                </div>
+                <div class="flex-group" style="margin-bottom: 12px;">
                     <div>
                         <label>Stock Inicial</label>
-                        <input type="number" id="prod-stock" min="0" placeholder="0" required>
+                        <input type="number" id="prod-stock" min="0" required>
                     </div>
                     <div>
                         <label>Stock Mínimo</label>
                         <input type="number" id="prod-min-stock" min="0" value="5" required>
                     </div>
+                    <div>
+                        <label>U. Medida</label>
+                        <select id="prod-unit">
+                            <option value="Pieza">Pieza</option>
+                            <option value="Kg">Kg</option>
+                            <option value="Litros">Litros</option>
+                            <option value="Paquete">Paquete</option>
+                        </select>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label>Unidad de Medida</label>
-                    <select id="prod-unit">
-                        <option value="Pieza">Pieza (Pza)</option>
-                        <option value="Kg">Kilo (Kg)</option>
-                        <option value="Litros">Litros (L)</option>
-                        <option value="Paquete">Paquete (Paq)</option>
-                    </select>
-                </div>
-
-                <div class="form-group flex-group">
+                <div class="flex-group" style="margin-bottom: 12px;">
                     <div>
                         <label>P. Unitario ($)</label>
-                        <input type="number" step="0.01" id="prod-price-unit" placeholder="0.00" required>
+                        <input type="number" step="0.01" id="prod-price-unit" required>
                     </div>
                     <div>
                         <label>P. Mayoreo ($)</label>
-                        <input type="number" step="0.01" id="prod-price-wholesale" placeholder="Opcional">
+                        <input type="number" step="0.01" id="prod-price-wholesale">
                     </div>
                     <div>
                         <label>P. Caja ($)</label>
-                        <input type="number" step="0.01" id="prod-price-box" placeholder="Opcional">
+                        <input type="number" step="0.01" id="prod-price-box">
                     </div>
                 </div>
-
-                <div class="form-group flex-group">
+                <div class="flex-group" style="margin-bottom: 16px;">
                     <div>
-                        <label>Fecha Compra</label>
+                        <label>Fecha de Compra</label>
                         <input type="date" id="prod-date-buy" required>
                     </div>
                     <div>
@@ -452,75 +361,72 @@
                         <input type="date" id="prod-date-expiry">
                     </div>
                 </div>
-
-                <button type="submit" class="btn-primary" id="btn-submit-form" style="margin-top: 10px;">Guardar Producto</button>
-                <button type="button" id="btn-cancel-edit" class="btn-danger" style="display:none; margin-top: 8px;" onclick="clearForm()">Cancelar Edición</button>
+                <button type="submit" class="btn-primary" id="btn-submit-form">Guardar Producto</button>
+                <button type="button" id="btn-cancel-edit" class="btn-danger" style="display:none; margin-top:8px;" onclick="clearForm()">Cancelar Edición</button>
             </form>
         </div>
 
-        <!-- SECCIÓN 3: PROMOCIONES -->
+        <!-- SECCIÓN 4: REGLAS DE PROMOCIONES -->
         <div id="promo-page" class="page">
-            <h2>🎉 Crear Promoción Especial</h2>
-            <form id="promo-form" onsubmit="applyPromo(event)">
-                <div class="form-group">
+            <h2>🎉 Configurar Promociones Especiales</h2>
+            <form id="promo-form" onsubmit="applyPromo(event)" style="background: white; padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); margin-bottom: 20px;">
+                <div style="margin-bottom: 12px;">
                     <label>Seleccionar Producto</label>
                     <select id="promo-product-select" required></select>
                 </div>
-
-                <div class="form-group">
-                    <label>Tipo de Promoción</label>
+                <div style="margin-bottom: 12px;">
+                    <label>Tipo de Oferta</label>
                     <select id="promo-type" onchange="togglePromoFields()">
-                        <option value="descuento">Porcentaje de Descuento (%)</option>
-                        <option value="xporx">Esquema Fijo (2x1, 3x2...)</option>
+                        <option value="descuento">Descuento Porcentual (%)</option>
+                        <option value="xporx">Esquema Multi-Unidad (2x1, 3x2...)</option>
                     </select>
                 </div>
-
-                <div class="form-group" id="div-promo-desc">
-                    <label>Descuento (%)</label>
+                <div id="div-promo-desc" style="margin-bottom: 12px;">
+                    <label>Porcentaje de Descuento (%)</label>
                     <input type="number" id="promo-discount" min="1" max="100" value="10">
                 </div>
-
-                <div id="div-promo-quantity" style="display:none;" class="form-group flex-group">
+                <div id="div-promo-quantity" class="flex-group" style="display:none; margin-bottom: 12px;">
                     <div>
-                        <label>Lleva (Cantidad)</label>
+                        <label>Lleva (Unidades)</label>
                         <input type="number" id="promo-buy" min="1" value="2">
                     </div>
                     <div>
-                        <label>Paga (Cantidad)</label>
+                        <label>Paga (Unidades)</label>
                         <input type="number" id="promo-pay" min="1" value="1">
                     </div>
                 </div>
-
-                <button type="submit" class="btn-primary">Activar Promoción</button>
+                <button type="submit" class="btn-primary">Activar Regla promocional</button>
             </form>
 
-            <h2>🔥 Promociones Activas</h2>
+            <h2>🔥 Promociones Corriendo Actualmente</h2>
             <div id="promos-active-container" class="product-list"></div>
         </div>
     </div>
 
-    <!-- NAVEGACIÓN INFERIOR PREMIUM -->
+    <!-- MENÚ INFERIOR DE 4 ESTACIONES -->
     <nav class="bottom-nav">
-        <button class="nav-item active" id="nav-stock" onclick="switchPage('stock-page', 'nav-stock')">
-            <span class="nav-icon">📦</span>
-            <span>Inventario</span>
+        <button class="nav-item active" id="nav-pos" onclick="switchPage('pos-page', 'nav-pos')">
+            <span>🖥️</span><span>POV Caja</span>
+        </button>
+        <button class="nav-item" id="nav-stock" onclick="switchPage('stock-page', 'nav-stock')">
+            <span>📊</span><span>Stock</span>
         </button>
         <button class="nav-item" id="nav-add" onclick="switchPage('add-page', 'nav-add')">
-            <span class="nav-icon">➕</span>
-            <span>Añadir</span>
+            <span>➕</span><span>Gestionar</span>
         </button>
         <button class="nav-item" id="nav-promo" onclick="switchPage('promo-page', 'nav-promo')">
-            <span class="nav-icon">🎉</span>
-            <span>Promos</span>
+            <span>🎉</span><span>Promos</span>
         </button>
     </nav>
 
     <script>
-        // --- BASE DE DATOS LOCALSTORAGE ---
+        // --- DATA DE LA APLICACIÓN ---
         let products = JSON.parse(localStorage.getItem('pwa_products')) || [];
+        let cart = [];
         let html5QrcodeScanner = null;
+        let isScannerRunning = false;
 
-        // --- SISTEMA DE NAVEGACIÓN INTERNA ---
+        // --- MANEJO DE SECCIONES (NAVEGACIÓN) ---
         function switchPage(pageId, navId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -528,60 +434,232 @@
             document.getElementById(pageId).classList.add('active');
             document.getElementById(navId).classList.add('active');
             
-            // Actualizar subtítulos dinámicos según sección
             const sub = document.getElementById('app-subtitle');
-            if(pageId === 'stock-page') {
-                sub.innerText = "Panel de control de inventario";
-                renderProducts();
-            } else if (pageId === 'add-page') {
-                sub.innerText = "Registrar existencias en el sistema";
-            } else if (pageId === 'promo-page') {
-                sub.innerText = "Gestionar ofertas y marketing";
-                populatePromoSelect();
-                renderPromos();
-            }
+            if(pageId === 'pos-page') { sub.innerText = "Terminal Activa de Cobro"; renderPOSCatalog(); }
+            else if(pageId === 'stock-page') { sub.innerText = "Control de Stock y Caducidades"; renderStockInventory(); }
+            else if(pageId === 'add-page') { sub.innerText = "Altas y Edición de Catálogo"; }
+            else if(pageId === 'promo-page') { sub.innerText = "Configurador de Ofertas Especiales"; populatePromoSelect(); renderPromos(); }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- MANEJO DE CÁMARA E INFRAESTRUCTURA DE ESCANEO ---
-        function startScan(target) {
-            const containerId = `scanner-container-${target}`;
-            const readerId = `reader-${target}`;
-            document.getElementById(containerId).style.display = 'block';
-
-            if (html5QrcodeScanner) { html5QrcodeScanner.clear(); }
-
-            html5QrcodeScanner = new Html5Qrcode(readerId);
-            html5QrcodeScanner.start(
-                { facingMode: "environment" }, 
-                { fps: 12, qrbox: { width: 260, height: 160 } },
-                (decodedText) => {
-                    if(target === 'form') {
-                        document.getElementById('prod-code').value = decodedText;
-                    } else if (target === 'search') {
-                        document.getElementById('search-input').value = decodedText;
-                        renderProducts();
-                    }
-                    stopScan(target);
-                },
-                (errorMessage) => {}
-            ).catch(err => alert("Acceso denegado a la cámara o error: " + err));
-        }
-
-        function stopScan(target) {
-            const containerId = `scanner-container-${target}`;
-            document.getElementById(containerId).style.display = 'none';
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(e => console.log(e));
+        // --- CONTROL DE CÁMARA EN ESCANEO CONTINUO ---
+        function toggleContinuousScanner() {
+            const wrapper = document.getElementById('scanner-wrapper');
+            const btn = document.getElementById('cam-toggle-btn');
+            if (isScannerRunning) {
+                stopContinuousScan();
+                wrapper.style.display = 'none';
+                btn.innerText = "📷 Escáner Apagado";
+                btn.classList.remove('active');
+            } else {
+                wrapper.style.display = 'block';
+                btn.innerText = "🛑 Apagar Cámara";
+                btn.classList.add('active');
+                startContinuousScan();
             }
         }
 
-        // --- LOGICA DE NEGOCIO (CRUD) ---
+        function startContinuousScan() {
+            if (html5QrcodeScanner) { html5QrcodeScanner.clear(); }
+            html5QrcodeScanner = new Html5Qrcode("interactive-reader");
+            isScannerRunning = true;
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 15, qrbox: { width: 280, height: 160 } },
+                (decodedText) => { addProductToCartByCode(decodedText.trim()); },
+                (err) => {}
+            ).catch(err => { alert("Error de cámara: " + err); toggleContinuousScanner(); });
+        }
+
+        function stopContinuousScan() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; isScannerRunning = false; }).catch(e => console.log(e));
+            }
+        }
+
+        // --- SISTEMA POV (CESTA Y COBRO) ---
+        function addProductToCartByCode(code) {
+            const prod = products.find(p => p.code === code);
+            if (prod) {
+                addToCart(prod.id);
+                document.body.style.backgroundColor = "#d1fae5";
+                setTimeout(() => document.body.style.backgroundColor = "var(--bg-main)", 150);
+            }
+        }
+
+        function addToCart(id) {
+            const prod = products.find(p => p.id === id);
+            if (!prod) return;
+            if (prod.stock <= 0) alert(`Atención: "${prod.name}" no tiene existencias.`);
+
+            const item = cart.find(i => i.id === id);
+            if (item) item.qty++;
+            else cart.push({ ...prod, qty: 1 });
+            renderCart();
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (!item) return;
+            item.qty += delta;
+            if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            if (cart.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido abajo.</p>';
+                updateCartTotals();
+                return;
+            }
+            container.innerHTML = '';
+            cart.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'cart-item';
+                row.innerHTML = `
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.name}</div>
+                        <div class="cart-item-meta">$${item.priceUnit} / c/u • Código: ${item.code}</div>
+                    </div>
+                    <div class="cart-item-actions">
+                        <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
+                        <span style="font-weight:700; font-size:1rem; min-width:20px; text-align:center;">${item.qty}</span>
+                        <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+                        <span style="font-weight:700; margin-left:10px; min-width:60px; text-align:right;">$${(item.priceUnit * item.qty).toFixed(2)}</span>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+            updateCartTotals();
+        }
+
+        function updateCartTotals() {
+            let subtotal = 0;
+            cart.forEach(item => { subtotal += item.priceUnit * item.qty; });
+
+            const distType = document.getElementById('cart-discount-type').value;
+            const distVal = parseFloat(document.getElementById('cart-discount-value').value) || 0;
+            let totalDisc = distType === 'percent' ? (subtotal * (distVal / 100)) : distVal;
+            if(totalDisc > subtotal) totalDisc = subtotal;
+
+            const finalTotal = subtotal - totalDisc;
+            document.getElementById('total-sub').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('total-disc').innerText = `-$${totalDisc.toFixed(2)}`;
+            document.getElementById('total-final').innerText = `$${finalTotal.toFixed(2)}`;
+        }
+
+        function checkoutSale() {
+            if(cart.length === 0) return alert("Cesta vacía.");
+            cart.forEach(item => {
+                const original = products.find(p => p.id === item.id);
+                if (original) original.stock = Math.max(0, original.stock - item.qty);
+            });
+            localStorage.setItem('pwa_products', JSON.stringify(products));
+            alert("¡VENTA PROCESADA CORRECTAMENTE!");
+            cart = [];
+            document.getElementById('cart-discount-value').value = 0;
+            renderCart();
+            renderPOSCatalog();
+        }
+
+        // --- ALGORITMO ALFABÉTICO + BUSCADORES PARA LAS LISTAS ---
+        function renderPOSCatalog() {
+            const container = document.getElementById('pos-catalog-container');
+            const q = document.getElementById('pos-search-input').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            let list = [...products].sort((a, b) => a.name.localeCompare(b.name));
+            if(q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.code.includes(q));
+
+            if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:10px;">No hay coincidencias.</p>'; return; }
+
+            list.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'quick-item-card';
+                card.onclick = () => addToCart(p.id);
+                card.innerHTML = `
+                    <div>
+                        <div style="font-weight:600;">${p.name}</div>
+                        <div style="font-size:0.75rem; color:var(--text-muted)">Stock: ${p.stock} | Código: ${p.code}</div>
+                    </div>
+                    <div style="font-weight:700; color:var(--primary);">$${p.priceUnit}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderStockInventory() {
+            const container = document.getElementById('stock-inventory-container');
+            const q = document.getElementById('stock-search-input').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            let list = [...products].sort((a, b) => a.name.localeCompare(b.name));
+            if(q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.code.includes(q));
+
+            if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:10px;">Inventario vacío.</p>'; return; }
+
+            list.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                let promoBadge = p.promo ? `<span class="badge-promo">${p.promo.type === 'descuento' ? `-${p.promo.value}%` : `${p.promo.buy}x${p.promo.pay}`}</span>` : '';
+                
+                card.innerHTML = `
+                    <div class="product-header">
+                        <div class="product-title">${p.name}</div>
+                        ${promoBadge}
+                    </div>
+                    <div class="product-meta">Código de barras: ${p.code}</div>
+                    <div class="product-stock">📦 Existencia: ${p.stock} ${p.unit} <span style="font-weight:400; color:var(--text-muted); margin-left:4px;">(Mínimo: ${p.minStock})</span></div>
+                    
+                    <div class="price-section">
+                        <span class="price-chip main">P. Unitario: $${p.priceUnit}</span>
+                        ${p.priceWholesale ? `<span class="price-chip">P. Mayoreo: $${p.priceWholesale}</span>` : ''}
+                        ${p.priceBox ? `<span class="price-chip">P. Caja: $${p.priceBox}</span>` : ''}
+                    </div>
+                    <div class="product-meta" style="font-size:0.75rem;">📅 Comprado: ${p.dateBuy} | Caducidad: ${p.dateExpiry || 'N/A'}</div>
+                    <div class="card-actions">
+                        <button class="btn-secondary" onclick="editProduct(${p.id})">Editar</button>
+                        <button class="btn-danger" onclick="deleteProduct(${p.id})">Eliminar</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            checkAlerts();
+        }
+
+        // --- SISTEMA COMPLETO DE ALERTAS (5) ---
+        function checkAlerts() {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            let html = [];
+            const hoy = new Date();
+
+            products.forEach(p => {
+                if(p.stock <= p.minStock) {
+                    html.push(`<div class="alert-item alert-danger">⚠️ <strong>${p.name}:</strong> Existencias bajas por debajo del límite mínimo. Stock: ${p.stock}</div>`);
+                }
+                if(p.dateExpiry) {
+                    const diff = (new Date(p.dateExpiry) - hoy) / (1000 * 60 * 60 * 24);
+                    if(diff < 0) html.push(`<div class="alert-item alert-danger">🛑 <strong>${p.name}:</strong> ¡PRODUCTO CADUCADO! Venció el ${p.dateExpiry}.</div>`);
+                    else if(diff <= 15) html.push(`<div class="alert-item alert-warning">⏳ <strong>${p.name}:</strong> Próximo a caducar (${Math.ceil(diff)} días restantes).</div>`);
+                }
+                if(p.dateBuy && p.stock > 0) {
+                    const dias = (hoy - new Date(p.dateBuy)) / (1000 * 60 * 60 * 24);
+                    if(dias >= 90) html.push(`<div class="alert-item alert-warning">🕒 <strong>${p.name}:</strong> Rezago en stock (Lleva ${Math.floor(dias)} días en bodega).</div>`);
+                }
+            });
+
+            if(html.length > 0) container.innerHTML = `<div class="alert-box">${html.join('')}</div>`;
+            else container.innerHTML = '<div class="alert-item alert-success">✨ Stock operativo óptimo. No hay alertas críticas.</div>';
+        }
+
+        // --- ALTAS, BAJAS Y EDICIONES (CRUD) ---
         function saveProduct(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
-            
-            const productData = {
+            const data = {
                 id: id ? parseInt(id) : Date.now(),
                 name: document.getElementById('prod-name').value.trim(),
                 code: document.getElementById('prod-code').value.trim(),
@@ -596,11 +674,8 @@
                 promo: id ? (products.find(p => p.id === parseInt(id))?.promo || null) : null
             };
 
-            if(id) {
-                products = products.map(p => p.id === parseInt(id) ? productData : p);
-            } else {
-                products.push(productData);
-            }
+            if(id) products = products.map(p => p.id === parseInt(id) ? data : p);
+            else products.push(data);
 
             localStorage.setItem('pwa_products', JSON.stringify(products));
             clearForm();
@@ -610,7 +685,6 @@
         function editProduct(id) {
             const p = products.find(prod => prod.id === id);
             if(!p) return;
-
             document.getElementById('edit-id').value = p.id;
             document.getElementById('prod-name').value = p.name;
             document.getElementById('prod-code').value = p.code;
@@ -624,198 +698,76 @@
             document.getElementById('prod-date-expiry').value = p.dateExpiry || '';
 
             document.getElementById('form-title').innerText = "Editar Producto";
-            document.getElementById('btn-submit-form').innerText = "Guardar Cambios";
+            document.getElementById('btn-submit-form').innerText = "Actualizar Cambios";
             document.getElementById('btn-cancel-edit').style.display = 'block';
-
             switchPage('add-page', 'nav-add');
         }
 
         function deleteProduct(id) {
-            if(confirm("¿Estás seguro de que deseas eliminar este producto permanentemente?")) {
+            if(confirm("¿Eliminar este producto permanentemente?")) {
                 products = products.filter(p => p.id !== id);
                 localStorage.setItem('pwa_products', JSON.stringify(products));
-                renderProducts();
+                renderStockInventory();
             }
         }
 
         function clearForm() {
             document.getElementById('product-form').reset();
             document.getElementById('edit-id').value = '';
-            document.getElementById('form-title').innerText = "Agregar Producto";
+            document.getElementById('form-title').innerText = "Agregar Nuevo Producto";
             document.getElementById('btn-submit-form').innerText = "Guardar Producto";
             document.getElementById('btn-cancel-edit').style.display = 'none';
         }
 
-        // --- RENDERIZACIÓN Y ALGORITMO ALFABÉTICO CON FILTRADO ---
-        function renderProducts() {
-            const container = document.getElementById('product-list-container');
-            const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
-            container.innerHTML = '';
-
-            // Clasificación Alfabética estricta
-            let sortedList = [...products].sort((a, b) => a.name.localeCompare(b.name));
-
-            // Filtro de motor de búsqueda
-            if(searchQuery) {
-                sortedList = sortedList.filter(p => 
-                    p.name.toLowerCase().includes(searchQuery) || p.code.includes(searchQuery)
-                );
-            }
-
-            if(sortedList.length === 0) {
-                container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:0.9rem; padding:20px;">No hay productos que coincidan con la búsqueda.</p>`;
-                return;
-            }
-
-            sortedList.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'product-card';
-                
-                let promoBadge = p.promo ? `<span class="badge-promo">${p.promo.type === 'descuento' ? `-${p.promo.value}%` : `${p.promo.buy}x${p.promo.pay}`}</span>` : '';
-
-                card.innerHTML = `
-                    <div class="product-header">
-                        <div class="product-title">${p.name}</div>
-                        ${promoBadge}
-                    </div>
-                    <div class="product-meta">Código: ${p.code}</div>
-                    
-                    <div class="product-stock">
-                        📦 Stock: ${p.stock} ${p.unit} <span style="color:var(--text-muted); font-weight:400; margin-left:4px;">(Mín. ${p.minStock})</span>
-                    </div>
-
-                    <div class="price-section">
-                        <span class="price-chip main">Unitario: $${p.priceUnit}</span>
-                        ${p.priceWholesale ? `<span class="price-chip">Mayoreo: $${p.priceWholesale}</span>` : ''}
-                        ${p.priceBox ? `<span class="price-chip">Caja: $${p.priceBox}</span>` : ''}
-                    </div>
-
-                    <div class="product-meta" style="margin-bottom: 0; font-size: 0.75rem;">
-                        📅 Compra: ${p.dateBuy} | Caducidad: ${p.dateExpiry || 'N/A'}
-                    </div>
-
-                    <div class="card-actions">
-                        <button class="btn-secondary" onclick="editProduct(${p.id})">Editar</button>
-                        <button class="btn-danger" onclick="deleteProduct(${p.id})">Eliminar</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-
-            checkAlerts();
-        }
-
-        // --- SISTEMA AUTOMÁTICO DE DETECCIÓN Y ALERTAS ---
-        function checkAlerts() {
-            const alertsContainer = document.getElementById('alerts-container');
-            alertsContainer.innerHTML = '';
-            let alertsHtml = [];
-            const hoy = new Date();
-            
-            products.forEach(p => {
-                // Alerta: Inventario por debajo de lo requerido
-                if(p.stock <= p.minStock) {
-                    alertsHtml.push(`<div class="alert-item alert-danger">⚠️ <strong>${p.name}:</strong> Stock bajo crítico (${p.stock} pzas restantes).</div>`);
-                }
-
-                // Alerta: Margen de caducidad
-                if(p.dateExpiry) {
-                    const fCaducidad = new Date(p.dateExpiry);
-                    const diasRestantes = (fCaducidad - hoy) / (1000 * 60 * 60 * 24);
-                    if(diasRestantes < 0) {
-                        alertsHtml.push(`<div class="alert-item alert-danger">🛑 <strong>${p.name}:</strong> ¡CADUCADO! Venció el ${p.dateExpiry}.</div>`);
-                    } else if(diasRestantes <= 15) {
-                        alertsHtml.push(`<div class="alert-item alert-warning">⏳ <strong>${p.name}:</strong> Próximo a caducar (${Math.ceil(diasRestantes)} días restantes).</div>`);
-                    }
-                }
-
-                // Alerta: Rezago / Antigüedad en Almacén (90 días)
-                if(p.dateBuy && p.stock > 0) {
-                    const fCompra = new Date(p.dateBuy);
-                    const diasAlmacenado = (hoy - fCompra) / (1000 * 60 * 60 * 24);
-                    if(diasAlmacenado >= 90) {
-                        alertsHtml.push(`<div class="alert-item alert-warning">🕒 <strong>${p.name}:</strong> Producto rezagado (${Math.floor(diasAlmacenado)} días en stock sin liquidar).</div>`);
-                    }
-                }
-            });
-
-            if(alertsHtml.length > 0) {
-                alertsContainer.innerHTML = `<div class="alert-box">${alertsHtml.join('')}</div>`;
-            } else {
-                alertsContainer.innerHTML = '<div class="alert-item alert-success">✨ Todo al día. No tienes alertas de inventario pendientes.</div>';
-            }
-        }
-
-        // --- INTERFAZ DE ADMINISTRACIÓN DE PROMOCIONES ---
+        // --- PROMOCIONES ---
         function populatePromoSelect() {
             const select = document.getElementById('promo-product-select');
             select.innerHTML = '';
             products.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.innerText = p.name;
-                select.appendChild(opt);
+                const opt = document.createElement('option'); opt.value = p.id; opt.innerText = p.name; select.appendChild(opt);
             });
         }
-
         function togglePromoFields() {
             const type = document.getElementById('promo-type').value;
             document.getElementById('div-promo-desc').style.display = type === 'descuento' ? 'block' : 'none';
             document.getElementById('div-promo-quantity').style.display = type === 'xporx' ? 'flex' : 'none';
         }
-
         function applyPromo(e) {
             e.preventDefault();
             const prodId = parseInt(document.getElementById('promo-product-select').value);
             const type = document.getElementById('promo-type').value;
-            
             let promoData = { type };
-            if(type === 'descuento') {
-                promoData.value = parseInt(document.getElementById('promo-discount').value);
-            } else {
-                promoData.buy = parseInt(document.getElementById('promo-buy').value);
-                promoData.pay = parseInt(document.getElementById('promo-pay').value);
-            }
+            if(type === 'descuento') promoData.value = parseInt(document.getElementById('promo-discount').value);
+            else { promoData.buy = parseInt(document.getElementById('promo-buy').value); promoData.pay = parseInt(document.getElementById('promo-pay').value); }
 
             products = products.map(p => p.id === prodId ? { ...p, promo: promoData } : p);
             localStorage.setItem('pwa_products', JSON.stringify(products));
             renderPromos();
-            alert("¡Promoción aplicada con éxito!");
+            alert("Promoción activada en catálogo.");
         }
-
         function removePromo(id) {
             products = products.map(p => p.id === id ? { ...p, promo: null } : p);
             localStorage.setItem('pwa_products', JSON.stringify(products));
             renderPromos();
         }
-
         function renderPromos() {
             const container = document.getElementById('promos-active-container');
             container.innerHTML = '';
-            const listWithPromo = products.filter(p => p.promo);
-
-            if(listWithPromo.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:0.9rem; padding:20px;">No hay promociones activas.</p>';
-                return;
-            }
-
-            listWithPromo.forEach(p => {
+            const list = products.filter(p => p.promo);
+            if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay promociones configuradas.</p>'; return; }
+            list.forEach(p => {
                 const item = document.createElement('div');
                 item.className = 'product-card';
-                const labelPromo = p.promo.type === 'descuento' ? `Descuento del ${p.promo.value}%` : `Especial: Lleva ${p.promo.buy} y paga ${p.promo.pay}`;
-
                 item.innerHTML = `
                     <div class="product-title">${p.name}</div>
-                    <div class="product-stock" style="margin-top:8px; background-color: var(--primary-light); color: var(--primary);">🔥 ${labelPromo}</div>
-                    <div class="card-actions" style="margin-top:8px;">
-                        <button class="btn-danger" onclick="removePromo(${p.id})">Remover Oferta</button>
-                    </div>
+                    <div class="product-stock" style="margin-top:8px; background:var(--primary-light); color:var(--primary);">🔥 ${p.promo.type === 'descuento' ? `Descuento ${p.promo.value}%` : `Mecánica ${p.promo.buy}x${p.promo.pay}`}</div>
+                    <div class="card-actions" style="margin-top:8px;"><button class="btn-danger" onclick="removePromo(${p.id})">Remover Promoción</button></div>
                 `;
                 container.appendChild(item);
             });
         }
 
-        window.onload = () => { renderProducts(); };
+        window.onload = () => { renderPOSCatalog(); };
     </script>
 </body>
 </html>
