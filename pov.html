@@ -4,33 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NextGen POS & Stock Master</title>
-    <!-- Librería para escanear códigos de barras -->
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --bg-main: #f1f5f9;
             --bg-card: #ffffff;
-            --text-main: #000000;
-            --text-muted: #334155;
-            --primary: #000000;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #0f172a;
             --primary-hover: #1e293b;
             --accent-promo: #4f46e5;
             --accent-promo-light: #e0e7ff;
-            --success: #16a34a;
-            --success-light: #dcfce7;
-            --danger: #dc2626;
+            --success: #10b981;
+            --success-hover: #059669;
+            --success-light: #ecfdf5;
+            --danger: #ef4444;
             --danger-light: #fee2e2;
-            --warning: #d97706;
+            --warning: #f59e0b;
             --warning-light: #fef3c7;
-            --border: #000000;
-            --border-light: #cbd5e1;
-            --radius-lg: 14px;
-            --radius-md: 10px;
+            --border-clean: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 12px;
         }
 
         * {
@@ -44,156 +42,167 @@
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
-            padding-bottom: 100px;
-            font-size: 16px;
+            padding-bottom: 110px;
+            font-size: 15px;
+            letter-spacing: -0.1px;
         }
 
         .app-container {
             width: 100%;
             max-width: 1600px;
             margin: 0 auto;
-            padding: 12px;
+            padding: 20px;
         }
 
         h2 { 
-            font-size: 1.3rem; 
-            font-weight: 800; 
-            margin: 16px 0 12px 0; 
+            font-size: 1.25rem; 
+            font-weight: 700; 
+            margin: 16px 0 16px 0; 
             display: flex; 
             align-items: center; 
             gap: 8px;
-            text-transform: uppercase;
-            letter-spacing: -0.5px;
+            color: #0f172a;
         }
 
-        /* --- ARQUITECTURA RESPONSIVA ADAPTABLE --- */
+        /* --- ARQUITECTURA LIMPIA (LAYOUT) --- */
         .pos-layout {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 16px;
+            gap: 20px;
         }
 
-        .cart-column {
-            width: 100%;
-        }
-        
-        .catalog-column {
+        .cart-column, .catalog-column {
             width: 100%;
         }
 
         .cart-card {
             background-color: var(--bg-card);
             border-radius: var(--radius-lg);
-            padding: 16px;
-            border: 2px solid var(--border);
+            padding: 24px;
+            border: 1px solid var(--border-clean);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
 
         /* --- COMPONENTES DE LA CESTA --- */
         .cart-items-scroll {
-            max-height: 320px;
+            max-height: 380px;
             overflow-y: auto;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             padding-right: 4px;
-            border-bottom: 1px solid var(--border-light);
         }
 
         .cart-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-light);
-            gap: 8px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f1f5f9;
+            gap: 12px;
         }
         .cart-item:last-child { border-bottom: none; }
         .cart-item-info { flex: 1; min-width: 0; }
-        .cart-item-title { font-weight: 700; font-size: 1rem; color: var(--text-main); }
-        .cart-item-meta { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+        .cart-item-title { font-weight: 700; font-size: 1.05rem; color: #0f172a; }
+        .cart-item-meta { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+        
         .cart-item-promo-badge { 
             display: inline-block; 
             font-size: 0.75rem; 
             font-weight: 700; 
             color: var(--accent-promo); 
             background: var(--accent-promo-light); 
-            padding: 2px 6px; 
-            border-radius: 4px; 
-            margin-top: 4px;
+            padding: 3px 8px; 
+            border-radius: 6px; 
+            margin-top: 6px;
         }
         
         .cart-item-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
-        /* Botones de acción grandes para pantallas táctiles */
         .qty-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: var(--radius-md);
-            background-color: var(--bg-main);
-            border: 1.5px solid var(--border);
-            font-weight: 800;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #f1f5f9;
+            border: none;
+            color: #475569;
+            font-weight: 700;
             font-size: 1.1rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: none;
+            transition: background-color 0.2s;
         }
-        .qty-btn:active { background-color: var(--border-light); }
+        .qty-btn:hover { background-color: #e2e8f0; }
+        .qty-btn:active { background-color: #cbd5e1; }
 
         /* --- CONTROL DE FORMULARIOS E INPUTS --- */
         .discount-section {
-            background-color: var(--bg-main);
+            background-color: #f8fafc;
             border-radius: var(--radius-md);
-            padding: 12px;
-            margin-top: 12px;
-            border: 1px solid var(--border-light);
+            padding: 16px;
+            margin-top: 16px;
+            border: 1px solid var(--border-clean);
         }
         .discount-inputs {
             display: flex;
-            gap: 8px;
-            margin-top: 6px;
+            gap: 10px;
+            margin-top: 8px;
         }
         
         input, select {
             width: 100%;
             padding: 12px 14px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             background-color: var(--bg-card);
-            border: 2px solid var(--border);
+            border: 1px solid #cbd5e1;
             border-radius: var(--radius-md);
             color: var(--text-main);
-            font-weight: 700;
+            font-weight: 600;
+            transition: border-color 0.2s;
         }
-        input:focus, select:focus { outline: none; border-color: var(--accent-promo); }
-        label { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;}
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: #94a3b8;
+        }
+        label { 
+            display: block; 
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            margin-bottom: 6px; 
+            color: var(--text-muted); 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-        /* --- TOTALES CON ALTO CONTRASTE --- */
+        /* --- TOTALES ESTILO LIMPIO --- */
         .totals-section {
-            margin-top: 14px;
-            padding-top: 12px;
-            border-top: 2px dashed var(--border);
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px dashed #cbd5e1;
         }
         .total-row {
             display: flex;
             justify-content: space-between;
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: var(--text-muted);
             margin-bottom: 6px;
-            font-weight: 500;
+            font-weight: 600;
         }
         .total-row.promo-discount {
             color: var(--accent-promo);
-            font-weight: 700;
         }
         .total-row.final {
             font-size: 1.6rem;
-            font-weight: 800;
-            color: var(--text-main);
-            margin-top: 6px;
-            border-top: 1px solid var(--border-light);
-            padding-top: 6px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 12px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 12px;
         }
 
         /* --- ESCÁNERES --- */
@@ -204,102 +213,115 @@
             margin-bottom: 16px;
             display: none;
             position: relative;
-            border: 2px solid var(--border);
         }
         .scanner-status {
             position: absolute;
             top: 12px;
             left: 12px;
-            background: var(--success);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
             color: white;
-            padding: 6px 12px;
+            padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.8rem;
-            font-weight: 700;
+            font-weight: 600;
             z-index: 10;
-            border: 1px solid white;
         }
 
-        /* --- REJILLAS ADAPTABLES (RESPONSIVE GRIDS) --- */
+        /* --- REJILLAS DE PRODUCTOS --- */
         .product-grid { 
             display: grid; 
-            grid-template-columns: repeat(1, 1fr); 
-            gap: 12px; 
+            grid-template-columns: 1fr; 
+            gap: 14px; 
         }
         
         .quick-item-card {
             background-color: var(--bg-card); 
-            border: 2px solid var(--border); 
-            border-radius: var(--radius-md);
-            padding: 16px; 
+            border: 1px solid var(--border-clean); 
+            border-radius: var(--radius-lg);
+            padding: 20px; 
             display: flex; 
             flex-direction: column;
             justify-content: space-between; 
             cursor: pointer; 
-            min-height: 100px;
+            min-height: 125px;
             position: relative;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            transition: transform 0.15s, box-shadow 0.15s;
         }
-        .quick-item-card:active { transform: scale(0.98); }
+        .quick-item-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .quick-item-card:active { 
+            transform: scale(0.98);
+        }
         .quick-item-card .prod-price {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--text-main);
-            margin-top: 10px;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #2563eb;
+            margin-top: 8px;
         }
         .quick-item-card .card-promo-indicator {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            background-color: var(--accent-promo);
-            color: white;
+            top: 14px;
+            right: 14px;
+            background-color: var(--accent-promo-light);
+            color: var(--accent-promo);
             font-size: 0.7rem;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 4px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
             text-transform: uppercase;
         }
 
-        /* --- ELEMENTOS DE LISTADO (STOCK Y PROMOS) --- */
+        /* --- SECCIONES DE LISTADO (STOCK Y PROMOS) --- */
         .product-list { display: flex; flex-direction: column; gap: 14px; }
         .product-card {
             background-color: var(--bg-card); 
-            border: 2px solid var(--border); 
+            border: 1px solid var(--border-clean); 
             border-radius: var(--radius-lg);
-            padding: 16px; 
+            padding: 20px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
-        .product-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
-        .product-title { font-size: 1.1rem; font-weight: 700; }
-        .badge-promo { background: var(--accent-promo); color: white; font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; }
-        .product-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
-        .product-stock { display: inline-flex; align-items: center; font-size: 0.9rem; font-weight: 700; padding: 6px 10px; background-color: var(--bg-main); border: 1px solid var(--border-light); border-radius: 6px; margin-bottom: 12px; }
+        .product-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+        .product-title { font-size: 1.15rem; font-weight: 700; color: #0f172a; }
+        .badge-promo { background: var(--accent-promo-light); color: var(--accent-promo); font-size: 0.75rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; }
+        .product-meta { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .product-stock { display: inline-flex; align-items: center; font-size: 0.9rem; font-weight: 700; padding: 6px 12px; background-color: #f8fafc; border: 1px solid var(--border-clean); border-radius: var(--radius-md); margin-bottom: 12px; }
         
         .price-section { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-        .price-chip { font-size: 0.8rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; background-color: var(--bg-main); border: 1px solid var(--border-light); }
-        .price-chip.main { background-color: #000; color: #fff; border-color: #000; }
+        .price-chip { font-size: 0.85rem; font-weight: 600; padding: 5px 10px; border-radius: 6px; background-color: #f1f5f9; color: #475569; }
+        .price-chip.main { background-color: #e0f2fe; color: #0369a1; font-weight: 700; }
         
-        .card-actions { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border-light); padding-top: 12px; }
+        .card-actions { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 14px; margin-top: 10px; }
         .card-actions button { padding: 10px 14px; font-size: 0.9rem; flex: 1; min-width: 120px; }
-        .btn-resurtir { background-color: var(--success-light); color: var(--success); border: 1.5px solid var(--success); }
+        .btn-resurtir { background-color: var(--success-light); color: var(--success); border: none; }
+        .btn-resurtir:hover { background-color: #d1fae5; }
 
-        /* --- BOTONES DE CONTROL --- */
+        /* --- BOTONES MODERNOS --- */
         button {
-            padding: 12px 16px; font-size: 1rem; font-weight: 700; border-radius: var(--radius-md); border: none; cursor: pointer;
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s ease;
+            padding: 12px 16px; font-size: 0.95rem; font-weight: 600; border-radius: var(--radius-md); border: none; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: none;
         }
-        .btn-primary { background-color: var(--primary); color: white; border: 2px solid var(--primary); width: 100%; }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
         .btn-primary:hover { background-color: var(--primary-hover); }
-        .btn-success { background-color: var(--success); color: white; border: 2px solid var(--success); width: 100%; font-size: 1.15rem; padding: 16px; }
-        .btn-secondary { background-color: var(--bg-card); border: 2px solid var(--border); color: var(--text-main); }
-        .btn-danger { background-color: var(--danger-light); color: var(--danger); border: 1.5px solid var(--danger); }
+        .btn-success { background-color: var(--success); color: white; width: 100%; font-size: 1.1rem; padding: 16px; font-weight: 700; border-radius: var(--radius-md); }
+        .btn-success:hover { background-color: var(--success-hover); }
+        .btn-secondary { background-color: #f1f5f9; color: #475569; }
+        .btn-secondary:hover { background-color: #e2e8f0; }
+        .btn-danger { background-color: var(--danger-light); color: var(--danger); }
+        .btn-danger:hover { background-color: #fee2e2; }
         
-        .btn-inline-cam { background-color: #000; color: white; border: 2px solid #000; padding: 12px; }
-        .btn-cart-cam { background-color: #000; color: white; border: 2px solid #000; width: 100%; margin-bottom: 12px; }
-        .btn-cart-cam.active { background-color: var(--danger); border-color: var(--danger); }
+        .btn-inline-cam { background-color: #0f172a; color: white; padding: 12px; }
+        .btn-cart-cam { background-color: #0f172a; color: white; width: 100%; margin-bottom: 16px; }
+        .btn-cart-cam.active { background-color: var(--danger); }
 
         .selector-promo-trigger {
-            background-color: var(--bg-main);
-            border: 2px dashed var(--accent-promo);
-            color: var(--accent-promo);
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            color: #475569;
             width: 100%;
             text-align: left;
             justify-content: flex-start;
@@ -307,57 +329,61 @@
         }
 
         /* --- ALERTAS --- */
-        .alert-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-        .alert-item { padding: 14px; border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 700; border: 1.5px solid transparent; }
-        .alert-warning { background-color: var(--warning-light); color: #78350f; border-color: var(--warning); }
-        .alert-danger { background-color: var(--danger-light); color: #991b1b; border-color: var(--danger); }
-        .alert-success { background-color: var(--success-light); color: #065f46; border-color: var(--success); text-align: center; justify-content: center; width: 100%;}
+        .alert-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .alert-item { padding: 14px; border-radius: var(--radius-md); font-size: 0.9rem; font-weight: 600; }
+        .alert-warning { background-color: var(--warning-light); color: #92400e; }
+        .alert-danger { background-color: var(--danger-light); color: #991b1b; }
+        .alert-success { background-color: var(--success-light); color: #065f46; text-align: center; justify-content: center; width: 100%; padding: 14px; border-radius: var(--radius-md); }
 
         /* --- POPUP / MODAL SELECCIÓN PROMOS --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center; z-index: 2000; padding: 12px;
+            background-color: rgba(15, 23, 42, 0.3); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px;
         }
         .modal-overlay.active { display: flex; }
         .modal-content {
-            background-color: var(--bg-card); width: 100%; max-width: 650px;
-            border-radius: var(--radius-lg); border: 2px solid var(--border);
-            display: flex; flex-direction: column; max-height: 85vh; overflow: hidden;
+            background-color: var(--bg-card); width: 100%; max-width: 600px;
+            border-radius: var(--radius-lg); border: 1px solid var(--border-clean);
+            display: flex; flex-direction: column; max-height: 80vh; overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
         .modal-header {
-            padding: 16px; border-bottom: 2px solid var(--border);
+            padding: 16px 20px; border-bottom: 1px solid #f1f5f9;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
-        .modal-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 10px; margin-top: 12px; }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
         .modal-item-card {
-            border: 2px solid var(--border); padding: 14px; border-radius: var(--radius-md);
-            cursor: pointer; font-size: 1rem; font-weight: 700; background-color: var(--bg-main); text-align: center;
+            border: 1px solid var(--border-clean); padding: 14px; border-radius: var(--radius-md);
+            cursor: pointer; font-size: 0.95rem; font-weight: 600; background-color: #f8fafc; text-align: center;
+            transition: all 0.2s;
         }
         .modal-item-card.selected { background-color: var(--accent-promo); color: white; border-color: var(--accent-promo); }
 
-        /* --- BARRA DE NAVEGACIÓN INFERIOR (TÁCTIL AMPLIA) --- */
+        /* --- BARRA DE NAVEGACIÓN INFERIOR MODERNA --- */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0;
-            background-color: #ffffff; border-top: 2px solid var(--border);
-            display: flex; justify-content: space-around; padding: 12px 0; z-index: 1000;
+            background-color: #ffffff; border-top: 1px solid var(--border-clean);
+            display: flex; justify-content: space-around; padding: 8px 0; z-index: 1000;
             height: 75px;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.03);
         }
         .nav-item {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: none; border: none; color: var(--text-muted); font-size: 0.8rem; font-weight: 700;
-            gap: 4px; width: 22%; padding: 0;
+            background: none; border: none; color: #94a3b8; font-size: 0.8rem; font-weight: 600;
+            gap: 4px; width: 22%; padding: 0; box-shadow: none;
         }
-        .nav-item span:first-child { font-size: 1.5rem; }
-        .nav-item.active { color: var(--text-main); }
-        .nav-item.active span:first-child { transform: scale(1.1); }
+        .nav-item span:first-child { font-size: 1.4rem; }
+        .nav-item.active { color: #2563eb; }
         
         .page { display: none; }
         .page.active { display: block; }
         .flex-group { display: flex; flex-direction: column; gap: 12px; }
 
-        /* --- MEDIA QUERIES PARA PANTALLAS MEDIANAS (TABLETS) --- */
+        /* ==========================================================================
+           REGLAS DE RESPONSIVIDAD LIMPIA
+           ========================================================================= */
         @media (min-width: 600px) {
             .product-grid { grid-template-columns: repeat(2, 1fr); }
             .modal-grid { grid-template-columns: repeat(2, 1fr); }
@@ -365,51 +391,45 @@
             .flex-group > div { flex: 1; min-width: 0; }
         }
 
-        /* --- MEDIA QUERIES PARA COMPUTADORAS Y PANTALLAS GRANDES --- */
         @media (min-width: 1024px) {
-            .app-container { padding: 24px; }
-            .pos-layout { grid-template-columns: 1fr 420px; align-items: start; }
-            .cart-column { position: sticky; top: 24px; }
-            .product-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+            .pos-layout { grid-template-columns: 1fr 420px; align-items: start; gap: 24px; }
+            .cart-column { position: sticky; top: 20px; order: 2; }
+            .catalog-column { order: 1; }
+            .product-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
             .modal-grid { grid-template-columns: repeat(3, 1fr); }
             .cart-items-scroll { max-height: calc(100vh - 460px); }
-            body { font-size: 15px; }
         }
 
-        @media (min-width: 1300px) {
-            .product-grid { grid-template-columns: repeat(4, 1fr); }
+        @media (min-width: 1280px) {
+            .product-grid { grid-template-columns: repeat(3, 1fr); }
         }
-
         @media (min-width: 1500px) {
-            .product-grid { grid-template-columns: repeat(5, 1fr); }
+            .product-grid { grid-template-columns: repeat(4, 1fr); }
         }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- SECCIÓN 1: CAJA / VENTAS -->
         <div id="pos-page" class="page active">
             <div class="pos-layout">
                 
-                <!-- MONITOR DE LA CESTA DE COMPRAS -->
                 <div class="cart-column">
-                    <h2>🛒 Cesta de Venta</h2>
+                    <h2>🛒 Cesta de Compra</h2>
                     <div class="cart-card">
                         <button id="cart-cam-btn" class="btn-cart-cam" onclick="toggleCartScanner()">
-                            📷 Activar Cámara Escáner
+                            📷 Activar Lector de Caja
                         </button>
 
                         <div id="cart-scanner-wrapper" class="scanner-card">
-                            <div id="cart-scanner-badge" class="scanner-status">🟢 Buscando códigos de barra...</div>
+                            <div id="cart-scanner-badge" class="scanner-status">🟢 Buscando códigos...</div>
                             <div id="cart-reader"></div>
                         </div>
 
                         <div class="cart-items-scroll" id="cart-items-container"></div>
 
-                        <!-- DESCUENTOS ADICIONALES A NIVEL DE TICKET -->
                         <div class="discount-section">
-                            <label>Descuento Extra sobre Total</label>
+                            <label>Descuento Directo</label>
                             <div class="discount-inputs">
                                 <select id="cart-discount-type" onchange="updateCartTotals()">
                                     <option value="percent">Porcentaje (%)</option>
@@ -420,20 +440,19 @@
                         </div>
 
                         <div class="totals-section">
-                            <div class="total-row"><span>Subtotal Base:</span><span id="total-sub">$0.00</span></div>
-                            <div class="total-row promo-discount"><span>Ahorros por Promoción:</span><span id="total-promo-disc">-$0.00</span></div>
-                            <div class="total-row"><span>Descuento Extra:</span><span id="total-disc">-$0.00</span></div>
+                            <div class="total-row"><span>Subtotal:</span><span id="total-sub">$0.00</span></div>
+                            <div class="total-row promo-discount"><span>Ahorros Promoción:</span><span id="total-promo-disc">-$0.00</span></div>
+                            <div class="total-row"><span>Descuento Aplicado:</span><span id="total-disc">-$0.00</span></div>
                             <div class="total-row final"><span>Total Neto:</span><span id="total-final">$0.00</span></div>
                         </div>
-                        <button class="btn-success" style="margin-top: 14px;" onclick="checkoutSale()">💳 REGISTRAR COBRO</button>
+                        <button class="btn-success" style="margin-top: 18px;" onclick="checkoutSale()">💳 FINALIZAR COBRO</button>
                     </div>
                 </div>
 
-                <!-- SELECCIÓN DE CATÁLOGO -->
                 <div class="catalog-column">
-                    <h2>📦 Catálogo de Productos</h2>
-                    <div style="margin-bottom: 14px;">
-                        <input type="text" id="pos-search-input" placeholder="Filtrar por nombre o código..." oninput="renderPOSCatalog()">
+                    <h2>📦 Catálogo de Selección Rápida</h2>
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="pos-search-input" placeholder="Buscar en la rejilla..." oninput="renderPOSCatalog()">
                     </div>
                     <div id="pos-catalog-container" class="product-grid"></div>
                 </div>
@@ -441,7 +460,6 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 2: CONTROL DE ALERTA Y STOCK -->
         <div id="stock-page" class="page">
             <h2>🚨 Estados y Alertas Críticas</h2>
             <div id="alerts-container"></div>
@@ -453,31 +471,30 @@
             <div id="stock-inventory-container" class="product-list"></div>
         </div>
 
-        <!-- SECCIÓN 3: ALTA / EDICIÓN -->
         <div id="add-page" class="page">
             <h2 id="form-title">Agregar Nuevo Producto</h2>
-            <form id="product-form" onsubmit="saveProduct(event)" style="background: white; padding: 16px; border-radius: var(--radius-lg); border: 2px solid var(--border);">
+            <form id="product-form" onsubmit="saveProduct(event)" style="background: white; padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-clean);">
                 <input type="hidden" id="edit-id">
                 
-                <div style="margin-bottom: 14px;">
+                <div style="margin-bottom: 16px;">
                     <label>Nombre Comercial del Artículo</label>
                     <input type="text" id="prod-name" required>
                 </div>
 
-                <div style="margin-bottom: 14px;">
+                <div style="margin-bottom: 16px;">
                     <label>Código de Barras (EAN / Universal)</label>
-                    <div style="display:flex; gap:8px;">
+                    <div style="display:flex; gap:10px;">
                         <input type="text" id="prod-code" required>
                         <button type="button" class="btn-inline-cam" onclick="toggleFormScanner()">📷 Escanear</button>
                     </div>
                 </div>
 
                 <div id="form-scanner-wrapper" class="scanner-card">
-                    <div class="scanner-status">🔍 Enfoca el código de barras</div>
+                    <div class="scanner-status">🔍 Enfoca el código</div>
                     <div id="form-reader"></div>
                 </div>
 
-                <div class="flex-group" style="margin-bottom: 14px;">
+                <div class="flex-group" style="margin-bottom: 16px;">
                     <div>
                         <label>Stock Inicial</label>
                         <input type="number" id="prod-stock" min="0" required>
@@ -496,7 +513,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="flex-group" style="margin-bottom: 14px;">
+                <div class="flex-group" style="margin-bottom: 16px;">
                     <div>
                         <label>Precio de Lista ($)</label>
                         <input type="number" step="0.01" id="prod-price-unit" required>
@@ -510,7 +527,7 @@
                         <input type="number" step="0.01" id="prod-price-box">
                     </div>
                 </div>
-                <div class="flex-group" style="margin-bottom: 18px;">
+                <div class="flex-group" style="margin-bottom: 20px;">
                     <div>
                         <label>Fecha de Ingreso</label>
                         <input type="date" id="prod-date-buy" required>
@@ -520,36 +537,35 @@
                         <input type="date" id="prod-date-expiry">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" id="btn-submit-form">Guardar en Fichero</button>
-                <button type="button" id="btn-cancel-edit" class="btn-danger" style="display:none; margin-top:10px; width:100%;" onclick="clearForm()">Cancelar Operación Actual</button>
+                <button type="submit" class="btn-primary" id="btn-submit-form">Guardar Producto</button>
+                <button type="button" id="btn-cancel-edit" class="btn-danger" style="display:none; margin-top:12px; width:100%;" onclick="clearForm()">Cancelar Edición</button>
             </form>
         </div>
 
-        <!-- SECCIÓN 4: REGLAS DE MARKETING -->
         <div id="promo-page" class="page">
             <h2>🎉 Crear Promoción Nueva</h2>
-            <form id="promo-form" onsubmit="applyPromo(event)" style="background: white; padding: 16px; border-radius: var(--radius-lg); border: 2px solid var(--border); margin-bottom: 20px;">
+            <form id="promo-form" onsubmit="applyPromo(event)" style="background: white; padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-clean); margin-bottom: 24px;">
                 
-                <div style="margin-bottom: 14px;">
+                <div style="margin-bottom: 16px;">
                     <label>Artículo Seleccionado</label>
                     <input type="hidden" id="promo-product-id" required>
                     <button type="button" id="btn-open-promo-selector" class="selector-promo-trigger" onclick="openPromoModal()">
-                        🔍 Desplegar lista ordenada alfabéticamente...
+                        🔍 Elegir de la lista...
                     </button>
                 </div>
 
-                <div style="margin-bottom: 14px;">
+                <div style="margin-bottom: 16px;">
                     <label>Estrategia de Oferta</label>
                     <select id="promo-type" onchange="togglePromoFields()">
                         <option value="descuento">Descuento Directo (%)</option>
                         <option value="xporx">Esquema Multi-Unidad (Ej: 2x1, 3x2)</option>
                     </select>
                 </div>
-                <div id="div-promo-desc" style="margin-bottom: 14px;">
+                <div id="div-promo-desc" style="margin-bottom: 16px;">
                     <label>Porcentaje a Descontar (%)</label>
                     <input type="number" id="promo-discount" min="1" max="100" value="10">
                 </div>
-                <div id="div-promo-quantity" class="flex-group" style="display:none; margin-bottom: 14px;">
+                <div id="div-promo-quantity" class="flex-group" style="display:none; margin-bottom: 16px;">
                     <div>
                         <label>Lleve (Cantidad total)</label>
                         <input type="number" id="promo-buy" min="1" value="2">
@@ -559,7 +575,7 @@
                         <input type="number" id="promo-pay" min="1" value="1">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" style="background-color: var(--accent-promo); border-color: var(--accent-promo);">Inyectar Regla de Venta</button>
+                <button type="submit" class="btn-primary" style="background-color: var(--accent-promo);">Aplicar Regla de Venta</button>
             </form>
 
             <h2>🔥 Promociones Activas en Sistema</h2>
@@ -567,14 +583,13 @@
         </div>
     </div>
 
-    <!-- POPUP EMERGENCIAS SELECCIÓN PROMOS -->
     <div id="promo-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 style="font-size:1.15rem; font-weight:800; text-transform:uppercase;">Selección por Orden Alfabético</h3>
-                <button class="qty-btn" onclick="closePromoModal()">✕</button>
+                <h3 style="font-size:1.1rem; font-weight:700;">Seleccionar Producto</h3>
+                <button class="qty-btn" style="width:32px; height:32px;" onclick="closePromoModal()">✕</button>
             </div>
-            <div style="padding: 12px 16px 0 16px;">
+            <div style="padding: 16px 20px 0 20px;">
                 <input type="text" id="modal-search-input" placeholder="Filtrar coincidencias..." oninput="renderModalGrid()">
             </div>
             <div class="modal-body">
@@ -583,16 +598,15 @@
         </div>
     </div>
 
-    <!-- MENÚ OPERATIVO TÁCTIL INFERIOR -->
     <nav class="bottom-nav">
         <button class="nav-item active" id="nav-pos" onclick="switchPage('pos-page', 'nav-pos')">
-            <span>🖥️</span><span>Caja POS</span>
+            <span>💻</span><span>POV Caja</span>
         </button>
         <button class="nav-item" id="nav-stock" onclick="switchPage('stock-page', 'nav-stock')">
-            <span>📊</span><span>Inventario</span>
+            <span>📊</span><span>Stock</span>
         </button>
         <button class="nav-item" id="nav-add" onclick="switchPage('add-page', 'nav-add')">
-            <span>➕</span><span>Alta</span>
+            <span>➕</span><span>Gestionar</span>
         </button>
         <button class="nav-item" id="nav-promo" onclick="switchPage('promo-page', 'nav-promo')">
             <span>🎉</span><span>Promos</span>
@@ -637,7 +651,7 @@
                 stopCartScan();
             } else {
                 wrapper.style.display = 'block';
-                btn.innerText = "🛑 Desactivar Cámara Escáner";
+                btn.innerText = "🛑 Desactivar Lector de Caja";
                 btn.classList.add('active');
                 startCartScan();
             }
@@ -661,7 +675,7 @@
             const btn = document.getElementById('cart-cam-btn');
             if(wrapper) wrapper.style.display = 'none';
             if(btn) {
-                btn.innerText = "📷 Activar Cámara Escáner";
+                btn.innerText = "📷 Activar Lector de Caja";
                 btn.classList.remove('active');
             }
             if (cartScanner && isCartScannerRunning) {
@@ -678,13 +692,13 @@
                 addToCart(prod.id);
                 scanCooldown = true;
                 const badge = document.getElementById('cart-scanner-badge');
-                if (badge) badge.innerText = "⏳ Procesado... Esperando retiro";
+                if (badge) badge.innerText = "⏳ Procesado...";
 
-                document.body.style.backgroundColor = "#bbf7d0";
+                document.body.style.backgroundColor = "#d1fae5";
                 setTimeout(() => {
                     document.body.style.backgroundColor = "var(--bg-main)";
                     scanCooldown = false;
-                    if (badge) badge.innerText = "🟢 Buscando códigos de barra...";
+                    if (badge) badge.innerText = "🟢 Buscando códigos...";
                 }, 1400);
             }
         }
@@ -726,9 +740,8 @@
             }
         }
 
-        // --- MOTOR DE CONTROL DE LA CESTA ---
+        // --- MOTOR DE LA CESTA ---
         function addToCart(id) {
-            // Buscamos la data fresca directo desde nuestra matriz de productos del negocio
             const prod = products.find(p => p.id === id);
             if (!prod) return;
             
@@ -745,6 +758,7 @@
             renderCart();
         }
 
+        // --- CAMBIAR CANTIDAD ---
         function changeQty(id, delta) {
             const item = cart.find(i => i.id === id);
             if (!item) return;
@@ -753,26 +767,26 @@
             renderCart();
         }
 
+        // --- RENDERIZAR CESTA ---
         function renderCart() {
             const container = document.getElementById('cart-items-container');
             if (cart.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 30px 10px; font-weight:700; font-size: 0.95rem;">La cesta está vacía. Añada elementos usando la rejilla inferior o el escáner.</p>';
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 40px 10px; font-weight:600; font-size: 0.95rem;">La cesta está vacía.</p>';
                 updateCartTotals();
                 return;
             }
             container.innerHTML = '';
             
             cart.forEach(cartItem => {
-                // Sincronizar dinámicamente con los cambios del inventario general (incluye promociones modificadas al vuelo)
                 const prod = products.find(p => p.id === cartItem.id);
                 if (!prod) return;
 
                 let badgeHtml = '';
                 if (prod.promo) {
                     if (prod.promo.type === 'descuento') {
-                        badgeHtml = `<span class="cart-item-promo-badge">Oferta: -${prod.promo.value}% Directo</span>`;
+                        badgeHtml = `<span class="cart-item-promo-badge">-${prod.promo.value}%</span>`;
                     } else if (prod.promo.type === 'xporx') {
-                        badgeHtml = `<span class="cart-item-promo-badge">Mecánica: ${prod.promo.buy} por ${prod.promo.pay}</span>`;
+                        badgeHtml = `<span class="cart-item-promo-badge">Mecánica: ${prod.promo.buy}x${prod.promo.pay}</span>`;
                     }
                 }
 
@@ -781,13 +795,14 @@
                 row.innerHTML = `
                     <div class="cart-item-info">
                         <div class="cart-item-title">${prod.name}</div>
-                        <div class="cart-item-meta">$${prod.priceUnit.toFixed(2)} c/u</div>
+                        <div class="cart-item-meta">$${prod.priceUnit.toFixed(2)} x un.</div>
                         ${badgeHtml}
                     </div>
                     <div class="cart-item-actions">
                         <button class="qty-btn" onclick="changeQty(${prod.id}, -1)">-</button>
-                        <span style="font-weight:800; font-size:1.1rem; min-width:24px; text-align:center;">${cartItem.qty}</span>
+                        <span style="font-weight:700; font-size:1.05rem; min-width:24px; text-align:center;">${cartItem.qty}</span>
                         <button class="qty-btn" onclick="changeQty(${prod.id}, 1)">+</button>
+                        <span style="font-weight:700; font-size:1.05rem; min-width:60px; text-align:right;">$${(prod.priceUnit * cartItem.qty).toFixed(2)}</span>
                     </div>
                 `;
                 container.appendChild(row);
@@ -795,7 +810,7 @@
             updateCartTotals();
         }
 
-        // --- MOTOR DE CÁLCULO DE PROMOCIONES VINCULADO A LA CAJA ---
+        // --- CÁLCULO DINÁMICO DE PROMOCIONES ---
         function updateCartTotals() {
             let subtotalBase = 0;
             let totalAhorroPromociones = 0;
@@ -807,30 +822,28 @@
                 let costoLineaOriginal = prod.priceUnit * cartItem.qty;
                 subtotalBase += costoLineaOriginal;
 
-                // VALIDACIÓN DE LAS REGLAS DE PROMOCIÓN ACTIVAS DE FORMA REAL EN LA CAJA
                 if (prod.promo) {
                     if (prod.promo.type === 'descuento') {
                         let descuentoPorUnidad = prod.priceUnit * (prod.promo.value / 100);
                         totalAhorroPromociones += descuentoPorUnidad * cartItem.qty;
                     } 
                     else if (prod.promo.type === 'xporx') {
-                        let grupoCompra = prod.promo.buy; 
-                        let grupoPago = prod.promo.pay;   
+                        let groupBuy = prod.promo.buy; 
+                        let groupPay = prod.promo.pay;   
 
-                        if (cartItem.qty >= grupoCompra) {
-                            let numeroDeGruposCompletos = Math.floor(cartItem.qty / grupoCompra);
-                            let sobrantesFueraDePromo = cartItem.qty % grupoCompra;
+                        if (cartItem.qty >= groupBuy) {
+                            let totalGroups = Math.floor(cartItem.qty / groupBuy);
+                            let remainder = cartItem.qty % groupBuy;
                             
-                            let totalUnidadesCobradas = (numeroDeGruposCompletos * grupoPago) + sobrantesFueraDePromo;
-                            let costoFinalConPromo = totalUnidadesCobradas * prod.priceUnit;
+                            let finalQtyToCharge = (totalGroups * groupPay) + remainder;
+                            let promoFinalCost = finalQtyToCharge * prod.priceUnit;
                             
-                            totalAhorroPromociones += (costoLineaOriginal - costoFinalConPromo);
+                            totalAhorroPromociones += (costoLineaOriginal - promoFinalCost);
                         }
                     }
                 }
             });
 
-            // Descuento manual adicional sobre el ticket
             const extraDiscountType = document.getElementById('cart-discount-type').value;
             const extraDiscountValue = parseFloat(document.getElementById('cart-discount-value').value) || 0;
             
@@ -848,6 +861,7 @@
             document.getElementById('total-final').innerText = `$${Math.max(0, finalTotalNeto).toFixed(2)}`;
         }
 
+        // --- COMPLETAR TRANSACCIÓN ---
         function checkoutSale() {
             if(cart.length === 0) return alert("No existen productos cargados en la cesta actual.");
             
@@ -859,14 +873,14 @@
             });
             
             localStorage.setItem('pwa_products', JSON.stringify(products));
-            alert("¡TRANSACCIÓN COMPLETADA Y DESCONTADA DE INVENTARIO!");
+            alert("¡COMPRA REGISTRADA OPERATIVAMENTE!");
             cart = [];
             document.getElementById('cart-discount-value').value = 0;
             renderCart();
             renderPOSCatalog();
         }
 
-        // --- CONSTRUCCIÓN CUADRÍCULA DE SELECCIÓN RÁPIDA ---
+        // --- CONSTRUCCIÓN CATÁLOGO ---
         function renderPOSCatalog() {
             const container = document.getElementById('pos-catalog-container');
             const q = document.getElementById('pos-search-input').value.toLowerCase().trim();
@@ -876,7 +890,7 @@
             if(q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.code.includes(q));
 
             if(list.length === 0) { 
-                container.innerHTML = '<p style="text-align:center; font-weight:700; color:var(--text-muted); grid-column: 1 / -1; padding:30px;">Ningún artículo coincide con los parámetros de búsqueda.</p>'; 
+                container.innerHTML = '<p style="text-align:center; font-weight:600; color:var(--text-muted); grid-column: 1 / -1; padding:40px;">Ningún artículo coincide.</p>'; 
                 return; 
             }
 
@@ -885,15 +899,14 @@
                 card.className = 'quick-item-card';
                 card.onclick = () => addToCart(p.id);
                 
-                let stockWarningStyle = p.stock <= p.minStock ? 'color: var(--danger); font-weight:800;' : 'color: var(--text-muted); font-weight:700;';
-                
+                let stockColor = p.stock <= p.minStock ? 'color: var(--danger);' : 'color: var(--text-muted);';
                 let promoTag = p.promo ? `<div class="card-promo-indicator">PROMO</div>` : '';
 
                 card.innerHTML = `
                     ${promoTag}
                     <div>
-                        <div style="font-weight:700; font-size:1.05rem; line-height:1.25; margin-bottom:6px; padding-right:35px;">${p.name}</div>
-                        <div style="font-size:0.85rem; ${stockWarningStyle}">Stock: ${p.stock} un.</div>
+                        <div style="font-weight:700; font-size:1.1rem; color:#0f172a; margin-bottom:4px;">${p.name}</div>
+                        <div style="font-size:0.85rem; font-weight:600; ${stockColor}">Stock: ${p.stock} pz.</div>
                     </div>
                     <div class="prod-price">$${p.priceUnit.toFixed(2)}</div>
                 `;
@@ -901,7 +914,7 @@
             });
         }
 
-        // --- GESTIÓN INVENTARIO CENTRAL ---
+        // --- INVENTARIO CENTRAL ---
         function renderStockInventory() {
             const container = document.getElementById('stock-inventory-container');
             const q = document.getElementById('stock-search-input').value.toLowerCase().trim();
@@ -911,7 +924,7 @@
             if(q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.code.includes(q));
 
             if(list.length === 0) { 
-                container.innerHTML = '<p style="text-align:center; font-weight:700; color:var(--text-muted); padding:20px;">Sin coincidencias en inventario.</p>'; 
+                container.innerHTML = '<p style="text-align:center; font-weight:600; color:var(--text-muted); padding:30px;">Sin coincidencias en inventario.</p>'; 
                 return; 
             }
 
@@ -925,17 +938,17 @@
                         <div class="product-title">${p.name}</div>
                         ${promoBadge}
                     </div>
-                    <div class="product-meta">Código SKU/Barras: <strong>${p.code}</strong></div>
-                    <div class="product-stock">📦 Existencia Actual: ${p.stock} ${p.unit} <span style="font-weight:500; color:var(--text-muted); margin-left:6px;">(Mínimo Requerido: ${p.minStock})</span></div>
+                    <div class="product-meta">Código SKU: <strong>${p.code}</strong></div>
+                    <div class="product-stock">📦 Existencia Actual: ${p.stock} ${p.unit} <span style="font-weight:600; color:var(--text-muted); margin-left:6px;">(Mínimo: ${p.minStock})</span></div>
                     
                     <div class="price-section">
-                        <span class="price-chip main">Precio General: $${p.priceUnit}</span>
+                        <span class="price-chip main">General: $${p.priceUnit}</span>
                         ${p.priceWholesale ? `<span class="price-chip">Mayoreo: $${p.priceWholesale}</span>` : ''}
                         ${p.priceBox ? `<span class="price-chip">Caja: $${p.priceBox}</span>` : ''}
                     </div>
-                    <div class="product-meta" style="font-size:0.8rem; border-top:1px dashed var(--border-light); padding-top:6px; margin-top:8px;">📅 Registro: ${p.dateBuy} | Caducidad: ${p.dateExpiry || 'No aplica'}</div>
+                    <div class="product-meta" style="font-size:0.8rem; border-top:1px solid #f1f5f9; padding-top:10px; margin-top:10px;">📅 Registro: ${p.dateBuy} | Vence: ${p.dateExpiry || 'No aplica'}</div>
                     <div class="card-actions">
-                        <button class="btn-resurtir" onclick="resurtirProducto(${p.id})">➕ Resurtir Piezas</button>
+                        <button class="btn-resurtir" onclick="resurtirProducto(${p.id})">➕ Resurtir</button>
                         <button class="btn-secondary" onclick="editProduct(${p.id})">Editar</button>
                         <button class="btn-danger" onclick="deleteProduct(${p.id})">Eliminar</button>
                     </div>
@@ -945,17 +958,17 @@
             checkAlerts();
         }
 
+        // --- CONTROL DE RESURTIDO ---
         function resurtirProducto(id) {
             const p = products.find(prod => prod.id === id);
             if (!p) return;
 
-            const inputResurtido = prompt(`MENU RESURTIDO DIRECTO\nArtículo: "${p.name}"\nExistencia física en este momento: ${p.stock} piezas.\n\nEscriba el número de unidades nuevas que va a sumar al inventario:`, "12");
-            
+            const inputResurtido = prompt(`MENU RESURTIDO DIRECTO\nArtículo: "${p.name}"\nExistencia física actual: ${p.stock} pz.\n\nCantidad a añadir al stock:`, "12");
             if (inputResurtido === null) return;
             
             const nuevasUnidades = parseInt(inputResurtido.trim());
             if (isNaN(nuevasUnidades) || nuevasUnidades <= 0) {
-                alert("Error: Por favor introduzca un número entero mayor que cero.");
+                alert("Error: Por favor introduzca un número entero válido.");
                 return;
             }
 
@@ -964,6 +977,7 @@
             renderStockInventory();
         }
 
+        // --- SISTEMA DE ALERTAS ---
         function checkAlerts() {
             const container = document.getElementById('alerts-container');
             container.innerHTML = '';
@@ -972,29 +986,29 @@
 
             products.forEach(p => {
                 if(p.stock <= p.minStock) {
-                    htmlAlertas.push(`<div class="alert-item alert-danger">⚠️ <strong>Abasto Crítico:</strong> "${p.name}" se encuentra por debajo de su reserva de seguridad. Existencia actual: ${p.stock} unidades.</div>`);
+                    htmlAlertas.push(`<div class="alert-item alert-danger">⚠️ <strong>Abasto Crítico:</strong> "${p.name}" por debajo de reserva mínima. Stock: ${p.stock} un.</div>`);
                 }
                 if(p.dateExpiry) {
                     const diffDias = (new Date(p.dateExpiry) - hoy) / (1000 * 60 * 60 * 24);
                     if(diffDias < 0) {
-                        htmlAlertas.push(`<div class="alert-item alert-danger">🛑 <strong>Producto Caducado:</strong> La vida útil de "${p.name}" terminó el ${p.dateExpiry}. Se recomienda su retiro inmediato.</div>`);
+                        htmlAlertas.push(`<div class="alert-item alert-danger">🛑 <strong>Caducado:</strong> El producto "${p.name}" venció el ${p.dateExpiry}.</div>`);
                     } else if(diffDias <= 15) {
-                        htmlAlertas.push(`<div class="alert-item alert-warning">⏳ <strong>Próxima Caducidad:</strong> "${p.name}" vencerá en un lapso de ${Math.ceil(diffDias)} días.</div>`);
+                        htmlAlertas.push(`<div class="alert-item alert-warning">⏳ <strong>Próxima Caducidad:</strong> "${p.name}" vencerá en ${Math.ceil(diffDias)} días.</div>`);
                     }
                 }
                 if(p.dateBuy && p.stock > 0) {
                     const tiempoBodega = (hoy - new Date(p.dateBuy)) / (1000 * 60 * 60 * 24);
                     if(tiempoBodega >= 90) {
-                        htmlAlertas.push(`<div class="alert-item alert-warning">🕒 <strong>Inmovilizado / Rezago:</strong> El producto "${p.name}" no ha registrado rotación total en los últimos ${Math.floor(tiempoBodega)} días.</div>`);
+                        htmlAlertas.push(`<div class="alert-item alert-warning">🕒 <strong>Baja Rotación:</strong> "${p.name}" inmovilizado hace ${Math.floor(tiempoBodega)} días.</div>`);
                     }
                 }
             });
 
             if(htmlAlertas.length > 0) container.innerHTML = `<div class="alert-box">${htmlAlertas.join('')}</div>`;
-            else container.innerHTML = '<div class="alert-item alert-success">✨ Estatus óptimo. Todo el inventario se halla operando dentro de los rangos normales.</div>';
+            else container.innerHTML = '<div class="alert-item alert-success">✨ Estatus óptimo del inventario en almacén.</div>';
         }
 
-        // --- ALTAS Y MODIFICACIONES (CRUD) ---
+        // --- CRUD FORMULARIO ---
         function saveProduct(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
@@ -1043,7 +1057,7 @@
         }
 
         function deleteProduct(id) {
-            if(confirm("¿Confirma la baja permanente de este artículo del catálogo?")) {
+            if(confirm("¿Confirma la baja permanente de este artículo?")) {
                 products = products.filter(p => p.id !== id);
                 cart = cart.filter(i => i.id !== id);
                 localStorage.setItem('pwa_products', JSON.stringify(products));
@@ -1051,16 +1065,7 @@
             }
         }
 
-        function clearForm() {
-            document.getElementById('product-form').reset();
-            document.getElementById('edit-id').value = '';
-            document.getElementById('form-title').innerText = "Agregar Nuevo Producto";
-            document.getElementById('btn-submit-form').innerText = "Guardar en Fichero";
-            document.getElementById('btn-cancel-edit').style.display = 'none';
-            stopFormScan();
-        }
-
-        // --- VENTANA EMERGENTE (MODAL SELECCIÓN ALFABÉTICA) ---
+        // --- GESTIÓN DE MODAL Y PROMOS ---
         function openPromoModal() {
             document.getElementById('promo-modal').classList.add('active');
             document.getElementById('modal-search-input').value = '';
@@ -1076,18 +1081,17 @@
             const q = document.getElementById('modal-search-input').value.toLowerCase().trim();
             container.innerHTML = '';
 
-            // ORDENAMIENTO ALFABÉTICO REQUERIDO
-            let listadoOrdenado = [...products].sort((a, b) => a.name.localeCompare(b.name));
-            if(q) listadoOrdenado = listadoOrdenado.filter(p => p.name.toLowerCase().includes(q));
+            let sortedList = [...products].sort((a, b) => a.name.localeCompare(b.name));
+            if(q) sortedList = sortedList.filter(p => p.name.toLowerCase().includes(q));
 
-            if(listadoOrdenado.length === 0) {
-                container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; font-weight:700; color: var(--text-muted); padding:16px;">Ningún elemento coincide.</p>';
+            if(sortedList.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; font-weight:600; color: var(--text-muted); padding:20px;">Sin resultados.</p>';
                 return;
             }
 
             const actualSeleccionado = parseInt(document.getElementById('promo-product-id').value);
 
-            listadoOrdenado.forEach(p => {
+            sortedList.forEach(p => {
                 const itemCard = document.createElement('div');
                 itemCard.className = `modal-item-card ${p.id === actualSeleccionado ? 'selected' : ''}`;
                 itemCard.innerText = p.name;
@@ -1105,13 +1109,12 @@
 
         function clearPromoFormSelection() {
             document.getElementById('promo-product-id').value = '';
-            document.getElementById('btn-open-promo-selector').innerText = "🔍 Desplegar lista ordenada alfabéticamente...";
+            document.getElementById('btn-open-promo-selector').innerText = "🔍 Elegir de la lista...";
             document.getElementById('btn-open-promo-selector').style.borderStyle = "dashed";
             document.getElementById('promo-form').reset();
             togglePromoFields();
         }
 
-        // --- APLICACIÓN Y REMOCIÓN DE REGLAS COMERCIALES ---
         function togglePromoFields() {
             const tipo = document.getElementById('promo-type').value;
             document.getElementById('div-promo-desc').style.display = tipo === 'descuento' ? 'block' : 'none';
@@ -1121,7 +1124,7 @@
         function applyPromo(e) {
             e.preventDefault();
             const prodId = parseInt(document.getElementById('promo-product-id').value);
-            if(!prodId) return alert("Es obligatorio elegir un artículo de la lista emergente.");
+            if(!prodId) return alert("Es obligatorio elegir un artículo.");
 
             const tipo = document.getElementById('promo-type').value;
             let esquemaPromo = { type: tipo };
@@ -1131,7 +1134,7 @@
             } else { 
                 esquemaPromo.buy = parseInt(document.getElementById('promo-buy').value); 
                 esquemaPromo.pay = parseInt(document.getElementById('promo-pay').value); 
-                if (esquemaPromo.pay > esquemaPromo.buy) return alert("Error: Las unidades que se pagan no pueden ser mayores que las que se llevan.");
+                if (esquemaPromo.pay > esquemaPromo.buy) return alert("Error: Las unidades pagadas no superan a las llevadas.");
             }
 
             products = products.map(p => p.id === prodId ? { ...p, promo: esquemaPromo } : p);
@@ -1139,7 +1142,7 @@
             
             clearPromoFormSelection();
             renderPromos();
-            alert("Nueva directiva inyectada de forma correcta.");
+            alert("Promoción guardada con éxito.");
         }
 
         function removePromo(id) {
@@ -1154,7 +1157,7 @@
             const activas = products.filter(p => p.promo);
             
             if(activas.length === 0) { 
-                container.innerHTML = '<p style="text-align:center; font-weight:700; color:var(--text-muted);">No existen promociones corriendo en este momento.</p>'; 
+                container.innerHTML = '<p style="text-align:center; font-weight:600; color:var(--text-muted);">No hay promociones configuradas.</p>'; 
                 return; 
             }
             
@@ -1163,14 +1166,22 @@
                 item.className = 'product-card';
                 item.innerHTML = `
                     <div class="product-title">${p.name}</div>
-                    <div class="product-stock" style="margin-top:8px; background:var(--accent-promo-light); color:var(--accent-promo); border:1px solid var(--accent-promo);">🔥 ${p.promo.type === 'descuento' ? `Descuento Directo del ${p.promo.value}%` : `Esquema de Regalo ${p.promo.buy}x${p.promo.pay}`}</div>
-                    <div class="card-actions" style="margin-top:8px;"><button class="btn-danger" style="width:100%;" onclick="removePromo(${p.id})">Remover Promoción</button></div>
+                    <div class="product-stock" style="margin-top:10px; background:var(--accent-promo-light); color:var(--accent-promo); border:none;">🔥 ${p.promo.type === 'descuento' ? `Descuento: ${p.promo.value}%` : `Mecánica: ${p.promo.buy}x${p.promo.pay}`}</div>
+                    <div class="card-actions" style="margin-top:10px;"><button class="btn-danger" style="width:100%;" onclick="removePromo(${p.id})">Remover Promoción</button></div>
                 `;
                 container.appendChild(item);
             });
         }
 
-        // INICIALIZADOR AL CARGAR
+        function clearForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-title').innerText = "Agregar Nuevo Producto";
+            document.getElementById('btn-submit-form').innerText = "Guardar Producto";
+            document.getElementById('btn-cancel-edit').style.display = 'none';
+            stopFormScan();
+        }
+
         window.onload = () => { renderPOSCatalog(); };
     </script>
 </body>
