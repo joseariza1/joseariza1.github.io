@@ -55,7 +55,7 @@
 
         h2 { font-size: 1.1rem; font-weight: 600; margin: 10px 0 14px 0; display: flex; align-items: center; gap: 8px; }
 
-        /* --- LAYOUT EVOLUCIONADO (Cesta arriba en móvil) --- */
+        /* --- LAYOUT EVOLUCIONADO --- */
         .pos-layout {
             display: flex;
             flex-direction: column;
@@ -91,12 +91,12 @@
         /* --- ORDENACIÓN DE COLUMNAS EN MÓVIL --- */
         .cart-column {
             width: 100%;
-            order: 1; /* Forzar que aparezca arriba en flujo vertical */
+            order: 1;
         }
         
         .catalog-column {
             width: 100%;
-            order: 2; /* El catálogo se desplaza abajo en celular */
+            order: 2;
         }
 
         .cart-card {
@@ -210,6 +210,17 @@
         .btn-cart-cam { background-color: #0f172a; color: white; width: 100%; margin-bottom: 12px; }
         .btn-cart-cam.active { background-color: var(--danger); }
 
+        /* Selector Especial para Producto Promocional */
+        .selector-promo-trigger {
+            background-color: var(--bg-main);
+            border: 1.5px dashed var(--primary);
+            color: var(--primary);
+            width: 100%;
+            text-align: left;
+            justify-content: flex-start;
+            padding: 12px;
+        }
+
         /* --- CUADRÍCULA DE PRODUCTOS --- */
         .product-grid { 
             display: grid; 
@@ -255,8 +266,44 @@
         .price-section { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
         .price-chip { font-size: 0.75rem; font-weight: 600; padding: 6px 10px; border-radius: 8px; background-color: var(--bg-main); border: 1px solid var(--border); }
         .price-chip.main { background-color: var(--primary-light); color: var(--primary); border-color: transparent; }
-        .card-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
+        .card-actions { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
         .card-actions button { padding: 8px 12px; font-size: 0.85rem; }
+        .btn-resurtir { background-color: var(--success-light); color: var(--success); }
+        .btn-resurtir:hover { background-color: var(--success); color: white; }
+
+        /* --- VENTANA EMERGENTE (MODAL SELECCIÓN PROMOS) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background-color: var(--bg-card); width: 100%; max-width: 600px;
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+            display: flex; flex-direction: column; max-height: 85vh; overflow: hidden;
+        }
+        .modal-header {
+            padding: 16px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body {
+            padding: 16px; overflow-y: auto; flex: 1;
+        }
+        .modal-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px;
+        }
+        .modal-item-card {
+            border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-md);
+            cursor: pointer; transition: all 0.2s ease; font-size: 0.9rem; font-weight: 600;
+            background-color: var(--bg-main); text-align: center;
+        }
+        .modal-item-card:hover {
+            border-color: var(--primary); background-color: var(--primary-light); color: var(--primary);
+        }
+        .modal-item-card.selected {
+            background-color: var(--primary); color: white; border-color: var(--primary);
+        }
 
         /* --- NAVEGACIÓN INFERIOR --- */
         .bottom-nav {
@@ -274,72 +321,46 @@
         .flex-group { display: flex; gap: 12px; }
         .flex-group > div { flex: 1; min-width: 0; }
 
-        /* ==========================================================================
-           RESPONSIVE RE-ARQUITECTURA (TABLET Y COMPUTADORA)
-           ========================================================================== */
+        /* RESPONSIVE */
         @media (min-width: 768px) {
-            .pos-layout {
-                display: grid;
-                grid-template-columns: 1fr 360px; /* Catálogo izquierda, Cesta fija derecha */
-                align-items: start;
-            }
-            .cart-column {
-                position: sticky;
-                top: 12px;
-                order: 2; /* Regresa a la derecha en pantallas grandes */
-            }
-            .catalog-column {
-                order: 1; /* Regresa a la izquierda en pantallas grandes */
-            }
-            .product-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .cart-items-scroll {
-                max-height: calc(100vh - 360px); /* Ajuste dinámico alto */
-            }
+            .pos-layout { display: grid; grid-template-columns: 1fr 360px; align-items: start; }
+            .cart-column { position: sticky; top: 12px; order: 2; }
+            .catalog-column { order: 1; }
+            .product-grid { grid-template-columns: repeat(3, 1fr); }
+            .modal-grid { grid-template-columns: repeat(3, 1fr); }
+            .cart-items-scroll { max-height: calc(100vh - 360px); }
         }
 
         @media (min-width: 1024px) {
-            .pos-layout {
-                grid-template-columns: 1fr 400px;
-            }
-            .product-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 14px;
-            }
+            .pos-layout { grid-template-columns: 1fr 400px; }
+            .product-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
         }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- TÍTULO GLOBAL ELIMINADO PARA APROVECHAMIENTO MÁXIMO -->
-
-        <!-- SECCIÓN 1: POV (VENTAS EN CAJA REORGANIZADO) -->
+        <!-- SECCIÓN 1: POV (VENTAS EN CAJA) -->
         <div id="pos-page" class="page active">
             <div class="pos-layout">
                 
-                <!-- CESTA DE COMPRA (ZONA SUPERIOR EN CELULAR / LATERAL EN PC) -->
+                <!-- CESTA DE COMPRA -->
                 <div class="cart-column">
                     <h2>🛒 Cesta de Compra</h2>
                     <div class="cart-card">
-                        <!-- CONTROL DE ESCÁNER INTEGRADO -->
                         <button id="cart-cam-btn" class="btn-cart-cam" onclick="toggleCartScanner()">
                             📷 Activar Lector de Caja
                         </button>
 
-                        <!-- DISPLAY DE ESCÁNER DE LA CESTA -->
                         <div id="cart-scanner-wrapper" class="scanner-card" style="margin-bottom:14px;">
                             <div id="cart-scanner-badge" class="scanner-status">🟢 Cámara de Venta En Línea</div>
                             <div id="cart-reader"></div>
                         </div>
 
-                        <!-- LISTADO SCROLLEABLE -->
                         <div class="cart-items-scroll" id="cart-items-container">
                             <p style="color: var(--text-muted); text-align: center; padding: 20px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona de la cuadrícula inferior.</p>
                         </div>
 
-                        <!-- DESCUENTOS -->
                         <div class="discount-section">
                             <label>Descuento Directo</label>
                             <div class="discount-inputs">
@@ -351,7 +372,6 @@
                             </div>
                         </div>
 
-                        <!-- TOTALES -->
                         <div class="totals-section">
                             <div class="total-row"><span>Subtotal:</span><span id="total-sub">$0.00</span></div>
                             <div class="total-row"><span>Descuento Aplicado:</span><span id="total-disc">-$0.00</span></div>
@@ -361,7 +381,7 @@
                     </div>
                 </div>
 
-                <!-- CATÁLOGO EN CUADRÍCULA (ABAJO EN MÓVIL / IZQUIERDA EN PC) -->
+                <!-- CATÁLOGO EN CUADRÍCULA -->
                 <div class="catalog-column">
                     <h2>📦 Catálogo de Selección Rápida</h2>
                     <div style="margin-bottom: 12px;">
@@ -461,10 +481,17 @@
         <div id="promo-page" class="page">
             <h2>🎉 Configurar Promociones</h2>
             <form id="promo-form" onsubmit="applyPromo(event)" style="background: white; padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); margin-bottom: 20px;">
+                
                 <div style="margin-bottom: 12px;">
-                    <label>Seleccionar Producto</label>
-                    <select id="promo-product-select" required></select>
+                    <label>Producto Vinculado</label>
+                    <!-- ID del producto seleccionado de forma oculta -->
+                    <input type="hidden" id="promo-product-id" required>
+                    <!-- Gatillo visual para abrir ventana de selección -->
+                    <button type="button" id="btn-open-promo-selector" class="selector-promo-trigger" onclick="openPromoModal()">
+                        🔍 Seleccionar Producto de la Lista...
+                    </button>
                 </div>
+
                 <div style="margin-bottom: 12px;">
                     <label>Tipo de Oferta</label>
                     <select id="promo-type" onchange="togglePromoFields()">
@@ -491,6 +518,22 @@
 
             <h2>🔥 Promociones Corriendo Actualmente</h2>
             <div id="promos-active-container" class="product-list"></div>
+        </div>
+    </div>
+
+    <!-- VENTANA EMERGENTE (MODAL) PARA SELECTOR DE PROMOS -->
+    <div id="promo-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="font-size:1.1rem; font-weight:700;">Seleccionar Producto</h3>
+                <button class="qty-btn" onclick="closePromoModal()">✕</button>
+            </div>
+            <div style="padding: 12px 16px 0 16px;">
+                <input type="text" id="modal-search-input" placeholder="Filtrar por nombre..." oninput="renderModalGrid()">
+            </div>
+            <div class="modal-body">
+                <div id="modal-grid-container" class="modal-grid"></div>
+            </div>
         </div>
     </div>
 
@@ -526,6 +569,7 @@
         function switchPage(pageId, navId) {
             stopCartScan();
             stopFormScan();
+            closePromoModal();
             
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -535,7 +579,7 @@
             
             if(pageId === 'pos-page') { renderPOSCatalog(); }
             else if(pageId === 'stock-page') { renderStockInventory(); }
-            else if(pageId === 'promo-page') { populatePromoSelect(); renderPromos(); }
+            else if(pageId === 'promo-page') { clearPromoFormSelection(); renderPromos(); }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -722,7 +766,7 @@
             renderPOSCatalog();
         }
 
-        // --- EN REJILLA ---
+        // --- EN REJILLA POV ---
         function renderPOSCatalog() {
             const container = document.getElementById('pos-catalog-container');
             const q = document.getElementById('pos-search-input').value.toLowerCase().trim();
@@ -751,6 +795,7 @@
             });
         }
 
+        // --- SECCIÓN INVENTARIO / STOCK ---
         function renderStockInventory() {
             const container = document.getElementById('stock-inventory-container');
             const q = document.getElementById('stock-search-input').value.toLowerCase().trim();
@@ -781,6 +826,7 @@
                     </div>
                     <div class="product-meta" style="font-size:0.75rem;">📅 Comprado: ${p.dateBuy} | Caducidad: ${p.dateExpiry || 'N/A'}</div>
                     <div class="card-actions">
+                        <button class="btn-resurtir" onclick="resurtirProducto(${p.id})">➕ Resurtir Stock</button>
                         <button class="btn-secondary" onclick="editProduct(${p.id})">Editar</button>
                         <button class="btn-danger" onclick="deleteProduct(${p.id})">Eliminar</button>
                     </div>
@@ -788,6 +834,26 @@
                 container.appendChild(card);
             });
             checkAlerts();
+        }
+
+        // LOGICA DE RESURTIDO DIRECTO
+        function resurtirProducto(id) {
+            const p = products.find(prod => prod.id === id);
+            if (!p) return;
+
+            const cantidadIngresada = prompt(`Resurtir stock para: "${p.name}"\nExistencia actual: ${p.stock} ${p.unit}.\n\nIngresa la cantidad de piezas a AGREGAR:`, "10");
+            
+            if (cantidadIngresada === null) return; // Cancelado por usuario
+            
+            const piezasNuevas = parseInt(cantidadIngresada.trim());
+            if (isNaN(piezasNuevas) || piezasNuevas <= 0) {
+                alert("Por favor introduce un número entero válido y mayor a cero.");
+                return;
+            }
+
+            p.stock += piezasNuevas;
+            localStorage.setItem('pwa_products', JSON.stringify(products));
+            renderStockInventory();
         }
 
         function checkAlerts() {
@@ -815,7 +881,7 @@
             else container.innerHTML = '<div class="alert-item alert-success">✨ Stock operativo óptimo. No hay alertas críticas.</div>';
         }
 
-        // --- CRUD ---
+        // --- CRUD AGREGAR / EDITAR ---
         function saveProduct(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
@@ -880,37 +946,94 @@
             stopFormScan();
         }
 
-        // --- PROMOS ---
-        function populatePromoSelect() {
-            const select = document.getElementById('promo-product-select');
-            select.innerHTML = '';
-            products.forEach(p => {
-                const opt = document.createElement('option'); opt.value = p.id; opt.innerText = p.name; select.appendChild(opt);
+        // --- CONTROL MODAL EMERGENTE (PROMOS) ---
+        function openPromoModal() {
+            document.getElementById('promo-modal').classList.add('active');
+            document.getElementById('modal-search-input').value = '';
+            renderModalGrid();
+        }
+
+        function closePromoModal() {
+            document.getElementById('promo-modal').classList.remove('active');
+        }
+
+        function renderModalGrid() {
+            const container = document.getElementById('modal-grid-container');
+            const q = document.getElementById('modal-search-input').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            // ORDENACIÓN ALFABÉTICA ESTRICTA
+            let orderedList = [...products].sort((a, b) => a.name.localeCompare(b.name));
+            
+            if(q) orderedList = orderedList.filter(p => p.name.toLowerCase().includes(q));
+
+            if(orderedList.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color: var(--text-muted); padding:12px;">Sin resultados.</p>';
+                return;
+            }
+
+            const currentSelectedId = parseInt(document.getElementById('promo-product-id').value);
+
+            orderedList.forEach(p => {
+                const itemCard = document.createElement('div');
+                itemCard.className = `modal-item-card ${p.id === currentSelectedId ? 'selected' : ''}`;
+                itemCard.innerText = p.name;
+                itemCard.onclick = () => selectProductForPromo(p.id, p.name);
+                container.appendChild(itemCard);
             });
         }
+
+        function selectProductForPromo(id, name) {
+            document.getElementById('promo-product-id').value = id;
+            document.getElementById('btn-open-promo-selector').innerText = `📦 Seleccionado: ${name}`;
+            document.getElementById('btn-open-promo-selector').style.borderStyle = "solid";
+            closePromoModal();
+        }
+
+        function clearPromoFormSelection() {
+            document.getElementById('promo-product-id').value = '';
+            document.getElementById('btn-open-promo-selector').innerText = "🔍 Seleccionar Producto de la Lista...";
+            document.getElementById('btn-open-promo-selector').style.borderStyle = "dashed";
+            document.getElementById('promo-form').reset();
+            togglePromoFields();
+        }
+
+        // --- PROMOS ACCIONES ---
         function togglePromoFields() {
             const type = document.getElementById('promo-type').value;
             document.getElementById('div-promo-desc').style.display = type === 'descuento' ? 'block' : 'none';
             document.getElementById('div-promo-quantity').style.display = type === 'xporx' ? 'flex' : 'none';
         }
+
         function applyPromo(e) {
             e.preventDefault();
-            const prodId = parseInt(document.getElementById('promo-product-select').value);
+            const prodId = parseInt(document.getElementById('promo-product-id').value);
+            if(!prodId) {
+                alert("Por favor selecciona un producto usando la ventana emergente.");
+                return;
+            }
+
             const type = document.getElementById('promo-type').value;
             let promoData = { type };
             if(type === 'descuento') promoData.value = parseInt(document.getElementById('promo-discount').value);
-            else { promoData.buy = parseInt(document.getElementById('promo-buy').value); promoData.pay = parseInt(document.getElementById('promo-pay').value); }
+            else { 
+                promoData.buy = parseInt(document.getElementById('promo-buy').value); 
+                promoData.pay = parseInt(document.getElementById('promo-pay').value); 
+            }
 
             products = products.map(p => p.id === prodId ? { ...p, promo: promoData } : p);
             localStorage.setItem('pwa_products', JSON.stringify(products));
+            clearPromoFormSelection();
             renderPromos();
-            alert("Promoción activada en catálogo.");
+            alert("Promoción activada exitosamente.");
         }
+
         function removePromo(id) {
             products = products.map(p => p.id === id ? { ...p, promo: null } : p);
             localStorage.setItem('pwa_products', JSON.stringify(products));
             renderPromos();
         }
+
         function renderPromos() {
             const container = document.getElementById('promos-active-container');
             container.innerHTML = '';
