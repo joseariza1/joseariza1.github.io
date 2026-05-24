@@ -13,13 +13,13 @@
     
     <style>
         :root {
-            --bg-main: #f1f5f9;
+            --bg-main: #f8fafc;
             --bg-card: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
-            --primary-light: #dbeafe;
+            --primary-light: #e0f2fe;
             --success: #10b981;
             --success-light: #d1fae5;
             --danger: #ef4444;
@@ -48,20 +48,19 @@
         }
 
         .app-container {
-            max-width: 800px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 16px;
+            padding: 12px;
         }
 
-        header {
-            margin-bottom: 16px;
+        h2 { font-size: 1.1rem; font-weight: 600; margin: 10px 0 14px 0; display: flex; align-items: center; gap: 8px; }
+
+        /* --- LAYOUT EVOLUCIONADO (Cesta arriba en móvil) --- */
+        .pos-layout {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 16px;
         }
-
-        h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
-        h2 { font-size: 1.1rem; font-weight: 600; margin: 20px 0 12px 0; display: flex; align-items: center; gap: 8px; }
 
         /* --- CONTENEDORES DE LAS CÁMARAS --- */
         .scanner-card {
@@ -89,14 +88,30 @@
             background: rgba(245, 158, 11, 0.9) !important;
         }
 
-        /* --- SECCIÓN CESTA DE COMPRAS (POV) --- */
+        /* --- ORDENACIÓN DE COLUMNAS EN MÓVIL --- */
+        .cart-column {
+            width: 100%;
+            order: 1; /* Forzar que aparezca arriba en flujo vertical */
+        }
+        
+        .catalog-column {
+            width: 100%;
+            order: 2; /* El catálogo se desplaza abajo en celular */
+        }
+
         .cart-card {
             background-color: var(--bg-card);
             border-radius: var(--radius-lg);
             padding: 16px;
-            box-shadow: var(--shadow-md);
-            margin-bottom: 20px;
-            border: 1.5px solid var(--border);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+        }
+
+        .cart-items-scroll {
+            max-height: 220px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding-right: 4px;
         }
 
         .cart-item {
@@ -107,18 +122,18 @@
             border-bottom: 1px solid var(--border);
         }
         .cart-item:last-child { border-bottom: none; }
-        .cart-item-info { flex: 1; min-width: 0; }
-        .cart-item-title { font-weight: 600; font-size: 0.95rem; }
+        .cart-item-info { flex: 1; min-width: 0; padding-right: 8px; }
+        .cart-item-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cart-item-meta { font-size: 0.8rem; color: var(--text-muted); }
         
         .cart-item-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         .qty-btn {
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background-color: var(--bg-main);
             border: none;
@@ -128,18 +143,19 @@
             align-items: center;
             justify-content: center;
         }
+        .qty-btn:hover { background-color: var(--border); }
 
-        /* --- PANEL DE DESCUENTOS Y TOTALES --- */
+        /* --- COMPONENTES FINANCIEROS --- */
         .discount-section {
             background-color: var(--bg-main);
             border-radius: var(--radius-md);
             padding: 12px;
-            margin-top: 14px;
+            margin-top: 10px;
         }
         .discount-inputs {
             display: flex;
             gap: 8px;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         
         input, select {
@@ -152,25 +168,25 @@
             color: var(--text-main);
         }
         input:focus, select:focus { outline: none; border-color: var(--primary); }
-        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; color: var(--text-main); text-transform: uppercase;}
+        label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase;}
 
         .totals-section {
-            margin-top: 14px;
-            padding-top: 12px;
+            margin-top: 12px;
+            padding-top: 10px;
             border-top: 2px dashed var(--border);
         }
         .total-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: var(--text-muted);
             margin-bottom: 4px;
         }
         .total-row.final {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             font-weight: 700;
             color: var(--text-main);
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         /* --- ALERTAS DEL SISTEMA --- */
@@ -186,7 +202,7 @@
             display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;
         }
         .btn-primary { background-color: var(--primary); color: white; width: 100%; }
-        .btn-success { background-color: var(--success); color: white; width: 100%; font-size: 1.1rem; }
+        .btn-success { background-color: var(--success); color: white; width: 100%; font-size: 1.1rem; padding: 14px; }
         .btn-secondary { background-color: var(--bg-card); border: 1.5px solid var(--border); color: var(--text-main); }
         .btn-danger { background-color: var(--danger-light); color: var(--danger); }
         
@@ -194,7 +210,38 @@
         .btn-cart-cam { background-color: #0f172a; color: white; width: 100%; margin-bottom: 12px; }
         .btn-cart-cam.active { background-color: var(--danger); }
 
-        /* --- SECCIÓN DE STOCK (PRODUCTOS) --- */
+        /* --- CUADRÍCULA DE PRODUCTOS --- */
+        .product-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+        }
+        
+        .quick-item-card {
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius-md);
+            padding: 14px; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: space-between; 
+            cursor: pointer; 
+            box-shadow: var(--shadow-md);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .quick-item-card:hover { 
+            border-color: var(--primary); 
+            transform: translateY(-2px);
+        }
+        .quick-item-card .prod-price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 8px;
+        }
+
+        /* --- SECCIÓN DE STOCK --- */
         .product-list { display: flex; flex-direction: column; gap: 12px; }
         .product-card {
             background-color: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
@@ -211,14 +258,6 @@
         .card-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; }
         .card-actions button { padding: 8px 12px; font-size: 0.85rem; }
 
-        /* GRID RÁPIDO PARA EL POV */
-        .product-grid { display: flex; flex-direction: column; gap: 10px; }
-        .quick-item-card {
-            background-color: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
-            padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow-md);
-        }
-        .quick-item-card:hover { border-color: var(--primary); }
-
         /* --- NAVEGACIÓN INFERIOR --- */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -234,73 +273,114 @@
         .page.active { display: block; }
         .flex-group { display: flex; gap: 12px; }
         .flex-group > div { flex: 1; min-width: 0; }
+
+        /* ==========================================================================
+           RESPONSIVE RE-ARQUITECTURA (TABLET Y COMPUTADORA)
+           ========================================================================== */
+        @media (min-width: 768px) {
+            .pos-layout {
+                display: grid;
+                grid-template-columns: 1fr 360px; /* Catálogo izquierda, Cesta fija derecha */
+                align-items: start;
+            }
+            .cart-column {
+                position: sticky;
+                top: 12px;
+                order: 2; /* Regresa a la derecha en pantallas grandes */
+            }
+            .catalog-column {
+                order: 1; /* Regresa a la izquierda en pantallas grandes */
+            }
+            .product-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .cart-items-scroll {
+                max-height: calc(100vh - 360px); /* Ajuste dinámico alto */
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .pos-layout {
+                grid-template-columns: 1fr 400px;
+            }
+            .product-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 14px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <header>
-            <div>
-                <h1 id="app-title">NextGen POS</h1>
-                <p id="app-subtitle" style="font-size:0.8rem; color:var(--text-muted)">Terminal Activa de Cobro</p>
-            </div>
-        </header>
+        <!-- TÍTULO GLOBAL ELIMINADO PARA APROVECHAMIENTO MÁXIMO -->
 
-        <!-- SECCIÓN 1: POV (VENTAS EN CAJA) -->
+        <!-- SECCIÓN 1: POV (VENTAS EN CAJA REORGANIZADO) -->
         <div id="pos-page" class="page active">
-            <h2>🛒 Cesta de Compra Actual</h2>
-            <div class="cart-card">
-                <!-- BOTÓN INTEGRADO EN LA PROPIA CESTA -->
-                <button id="cart-cam-btn" class="btn-cart-cam" onclick="toggleCartScanner()">
-                    📷 Activar Escáner de Caja
-                </button>
+            <div class="pos-layout">
+                
+                <!-- CESTA DE COMPRA (ZONA SUPERIOR EN CELULAR / LATERAL EN PC) -->
+                <div class="cart-column">
+                    <h2>🛒 Cesta de Compra</h2>
+                    <div class="cart-card">
+                        <!-- CONTROL DE ESCÁNER INTEGRADO -->
+                        <button id="cart-cam-btn" class="btn-cart-cam" onclick="toggleCartScanner()">
+                            📷 Activar Lector de Caja
+                        </button>
 
-                <!-- ÁREA DEL ESCÁNER DE LA CESTA -->
-                <div id="cart-scanner-wrapper" class="scanner-card" style="margin-bottom:14px;">
-                    <div id="cart-scanner-badge" class="scanner-status">🟢 Cámara de Venta En Línea</div>
-                    <div id="cart-reader"></div>
-                </div>
+                        <!-- DISPLAY DE ESCÁNER DE LA CESTA -->
+                        <div id="cart-scanner-wrapper" class="scanner-card" style="margin-bottom:14px;">
+                            <div id="cart-scanner-badge" class="scanner-status">🟢 Cámara de Venta En Línea</div>
+                            <div id="cart-reader"></div>
+                        </div>
 
-                <div id="cart-items-container">
-                    <p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido.</p>
-                </div>
+                        <!-- LISTADO SCROLLEABLE -->
+                        <div class="cart-items-scroll" id="cart-items-container">
+                            <p style="color: var(--text-muted); text-align: center; padding: 20px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona de la cuadrícula inferior.</p>
+                        </div>
 
-                <!-- DESCUENTO EN LA PROPIA CESTA -->
-                <div class="discount-section">
-                    <label>Descuento Directo al Cliente</label>
-                    <div class="discount-inputs">
-                        <select id="cart-discount-type" onchange="updateCartTotals()">
-                            <option value="percent">Porcentaje (%)</option>
-                            <option value="fixed">Monto Fijo ($)</option>
-                        </select>
-                        <input type="number" id="cart-discount-value" value="0" min="0" oninput="updateCartTotals()" placeholder="0">
+                        <!-- DESCUENTOS -->
+                        <div class="discount-section">
+                            <label>Descuento Directo</label>
+                            <div class="discount-inputs">
+                                <select id="cart-discount-type" onchange="updateCartTotals()">
+                                    <option value="percent">Porcentaje (%)</option>
+                                    <option value="fixed">Monto Fijo ($)</option>
+                                </select>
+                                <input type="number" id="cart-discount-value" value="0" min="0" oninput="updateCartTotals()" placeholder="0">
+                            </div>
+                        </div>
+
+                        <!-- TOTALES -->
+                        <div class="totals-section">
+                            <div class="total-row"><span>Subtotal:</span><span id="total-sub">$0.00</span></div>
+                            <div class="total-row"><span>Descuento Aplicado:</span><span id="total-disc">-$0.00</span></div>
+                            <div class="total-row final"><span>Total Neto:</span><span id="total-final">$0.00</span></div>
+                        </div>
+                        <button class="btn-success" style="margin-top: 12px;" onclick="checkoutSale()">💳 FINALIZAR COBRO</button>
                     </div>
                 </div>
 
-                <!-- TOTALES -->
-                <div class="totals-section">
-                    <div class="total-row"><span>Subtotal:</span><span id="total-sub">$0.00</span></div>
-                    <div class="total-row"><span>Descuento Aplicado:</span><span id="total-disc">-$0.00</span></div>
-                    <div class="total-row final"><span>Total Neto:</span><span id="total-final">$0.00</span></div>
+                <!-- CATÁLOGO EN CUADRÍCULA (ABAJO EN MÓVIL / IZQUIERDA EN PC) -->
+                <div class="catalog-column">
+                    <h2>📦 Catálogo de Selección Rápida</h2>
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="pos-search-input" placeholder="Buscar en la rejilla..." oninput="renderPOSCatalog()">
+                    </div>
+                    <div id="pos-catalog-container" class="product-grid"></div>
                 </div>
-                <button class="btn-success" style="margin-top: 14px;" onclick="checkoutSale()">💳 FINALIZAR COBRO</button>
-            </div>
 
-            <h2>📦 Catálogo de Selección Rápida</h2>
-            <div style="margin-bottom: 12px;">
-                <input type="text" id="pos-search-input" placeholder="Buscar producto en venta..." oninput="renderPOSCatalog()">
             </div>
-            <div id="pos-catalog-container" class="product-grid"></div>
         </div>
 
         <!-- SECCIÓN 2: CONTROL DE STOCK -->
         <div id="stock-page" class="page">
-            <h2>🚨 Alertas de Control (Próximos a Caducar / Rezago)</h2>
+            <h2>🚨 Alertas de Control</h2>
             <div id="alerts-container"></div>
 
             <h2>📦 Inventario en Stock</h2>
             <div style="margin-bottom: 16px;">
-                <input type="text" id="stock-search-input" placeholder="Buscar por nombre o código en stock..." oninput="renderStockInventory()">
+                <input type="text" id="stock-search-input" placeholder="Buscar en stock..." oninput="renderStockInventory()">
             </div>
             <div id="stock-inventory-container" class="product-list"></div>
         </div>
@@ -316,7 +396,6 @@
                     <input type="text" id="prod-name" required>
                 </div>
 
-                <!-- CAMPO CÓDIGO CON BOTÓN DE ESCÁNER PROPIO -->
                 <div style="margin-bottom: 12px;">
                     <label>Código de Barras</label>
                     <div style="display:flex; gap:8px;">
@@ -325,7 +404,6 @@
                     </div>
                 </div>
 
-                <!-- LECTOR DE LA PESTAÑA GESTIONAR -->
                 <div id="form-scanner-wrapper" class="scanner-card">
                     <div class="scanner-status">🔍 Apuntando al Código del Producto</div>
                     <div id="form-reader"></div>
@@ -381,7 +459,7 @@
 
         <!-- SECCIÓN 4: REGLAS DE PROMOCIONES -->
         <div id="promo-page" class="page">
-            <h2>🎉 Configurar Promociones Especiales</h2>
+            <h2>🎉 Configurar Promociones</h2>
             <form id="promo-form" onsubmit="applyPromo(event)" style="background: white; padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); margin-bottom: 20px;">
                 <div style="margin-bottom: 12px;">
                     <label>Seleccionar Producto</label>
@@ -400,15 +478,15 @@
                 </div>
                 <div id="div-promo-quantity" class="flex-group" style="display:none; margin-bottom: 12px;">
                     <div>
-                        <label>Lleva (Unidades)</label>
+                        <label>Lleva</label>
                         <input type="number" id="promo-buy" min="1" value="2">
                     </div>
                     <div>
-                        <label>Paga (Unidades)</label>
+                        <label>Paga</label>
                         <input type="number" id="promo-pay" min="1" value="1">
                     </div>
                 </div>
-                <button type="submit" class="btn-primary">Activar Regla promocional</button>
+                <button type="submit" class="btn-primary">Activar Regla</button>
             </form>
 
             <h2>🔥 Promociones Corriendo Actualmente</h2>
@@ -437,18 +515,15 @@
         let products = JSON.parse(localStorage.getItem('pwa_products')) || [];
         let cart = [];
         
-        // Instancias de escáneres
         let cartScanner = null;
         let formScanner = null;
         
-        // Variables de control de escaneo
         let isCartScannerRunning = false;
         let isFormScannerRunning = false;
-        let scanCooldown = false; // Flag anti-duplicado
+        let scanCooldown = false;
 
         // --- NAVEGACIÓN ---
         function switchPage(pageId, navId) {
-            // Apagar cámaras al cambiar de sección para optimizar rendimiento
             stopCartScan();
             stopFormScan();
             
@@ -458,15 +533,13 @@
             document.getElementById(pageId).classList.add('active');
             document.getElementById(navId).classList.add('active');
             
-            const sub = document.getElementById('app-subtitle');
-            if(pageId === 'pos-page') { sub.innerText = "Terminal Activa de Cobro"; renderPOSCatalog(); }
-            else if(pageId === 'stock-page') { sub.innerText = "Control de Stock y Caducidades"; renderStockInventory(); }
-            else if(pageId === 'add-page') { sub.innerText = "Altas y Edición de Catálogo"; }
-            else if(pageId === 'promo-page') { sub.innerText = "Configurador de Ofertas Especiales"; populatePromoSelect(); renderPromos(); }
+            if(pageId === 'pos-page') { renderPOSCatalog(); }
+            else if(pageId === 'stock-page') { renderStockInventory(); }
+            else if(pageId === 'promo-page') { populatePromoSelect(); renderPromos(); }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- LÓGICA DE ESCÁNER 1: CESTA DE VENTAS (CONTINUO CON ANTIDUPLICADO) ---
+        // --- ESCÁNER 1: CAJA ---
         function toggleCartScanner() {
             const wrapper = document.getElementById('cart-scanner-wrapper');
             const btn = document.getElementById('cart-cam-btn');
@@ -499,7 +572,7 @@
             const btn = document.getElementById('cart-cam-btn');
             if(wrapper) wrapper.style.display = 'none';
             if(btn) {
-                btn.innerText = "📷 Activar Escáner de Caja";
+                btn.innerText = "📷 Activar Lector de Caja";
                 btn.classList.remove('active');
             }
             if (cartScanner && isCartScannerRunning) {
@@ -510,35 +583,32 @@
         }
 
         function processCartScan(code) {
-            if (scanCooldown) return; // Rechazar lectura si está en pausa anti-duplicado
+            if (scanCooldown) return;
 
             const prod = products.find(p => p.code === code);
             if (prod) {
                 addToCart(prod.id);
-                
-                // Activar pausa anti-duplicado
                 scanCooldown = true;
                 const badge = document.getElementById('cart-scanner-badge');
                 if (badge) {
-                    badge.innerText = "⏳ Procesando artículo... Pausa de seguridad";
+                    badge.innerText = "⏳ Procesando... Pausa de seguridad";
                     badge.classList.add('cooldown');
                 }
 
-                // Destello visual de éxito
                 document.body.style.backgroundColor = "#d1fae5";
                 
                 setTimeout(() => {
                     document.body.style.backgroundColor = "var(--bg-main)";
-                    scanCooldown = false; // Volver a habilitar lecturas
+                    scanCooldown = false;
                     if (badge) {
                         badge.innerText = "🟢 Cámara de Venta En Línea";
                         badge.classList.remove('cooldown');
                     }
-                }, 1500); // 1.5 Segundos de pausa entre lecturas
+                }, 1500);
             }
         }
 
-        // --- LÓGICA DE ESCÁNER 2: REGISTRO/EDICIÓN DE PRODUCTO (UN SOLO USO) ---
+        // --- ESCÁNER 2: REGISTRO ---
         function toggleFormScanner() {
             const wrapper = document.getElementById('form-scanner-wrapper');
             if (isFormScannerRunning) {
@@ -559,7 +629,6 @@
                 { fps: 15, qrbox: { width: 280, height: 160 } },
                 (decodedText) => {
                     document.getElementById('prod-code').value = decodedText.trim();
-                    // Al encontrar el código, se detiene automáticamente para comodidad del usuario
                     stopFormScan(); 
                 },
                 (err) => {}
@@ -576,7 +645,7 @@
             }
         }
 
-        // --- SISTEMA POV (CESTA Y COBRO) ---
+        // --- GESTIÓN CESTA ---
         function addToCart(id) {
             const prod = products.find(p => p.id === id);
             if (!prod) return;
@@ -599,7 +668,7 @@
         function renderCart() {
             const container = document.getElementById('cart-items-container');
             if (cart.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido.</p>';
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 20px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona de la cuadrícula inferior.</p>';
                 updateCartTotals();
                 return;
             }
@@ -610,13 +679,13 @@
                 row.innerHTML = `
                     <div class="cart-item-info">
                         <div class="cart-item-title">${item.name}</div>
-                        <div class="cart-item-meta">$${item.priceUnit} / c/u • Código: ${item.code}</div>
+                        <div class="cart-item-meta">$${item.priceUnit} x un.</div>
                     </div>
                     <div class="cart-item-actions">
                         <button class="qty-btn" onclick="changeQty(${item.id}, -1)">-</button>
-                        <span style="font-weight:700; font-size:1rem; min-width:20px; text-align:center;">${item.qty}</span>
+                        <span style="font-weight:700; font-size:0.95rem; min-width:18px; text-align:center;">${item.qty}</span>
                         <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
-                        <span style="font-weight:700; margin-left:10px; min-width:60px; text-align:right;">$${(item.priceUnit * item.qty).toFixed(2)}</span>
+                        <span style="font-weight:700; margin-left:4px; min-width:55px; text-align:right; font-size:0.9rem;">$${(item.priceUnit * item.qty).toFixed(2)}</span>
                     </div>
                 `;
                 container.appendChild(row);
@@ -653,7 +722,7 @@
             renderPOSCatalog();
         }
 
-        // --- CATÁLOGOS Y ALFABETO ---
+        // --- EN REJILLA ---
         function renderPOSCatalog() {
             const container = document.getElementById('pos-catalog-container');
             const q = document.getElementById('pos-search-input').value.toLowerCase().trim();
@@ -662,18 +731,21 @@
             let list = [...products].sort((a, b) => a.name.localeCompare(b.name));
             if(q) list = list.filter(p => p.name.toLowerCase().includes(q) || p.code.includes(q));
 
-            if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:10px;">No hay coincidencias.</p>'; return; }
+            if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:var(--text-muted); grid-column: 1 / -1; padding:20px;">No hay coincidencias en el catálogo.</p>'; return; }
 
             list.forEach(p => {
                 const card = document.createElement('div');
                 card.className = 'quick-item-card';
                 card.onclick = () => addToCart(p.id);
+                
+                let stockWarning = p.stock <= p.minStock ? 'color: var(--danger); font-weight:700;' : 'color: var(--text-muted);';
+                
                 card.innerHTML = `
                     <div>
-                        <div style="font-weight:600;">${p.name}</div>
-                        <div style="font-size:0.75rem; color:var(--text-muted)">Stock: ${p.stock} | Código: ${p.code}</div>
+                        <div style="font-weight:600; font-size:0.95rem; line-height:1.2; margin-bottom:4px;">${p.name}</div>
+                        <div style="font-size:0.75rem; ${stockWarning}">Stock: ${p.stock} pz.</div>
                     </div>
-                    <div style="font-weight:700; color:var(--primary);">$${p.priceUnit}</div>
+                    <div class="prod-price">$${p.priceUnit.toFixed(2)}</div>
                 `;
                 container.appendChild(card);
             });
@@ -743,7 +815,7 @@
             else container.innerHTML = '<div class="alert-item alert-success">✨ Stock operativo óptimo. No hay alertas críticas.</div>';
         }
 
-        // --- ALTAS, BAJAS Y EDICIONES (CRUD) ---
+        // --- CRUD ---
         function saveProduct(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
@@ -808,7 +880,7 @@
             stopFormScan();
         }
 
-        // --- PROMOCIONES ---
+        // --- PROMOS ---
         function populatePromoSelect() {
             const select = document.getElementById('promo-product-select');
             select.innerHTML = '';
