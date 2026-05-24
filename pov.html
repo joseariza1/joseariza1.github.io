@@ -44,6 +44,7 @@
             background-color: var(--bg-main);
             color: var(--text-main);
             padding-bottom: 90px;
+            transition: background-color 0.2s ease;
         }
 
         .app-container {
@@ -62,7 +63,7 @@
         h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
         h2 { font-size: 1.1rem; font-weight: 600; margin: 20px 0 12px 0; display: flex; align-items: center; gap: 8px; }
 
-        /* --- CONTENEDOR DE LA CÁMARA CONTINUA --- */
+        /* --- CONTENEDORES DE LAS CÁMARAS --- */
         .scanner-card {
             background: #000;
             border-radius: var(--radius-lg);
@@ -72,7 +73,6 @@
             display: none;
             position: relative;
         }
-        #interactive-reader { width: 100%; }
         .scanner-status {
             position: absolute;
             top: 12px;
@@ -84,9 +84,10 @@
             font-size: 0.75rem;
             font-weight: 600;
             z-index: 10;
-            animation: pulse 1.5s infinite;
         }
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        .scanner-status.cooldown {
+            background: rgba(245, 158, 11, 0.9) !important;
+        }
 
         /* --- SECCIÓN CESTA DE COMPRAS (POV) --- */
         .cart-card {
@@ -141,7 +142,7 @@
             margin-top: 6px;
         }
         
-        input, select, text {
+        input, select {
             width: 100%;
             padding: 10px 14px;
             font-size: 0.9rem;
@@ -188,8 +189,10 @@
         .btn-success { background-color: var(--success); color: white; width: 100%; font-size: 1.1rem; }
         .btn-secondary { background-color: var(--bg-card); border: 1.5px solid var(--border); color: var(--text-main); }
         .btn-danger { background-color: var(--danger-light); color: var(--danger); }
-        .btn-cam { background-color: #0f172a; color: white; }
-        .btn-cam.active { background-color: var(--danger); animation: pulse 2s infinite; }
+        
+        .btn-inline-cam { background-color: #0f172a; color: white; padding: 10px 14px; }
+        .btn-cart-cam { background-color: #0f172a; color: white; width: 100%; margin-bottom: 12px; }
+        .btn-cart-cam.active { background-color: var(--danger); }
 
         /* --- SECCIÓN DE STOCK (PRODUCTOS) --- */
         .product-list { display: flex; flex-direction: column; gap: 12px; }
@@ -215,9 +218,6 @@
             padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; box-shadow: var(--shadow-md);
         }
         .quick-item-card:hover { border-color: var(--primary); }
-        .alert-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px; }
-        .alert-low { background-color: var(--danger-light); color: var(--danger); }
-        .alert-exp { background-color: #fef3c7; color: #b45309; }
 
         /* --- NAVEGACIÓN INFERIOR --- */
         .bottom-nav {
@@ -244,24 +244,25 @@
                 <h1 id="app-title">NextGen POS</h1>
                 <p id="app-subtitle" style="font-size:0.8rem; color:var(--text-muted)">Terminal Activa de Cobro</p>
             </div>
-            <!-- Botón de cámara continua (Permanece encendido mientras vendes) -->
-            <button id="cam-toggle-btn" class="btn-cam" onclick="toggleContinuousScanner()">
-                📷 Escáner Apagado
-            </button>
         </header>
-
-        <!-- ÁREA DEL ESCÁNER DE CAMARA CONTINUO -->
-        <div id="scanner-wrapper" class="scanner-card">
-            <div class="scanner-status">🟢 Escáner Activo en Caja</div>
-            <div id="interactive-reader"></div>
-        </div>
 
         <!-- SECCIÓN 1: POV (VENTAS EN CAJA) -->
         <div id="pos-page" class="page active">
             <h2>🛒 Cesta de Compra Actual</h2>
             <div class="cart-card">
+                <!-- BOTÓN INTEGRADO EN LA PROPIA CESTA -->
+                <button id="cart-cam-btn" class="btn-cart-cam" onclick="toggleCartScanner()">
+                    📷 Activar Escáner de Caja
+                </button>
+
+                <!-- ÁREA DEL ESCÁNER DE LA CESTA -->
+                <div id="cart-scanner-wrapper" class="scanner-card" style="margin-bottom:14px;">
+                    <div id="cart-scanner-badge" class="scanner-status">🟢 Cámara de Venta En Línea</div>
+                    <div id="cart-reader"></div>
+                </div>
+
                 <div id="cart-items-container">
-                    <p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido abajo.</p>
+                    <p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido.</p>
                 </div>
 
                 <!-- DESCUENTO EN LA PROPIA CESTA -->
@@ -292,7 +293,7 @@
             <div id="pos-catalog-container" class="product-grid"></div>
         </div>
 
-        <!-- SECCIÓN 2: CONTROL DE STOCK (ALFABÉTICO, BUSCADOR Y ALERTAS) -->
+        <!-- SECCIÓN 2: CONTROL DE STOCK -->
         <div id="stock-page" class="page">
             <h2>🚨 Alertas de Control (Próximos a Caducar / Rezago)</h2>
             <div id="alerts-container"></div>
@@ -314,10 +315,22 @@
                     <label>Nombre del Producto</label>
                     <input type="text" id="prod-name" required>
                 </div>
+
+                <!-- CAMPO CÓDIGO CON BOTÓN DE ESCÁNER PROPIO -->
                 <div style="margin-bottom: 12px;">
                     <label>Código de Barras</label>
-                    <input type="text" id="prod-code" required>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="prod-code" required>
+                        <button type="button" class="btn-inline-cam" onclick="toggleFormScanner()">📷 Escanear</button>
+                    </div>
                 </div>
+
+                <!-- LECTOR DE LA PESTAÑA GESTIONAR -->
+                <div id="form-scanner-wrapper" class="scanner-card">
+                    <div class="scanner-status">🔍 Apuntando al Código del Producto</div>
+                    <div id="form-reader"></div>
+                </div>
+
                 <div class="flex-group" style="margin-bottom: 12px;">
                     <div>
                         <label>Stock Inicial</label>
@@ -403,7 +416,7 @@
         </div>
     </div>
 
-    <!-- MENÚ INFERIOR DE 4 ESTACIONES -->
+    <!-- NAVEGACIÓN INFERIOR -->
     <nav class="bottom-nav">
         <button class="nav-item active" id="nav-pos" onclick="switchPage('pos-page', 'nav-pos')">
             <span>🖥️</span><span>POV Caja</span>
@@ -423,11 +436,22 @@
         // --- DATA DE LA APLICACIÓN ---
         let products = JSON.parse(localStorage.getItem('pwa_products')) || [];
         let cart = [];
-        let html5QrcodeScanner = null;
-        let isScannerRunning = false;
+        
+        // Instancias de escáneres
+        let cartScanner = null;
+        let formScanner = null;
+        
+        // Variables de control de escaneo
+        let isCartScannerRunning = false;
+        let isFormScannerRunning = false;
+        let scanCooldown = false; // Flag anti-duplicado
 
-        // --- MANEJO DE SECCIONES (NAVEGACIÓN) ---
+        // --- NAVEGACIÓN ---
         function switchPage(pageId, navId) {
+            // Apagar cámaras al cambiar de sección para optimizar rendimiento
+            stopCartScan();
+            stopFormScan();
+            
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             
@@ -442,52 +466,117 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // --- CONTROL DE CÁMARA EN ESCANEO CONTINUO ---
-        function toggleContinuousScanner() {
-            const wrapper = document.getElementById('scanner-wrapper');
-            const btn = document.getElementById('cam-toggle-btn');
-            if (isScannerRunning) {
-                stopContinuousScan();
-                wrapper.style.display = 'none';
-                btn.innerText = "📷 Escáner Apagado";
-                btn.classList.remove('active');
+        // --- LÓGICA DE ESCÁNER 1: CESTA DE VENTAS (CONTINUO CON ANTIDUPLICADO) ---
+        function toggleCartScanner() {
+            const wrapper = document.getElementById('cart-scanner-wrapper');
+            const btn = document.getElementById('cart-cam-btn');
+            
+            if (isCartScannerRunning) {
+                stopCartScan();
             } else {
                 wrapper.style.display = 'block';
-                btn.innerText = "🛑 Apagar Cámara";
+                btn.innerText = "🛑 Apagar Lector de Caja";
                 btn.classList.add('active');
-                startContinuousScan();
+                startCartScan();
             }
         }
 
-        function startContinuousScan() {
-            if (html5QrcodeScanner) { html5QrcodeScanner.clear(); }
-            html5QrcodeScanner = new Html5Qrcode("interactive-reader");
-            isScannerRunning = true;
+        function startCartScan() {
+            if (cartScanner) { cartScanner.clear(); }
+            cartScanner = new Html5Qrcode("cart-reader");
+            isCartScannerRunning = true;
 
-            html5QrcodeScanner.start(
+            cartScanner.start(
                 { facingMode: "environment" }, 
                 { fps: 15, qrbox: { width: 280, height: 160 } },
-                (decodedText) => { addProductToCartByCode(decodedText.trim()); },
+                (decodedText) => { processCartScan(decodedText.trim()); },
                 (err) => {}
-            ).catch(err => { alert("Error de cámara: " + err); toggleContinuousScanner(); });
+            ).catch(err => { console.error(err); stopCartScan(); });
         }
 
-        function stopContinuousScan() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; isScannerRunning = false; }).catch(e => console.log(e));
+        function stopCartScan() {
+            const wrapper = document.getElementById('cart-scanner-wrapper');
+            const btn = document.getElementById('cart-cam-btn');
+            if(wrapper) wrapper.style.display = 'none';
+            if(btn) {
+                btn.innerText = "📷 Activar Escáner de Caja";
+                btn.classList.remove('active');
+            }
+            if (cartScanner && isCartScannerRunning) {
+                cartScanner.stop().then(() => { cartScanner = null; isCartScannerRunning = false; }).catch(e => console.log(e));
+            } else {
+                isCartScannerRunning = false;
+            }
+        }
+
+        function processCartScan(code) {
+            if (scanCooldown) return; // Rechazar lectura si está en pausa anti-duplicado
+
+            const prod = products.find(p => p.code === code);
+            if (prod) {
+                addToCart(prod.id);
+                
+                // Activar pausa anti-duplicado
+                scanCooldown = true;
+                const badge = document.getElementById('cart-scanner-badge');
+                if (badge) {
+                    badge.innerText = "⏳ Procesando artículo... Pausa de seguridad";
+                    badge.classList.add('cooldown');
+                }
+
+                // Destello visual de éxito
+                document.body.style.backgroundColor = "#d1fae5";
+                
+                setTimeout(() => {
+                    document.body.style.backgroundColor = "var(--bg-main)";
+                    scanCooldown = false; // Volver a habilitar lecturas
+                    if (badge) {
+                        badge.innerText = "🟢 Cámara de Venta En Línea";
+                        badge.classList.remove('cooldown');
+                    }
+                }, 1500); // 1.5 Segundos de pausa entre lecturas
+            }
+        }
+
+        // --- LÓGICA DE ESCÁNER 2: REGISTRO/EDICIÓN DE PRODUCTO (UN SOLO USO) ---
+        function toggleFormScanner() {
+            const wrapper = document.getElementById('form-scanner-wrapper');
+            if (isFormScannerRunning) {
+                stopFormScan();
+            } else {
+                wrapper.style.display = 'block';
+                startFormScan();
+            }
+        }
+
+        function startFormScan() {
+            if (formScanner) { formScanner.clear(); }
+            formScanner = new Html5Qrcode("form-reader");
+            isFormScannerRunning = true;
+
+            formScanner.start(
+                { facingMode: "environment" },
+                { fps: 15, qrbox: { width: 280, height: 160 } },
+                (decodedText) => {
+                    document.getElementById('prod-code').value = decodedText.trim();
+                    // Al encontrar el código, se detiene automáticamente para comodidad del usuario
+                    stopFormScan(); 
+                },
+                (err) => {}
+            ).catch(err => { console.error(err); stopFormScan(); });
+        }
+
+        function stopFormScan() {
+            const wrapper = document.getElementById('form-scanner-wrapper');
+            if(wrapper) wrapper.style.display = 'none';
+            if (formScanner && isFormScannerRunning) {
+                formScanner.stop().then(() => { formScanner = null; isFormScannerRunning = false; }).catch(e => console.log(e));
+            } else {
+                isFormScannerRunning = false;
             }
         }
 
         // --- SISTEMA POV (CESTA Y COBRO) ---
-        function addProductToCartByCode(code) {
-            const prod = products.find(p => p.code === code);
-            if (prod) {
-                addToCart(prod.id);
-                document.body.style.backgroundColor = "#d1fae5";
-                setTimeout(() => document.body.style.backgroundColor = "var(--bg-main)", 150);
-            }
-        }
-
         function addToCart(id) {
             const prod = products.find(p => p.id === id);
             if (!prod) return;
@@ -510,7 +599,7 @@
         function renderCart() {
             const container = document.getElementById('cart-items-container');
             if (cart.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido abajo.</p>';
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 10px 0; font-size: 0.9rem;">La cesta está vacía. Escanea o selecciona del catálogo rápido.</p>';
                 updateCartTotals();
                 return;
             }
@@ -564,7 +653,7 @@
             renderPOSCatalog();
         }
 
-        // --- ALGORITMO ALFABÉTICO + BUSCADORES PARA LAS LISTAS ---
+        // --- CATÁLOGOS Y ALFABETO ---
         function renderPOSCatalog() {
             const container = document.getElementById('pos-catalog-container');
             const q = document.getElementById('pos-search-input').value.toLowerCase().trim();
@@ -629,7 +718,6 @@
             checkAlerts();
         }
 
-        // --- SISTEMA COMPLETO DE ALERTAS (5) ---
         function checkAlerts() {
             const container = document.getElementById('alerts-container');
             container.innerHTML = '';
@@ -717,6 +805,7 @@
             document.getElementById('form-title').innerText = "Agregar Nuevo Producto";
             document.getElementById('btn-submit-form').innerText = "Guardar Producto";
             document.getElementById('btn-cancel-edit').style.display = 'none';
+            stopFormScan();
         }
 
         // --- PROMOCIONES ---
