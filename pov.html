@@ -2,295 +2,820 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Flow Pro - Stock Fix</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockMaster PWA</title>
+    <!-- Librería para escanear códigos de barras -->
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Google Fonts para tipografía moderna -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        .hidden { display: none; }
-        #reader-pos, #reader-reg { background: #000 !important; border-radius: 2rem; overflow: hidden; }
-        #reader-pos video, #reader-reg video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
-        
-        .scanner-line {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: #ff004c;
-            top: 50%;
-            box-shadow: 0 0 15px #ff004c;
-            animation: scan 2s infinite ease-in-out;
-            z-index: 20;
+        /* --- VARIABLES DE DISEÑO DE ÚLTIMA GENERACIÓN --- */
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #e0e7ff;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --border: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
         }
-        @keyframes scan { 0%, 100% { top: 20%; } 50% { top: 80%; } }
 
-        @media (min-width: 1024px) {
-            .main-layout { display: grid; grid-template-columns: 1fr 400px; gap: 20px; height: 85vh; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding-bottom: 90px; /* Espacio para la barra de navegación inferior */
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        header {
+            margin-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+        }
+
+        header p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 24px 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- FORMULARIOS E INPUTS PREMIUM --- */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            background-color: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        .flex-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .flex-group > div {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* --- BOTONES MODERNOS --- */
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-card);
+            border: 1.5px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-main);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-light);
+            color: var(--danger);
+        }
+
+        .btn-icon-only {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        /* --- SISTEMA DE ALERTAS (CHIPS/TARJETAS) --- */
+        .alert-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .alert-warning { background-color: var(--warning-light); color: #92400e; }
+        .alert-danger { background-color: var(--danger-light); color: #991b1b; }
+        .alert-success { background-color: var(--success-light); color: #065f46; padding: 16px; text-align: center; justify-content: center;}
+
+        /* --- TARJETAS DE PRODUCTOS (GRID-CARDS) --- */
+        .product-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .product-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .product-card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .product-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .badge-promo {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .product-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .product-stock {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            background-color: var(--bg-main);
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .price-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .price-chip {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background-color: var(--bg-main);
+            border: 1px solid var(--border);
+        }
+
+        .price-chip.main {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            border-color: transparent;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+        }
+
+        .card-actions button {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+
+        /* --- ESCÁNER DE CÁMARA FLOTANTE/ESTILIZADO --- */
+        .scanner-wrapper {
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            margin: 12px 0;
+            position: relative;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        /* --- BARRA DE NAVEGACIÓN INFERIOR (ESTILO APP NATIVA) --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            padding: 6px;
+            width: auto;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 500;
+            gap: 4px;
+            box-shadow: none;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            font-size: 1.3rem;
+        }
+
+        /* --- CONTROL DE VISTAS --- */
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen font-sans text-slate-900">
+<body>
 
-    <nav class="bg-slate-900 text-white p-4 sticky top-0 z-[100] shadow-xl">
-        <div class="container mx-auto flex justify-between items-center">
-            <span class="font-black tracking-tighter text-lg flex items-center gap-2">
-                <i data-lucide="zap" class="text-indigo-400"></i> POS FLOW <small class="text-[10px] opacity-50">V14</small>
-            </span>
-            <div id="cam-indicator" class="text-[9px] font-black px-3 py-1 bg-slate-800 rounded-full border border-white/10 uppercase">Sistema Listo</div>
+    <div class="app-container">
+        <!-- HEADER DINÁMICO -->
+        <header>
+            <h1 id="app-title">StockMaster</h1>
+            <p id="app-subtitle">Panel de control de inventario</p>
+        </header>
+
+        <!-- SECCIÓN 1: STOCK E INVENTARIO -->
+        <div id="stock-page" class="page active">
+            <h2>🚨 Alertas de atención</h2>
+            <div id="alerts-container"></div>
+
+            <h2>📦 Productos registrados</h2>
+            <div class="form-group flex-group" style="margin-bottom: 20px;">
+                <input type="text" id="search-input" placeholder="Buscar por nombre o código..." oninput= "renderProducts()">
+                <button class="btn-secondary btn-icon-only" onclick="startScan('search')" title="Escanear Código">🔍</button>
+            </div>
+            
+            <div id="scanner-container-search" style="display:none;" class="scanner-wrapper">
+                <div id="reader-search"></div>
+                <button onclick="stopScan('search')" class="btn-danger" style="border-radius:0;">Cerrar Cámara</button>
+            </div>
+
+            <div id="product-list-container" class="product-list"></div>
         </div>
+
+        <!-- SECCIÓN 2: FORMULARIO AGREGAR / EDITAR -->
+        <div id="add-page" class="page">
+            <h2 id="form-title">Agregar Producto</h2>
+            <form id="product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="edit-id">
+
+                <div class="form-group">
+                    <label>Nombre del Producto</label>
+                    <input type="text" id="prod-name" placeholder="Ej. Leche Entera 1L" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Código de Barras</label>
+                    <div class="flex-group">
+                        <input type="text" id="prod-code" placeholder="Escribe o escanea" required>
+                        <button type="button" class="btn-secondary btn-icon-only" onclick="startScan('form')">📷</button>
+                    </div>
+                </div>
+                
+                <div id="scanner-container-form" style="display:none;" class="scanner-wrapper">
+                    <div id="reader-form"></div>
+                    <button type="button" onclick="stopScan('form')" class="btn-danger" style="border-radius:0;">Cerrar Cámara</button>
+                </div>
+
+                <div class="form-group flex-group">
+                    <div>
+                        <label>Stock Inicial</label>
+                        <input type="number" id="prod-stock" min="0" placeholder="0" required>
+                    </div>
+                    <div>
+                        <label>Stock Mínimo</label>
+                        <input type="number" id="prod-min-stock" min="0" value="5" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Unidad de Medida</label>
+                    <select id="prod-unit">
+                        <option value="Pieza">Pieza (Pza)</option>
+                        <option value="Kg">Kilo (Kg)</option>
+                        <option value="Litros">Litros (L)</option>
+                        <option value="Paquete">Paquete (Paq)</option>
+                    </select>
+                </div>
+
+                <div class="form-group flex-group">
+                    <div>
+                        <label>P. Unitario ($)</label>
+                        <input type="number" step="0.01" id="prod-price-unit" placeholder="0.00" required>
+                    </div>
+                    <div>
+                        <label>P. Mayoreo ($)</label>
+                        <input type="number" step="0.01" id="prod-price-wholesale" placeholder="Opcional">
+                    </div>
+                    <div>
+                        <label>P. Caja ($)</label>
+                        <input type="number" step="0.01" id="prod-price-box" placeholder="Opcional">
+                    </div>
+                </div>
+
+                <div class="form-group flex-group">
+                    <div>
+                        <label>Fecha Compra</label>
+                        <input type="date" id="prod-date-buy" required>
+                    </div>
+                    <div>
+                        <label>Fecha Caducidad</label>
+                        <input type="date" id="prod-date-expiry">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary" id="btn-submit-form" style="margin-top: 10px;">Guardar Producto</button>
+                <button type="button" id="btn-cancel-edit" class="btn-danger" style="display:none; margin-top: 8px;" onclick="clearForm()">Cancelar Edición</button>
+            </form>
+        </div>
+
+        <!-- SECCIÓN 3: PROMOCIONES -->
+        <div id="promo-page" class="page">
+            <h2>🎉 Crear Promoción Especial</h2>
+            <form id="promo-form" onsubmit="applyPromo(event)">
+                <div class="form-group">
+                    <label>Seleccionar Producto</label>
+                    <select id="promo-product-select" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Promoción</label>
+                    <select id="promo-type" onchange="togglePromoFields()">
+                        <option value="descuento">Porcentaje de Descuento (%)</option>
+                        <option value="xporx">Esquema Fijo (2x1, 3x2...)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="div-promo-desc">
+                    <label>Descuento (%)</label>
+                    <input type="number" id="promo-discount" min="1" max="100" value="10">
+                </div>
+
+                <div id="div-promo-quantity" style="display:none;" class="form-group flex-group">
+                    <div>
+                        <label>Lleva (Cantidad)</label>
+                        <input type="number" id="promo-buy" min="1" value="2">
+                    </div>
+                    <div>
+                        <label>Paga (Cantidad)</label>
+                        <input type="number" id="promo-pay" min="1" value="1">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Activar Promoción</button>
+            </form>
+
+            <h2>🔥 Promociones Activas</h2>
+            <div id="promos-active-container" class="product-list"></div>
+        </div>
+    </div>
+
+    <!-- NAVEGACIÓN INFERIOR PREMIUM -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" id="nav-stock" onclick="switchPage('stock-page', 'nav-stock')">
+            <span class="nav-icon">📦</span>
+            <span>Inventario</span>
+        </button>
+        <button class="nav-item" id="nav-add" onclick="switchPage('add-page', 'nav-add')">
+            <span class="nav-icon">➕</span>
+            <span>Añadir</span>
+        </button>
+        <button class="nav-item" id="nav-promo" onclick="switchPage('promo-page', 'nav-promo')">
+            <span class="nav-icon">🎉</span>
+            <span>Promos</span>
+        </button>
     </nav>
 
-    <main class="container mx-auto p-4 lg:p-6">
-        <section id="view-pos" class="main-layout">
-            <div class="space-y-6 overflow-y-auto pr-2">
-                <div class="relative bg-black rounded-[2.5rem] overflow-hidden h-64 md:h-80 shadow-2xl border-4 border-white">
-                    <div id="reader-pos" class="w-full h-full"></div>
-                    <div class="scanner-line"></div>
-                    <button onclick="forceRestart('pos')" class="absolute bottom-4 right-4 bg-white/10 backdrop-blur-md p-3 rounded-2xl text-white z-30"><i data-lucide="refresh-cw"></i></button>
-                </div>
-
-                <div class="space-y-4">
-                    <input type="text" id="pos-search" oninput="renderCatalog(this.value)" placeholder="Buscar producto..." class="w-full p-4 bg-white rounded-2xl shadow-sm border-none ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-indigo-500">
-                    <div id="product-catalog" class="grid grid-cols-3 md:grid-cols-4 gap-3"></div>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-[2.5rem] shadow-2xl flex flex-col mt-6 lg:mt-0">
-                <div id="cart-items" class="flex-1 overflow-y-auto space-y-3 mb-6 min-h-[250px]"></div>
-                <div class="bg-slate-900 p-6 rounded-[2rem] text-white">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-slate-400 font-bold text-xs">TOTAL</span>
-                        <span id="cart-total" class="text-4xl font-black text-indigo-400">$0.00</span>
-                    </div>
-                    <button onclick="completeSale()" class="w-full bg-indigo-600 py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">COBRAR</button>
-                </div>
-            </div>
-        </section>
-
-        <section id="view-inventory" class="hidden max-w-2xl mx-auto space-y-6 pb-24">
-            <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-200">
-                <h2 class="text-xl font-black mb-6 uppercase tracking-tight">Nuevo Ingreso</h2>
-                <form id="product-form" class="space-y-4">
-                    <input type="text" id="p-name" placeholder="Nombre del Producto" class="w-full p-4 bg-slate-50 rounded-2xl outline-none" required>
-                    
-                    <div class="space-y-2">
-                        <div class="flex gap-2">
-                            <input type="text" id="p-code" placeholder="Código de Barras" class="flex-1 p-4 bg-slate-50 rounded-2xl outline-none">
-                            <button type="button" onclick="toggleStockScanner()" id="btn-stock-cam" class="bg-slate-800 text-white px-6 rounded-2xl active:scale-90 transition-all">
-                                <i data-lucide="camera"></i>
-                            </button>
-                        </div>
-                        <div id="reader-reg-container" class="hidden relative h-48 bg-black rounded-3xl overflow-hidden border-2 border-indigo-500">
-                            <div id="reader-reg" class="w-full h-full"></div>
-                            <div class="scanner-line"></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="number" id="p-price" placeholder="Precio $" step="0.1" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
-                        <select id="p-unit" class="p-4 bg-slate-50 rounded-2xl outline-none font-bold"><option value="pza">Pza</option><option value="kg">Kg</option></select>
-                        <input type="number" id="p-stock" placeholder="Cantidad" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
-                        <input type="number" id="p-min" placeholder="Stock Mín" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
-                    </div>
-                    <button type="submit" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black">GUARDAR EN STOCK</button>
-                </form>
-            </div>
-            <div id="inventory-list" class="space-y-3"></div>
-        </section>
-    </main>
-
-    <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md p-4 flex justify-around border-t lg:hidden z-50">
-        <button onclick="switchView('pos')" class="flex flex-col items-center text-indigo-600 font-bold"><i data-lucide="shopping-cart"></i><span class="text-[10px]">VENTA</span></button>
-        <button onclick="switchView('inventory')" class="flex flex-col items-center text-slate-400 font-bold"><i data-lucide="package"></i><span class="text-[10px]">STOCK</span></button>
-    </footer>
-
     <script>
-        let inventory = JSON.parse(localStorage.getItem('pos_v14_data')) || [];
-        let cart = [];
-        let html5QrCode = null;
-        let isScannerLocked = false;
+        // --- BASE DE DATOS LOCALSTORAGE ---
+        let products = JSON.parse(localStorage.getItem('pwa_products')) || [];
+        let html5QrcodeScanner = null;
 
-        const playBeep = () => {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const g = ctx.createGain();
-            osc.connect(g); g.connect(ctx.destination);
-            osc.frequency.value = 1200; g.gain.value = 0.05;
-            osc.start(); osc.stop(ctx.currentTime + 0.08);
-        };
-
-        lucide.createIcons();
-
-        // --- MOTOR DE CÁMARA ÚNICO ---
-        async function killScanner() {
-            if (html5QrCode && html5QrCode.isScanning) {
-                await html5QrCode.stop();
-                html5QrCode.clear();
-            }
-            html5QrCode = null;
-            return new Promise(resolve => setTimeout(resolve, 300)); // Pausa técnica
-        }
-
-        async function startScanner(elementId, callback) {
-            await killScanner();
-            html5QrCode = new Html5Qrcode(elementId);
-            const config = { fps: 20, qrbox: (w, h) => ({ width: w * 0.8, height: h * 0.5 }) };
+        // --- SISTEMA DE NAVEGACIÓN INTERNA ---
+        function switchPage(pageId, navId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             
-            try {
-                await html5QrCode.start({ facingMode: "environment" }, config, callback);
-                document.getElementById('cam-indicator').innerText = "Cámara Activa";
-            } catch (err) {
-                console.error("Error al iniciar cámara:", err);
+            document.getElementById(pageId).classList.add('active');
+            document.getElementById(navId).classList.add('active');
+            
+            // Actualizar subtítulos dinámicos según sección
+            const sub = document.getElementById('app-subtitle');
+            if(pageId === 'stock-page') {
+                sub.innerText = "Panel de control de inventario";
+                renderProducts();
+            } else if (pageId === 'add-page') {
+                sub.innerText = "Registrar existencias en el sistema";
+            } else if (pageId === 'promo-page') {
+                sub.innerText = "Gestionar ofertas y marketing";
+                populatePromoSelect();
+                renderPromos();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- MANEJO DE CÁMARA E INFRAESTRUCTURA DE ESCANEO ---
+        function startScan(target) {
+            const containerId = `scanner-container-${target}`;
+            const readerId = `reader-${target}`;
+            document.getElementById(containerId).style.display = 'block';
+
+            if (html5QrcodeScanner) { html5QrcodeScanner.clear(); }
+
+            html5QrcodeScanner = new Html5Qrcode(readerId);
+            html5QrcodeScanner.start(
+                { facingMode: "environment" }, 
+                { fps: 12, qrbox: { width: 260, height: 160 } },
+                (decodedText) => {
+                    if(target === 'form') {
+                        document.getElementById('prod-code').value = decodedText;
+                    } else if (target === 'search') {
+                        document.getElementById('search-input').value = decodedText;
+                        renderProducts();
+                    }
+                    stopScan(target);
+                },
+                (errorMessage) => {}
+            ).catch(err => alert("Acceso denegado a la cámara o error: " + err));
+        }
+
+        function stopScan(target) {
+            const containerId = `scanner-container-${target}`;
+            document.getElementById(containerId).style.display = 'none';
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(e => console.log(e));
             }
         }
 
-        // --- FLUJO VENTAS ---
-        async function initPosScanner() {
-            await startScanner("reader-pos", (text) => {
-                if (isScannerLocked) return;
-                const p = inventory.find(prod => prod.code === text);
-                if (p) {
-                    lockUI();
-                    addToCart(p.id);
-                    playBeep();
-                }
-            });
-        }
+        // --- LOGICA DE NEGOCIO (CRUD) ---
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            
+            const productData = {
+                id: id ? parseInt(id) : Date.now(),
+                name: document.getElementById('prod-name').value.trim(),
+                code: document.getElementById('prod-code').value.trim(),
+                stock: parseInt(document.getElementById('prod-stock').value),
+                minStock: parseInt(document.getElementById('prod-min-stock').value),
+                unit: document.getElementById('prod-unit').value,
+                priceUnit: parseFloat(document.getElementById('prod-price-unit').value),
+                priceWholesale: parseFloat(document.getElementById('prod-price-wholesale').value) || null,
+                priceBox: parseFloat(document.getElementById('prod-price-box').value) || null,
+                dateBuy: document.getElementById('prod-date-buy').value,
+                dateExpiry: document.getElementById('prod-date-expiry').value || null,
+                promo: id ? (products.find(p => p.id === parseInt(id))?.promo || null) : null
+            };
 
-        function lockUI() {
-            isScannerLocked = true;
-            document.getElementById('cam-indicator').classList.replace('bg-slate-800', 'bg-indigo-600');
-            setTimeout(() => {
-                isScannerLocked = false;
-                document.getElementById('cam-indicator').classList.replace('bg-indigo-600', 'bg-slate-800');
-            }, 2000);
-        }
-
-        // --- FLUJO STOCK (CORREGIDO) ---
-        async function toggleStockScanner() {
-            const container = document.getElementById('reader-reg-container');
-            if (container.classList.contains('hidden')) {
-                container.classList.remove('hidden');
-                await startScanner("reader-reg", (text) => {
-                    document.getElementById('p-code').value = text;
-                    playBeep();
-                    toggleStockScanner(); // Cerrar al detectar
-                });
+            if(id) {
+                products = products.map(p => p.id === parseInt(id) ? productData : p);
             } else {
-                await killScanner();
-                container.classList.add('hidden');
+                products.push(productData);
+            }
+
+            localStorage.setItem('pwa_products', JSON.stringify(products));
+            clearForm();
+            switchPage('stock-page', 'nav-stock');
+        }
+
+        function editProduct(id) {
+            const p = products.find(prod => prod.id === id);
+            if(!p) return;
+
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-code').value = p.code;
+            document.getElementById('prod-stock').value = p.stock;
+            document.getElementById('prod-min-stock').value = p.minStock;
+            document.getElementById('prod-unit').value = p.unit;
+            document.getElementById('prod-price-unit').value = p.priceUnit;
+            document.getElementById('prod-price-wholesale').value = p.priceWholesale || '';
+            document.getElementById('prod-price-box').value = p.priceBox || '';
+            document.getElementById('prod-date-buy').value = p.dateBuy;
+            document.getElementById('prod-date-expiry').value = p.dateExpiry || '';
+
+            document.getElementById('form-title').innerText = "Editar Producto";
+            document.getElementById('btn-submit-form').innerText = "Guardar Cambios";
+            document.getElementById('btn-cancel-edit').style.display = 'block';
+
+            switchPage('add-page', 'nav-add');
+        }
+
+        function deleteProduct(id) {
+            if(confirm("¿Estás seguro de que deseas eliminar este producto permanentemente?")) {
+                products = products.filter(p => p.id !== id);
+                localStorage.setItem('pwa_products', JSON.stringify(products));
+                renderProducts();
             }
         }
 
-        // --- LOGICA DE CARRITO Y VISTAS ---
-        function addToCart(id) {
-            const product = inventory.find(p => p.id === id);
-            if (!product) return;
-            const item = cart.find(i => i.id === id);
-            if (item) {
-                if (item.qty + 1 > product.stock) return alert("Sin stock");
-                item.qty++;
-            } else {
-                if (product.stock < 1) return alert("Sin stock");
-                cart.push({ ...product, qty: 1 });
-            }
-            renderCart();
+        function clearForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-title').innerText = "Agregar Producto";
+            document.getElementById('btn-submit-form').innerText = "Guardar Producto";
+            document.getElementById('btn-cancel-edit').style.display = 'none';
         }
 
-        function renderCart() {
-            const container = document.getElementById('cart-items');
-            let total = 0;
-            container.innerHTML = cart.map(item => {
-                total += (item.price * item.qty);
-                return `
-                    <div class="flex justify-between items-center p-4 bg-slate-50 rounded-3xl border border-slate-100">
-                        <div class="flex-1 text-xs font-black uppercase">${item.name}</div>
-                        <div class="flex items-center gap-3">
-                            <div class="flex items-center bg-white rounded-xl p-1 shadow-sm">
-                                <button onclick="changeQty(${item.id},-1)" class="w-7 h-7 flex items-center justify-center font-bold text-slate-400">-</button>
-                                <span class="px-2 font-black text-xs">${item.qty}</span>
-                                <button onclick="changeQty(${item.id},1)" class="w-7 h-7 flex items-center justify-center font-bold text-indigo-600">+</button>
-                            </div>
-                            <span class="w-16 text-right font-black text-indigo-700">$${(item.price * item.qty).toFixed(2)}</span>
-                        </div>
+        // --- RENDERIZACIÓN Y ALGORITMO ALFABÉTICO CON FILTRADO ---
+        function renderProducts() {
+            const container = document.getElementById('product-list-container');
+            const searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            container.innerHTML = '';
+
+            // Clasificación Alfabética estricta
+            let sortedList = [...products].sort((a, b) => a.name.localeCompare(b.name));
+
+            // Filtro de motor de búsqueda
+            if(searchQuery) {
+                sortedList = sortedList.filter(p => 
+                    p.name.toLowerCase().includes(searchQuery) || p.code.includes(searchQuery)
+                );
+            }
+
+            if(sortedList.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:0.9rem; padding:20px;">No hay productos que coincidan con la búsqueda.</p>`;
+                return;
+            }
+
+            sortedList.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                
+                let promoBadge = p.promo ? `<span class="badge-promo">${p.promo.type === 'descuento' ? `-${p.promo.value}%` : `${p.promo.buy}x${p.promo.pay}`}</span>` : '';
+
+                card.innerHTML = `
+                    <div class="product-header">
+                        <div class="product-title">${p.name}</div>
+                        ${promoBadge}
+                    </div>
+                    <div class="product-meta">Código: ${p.code}</div>
+                    
+                    <div class="product-stock">
+                        📦 Stock: ${p.stock} ${p.unit} <span style="color:var(--text-muted); font-weight:400; margin-left:4px;">(Mín. ${p.minStock})</span>
+                    </div>
+
+                    <div class="price-section">
+                        <span class="price-chip main">Unitario: $${p.priceUnit}</span>
+                        ${p.priceWholesale ? `<span class="price-chip">Mayoreo: $${p.priceWholesale}</span>` : ''}
+                        ${p.priceBox ? `<span class="price-chip">Caja: $${p.priceBox}</span>` : ''}
+                    </div>
+
+                    <div class="product-meta" style="margin-bottom: 0; font-size: 0.75rem;">
+                        📅 Compra: ${p.dateBuy} | Caducidad: ${p.dateExpiry || 'N/A'}
+                    </div>
+
+                    <div class="card-actions">
+                        <button class="btn-secondary" onclick="editProduct(${p.id})">Editar</button>
+                        <button class="btn-danger" onclick="deleteProduct(${p.id})">Eliminar</button>
                     </div>
                 `;
-            }).join('');
-            document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
-        }
-
-        function changeQty(id, delta) {
-            const item = cart.find(i => i.id === id);
-            const p = inventory.find(prod => prod.id === id);
-            if (item) {
-                if (item.qty + delta > p.stock) return alert("Máximo alcanzado");
-                item.qty += delta;
-                if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
-                renderCart();
-            }
-        }
-
-        async function switchView(view) {
-            document.getElementById('view-pos').classList.toggle('hidden', view !== 'pos');
-            document.getElementById('view-inventory').classList.toggle('hidden', view !== 'inventory');
-            
-            await killScanner(); // Apagar todo al cambiar de pestaña
-            
-            if (view === 'pos') {
-                initPosScanner();
-                renderCatalog();
-            } else {
-                document.getElementById('reader-reg-container').classList.add('hidden');
-                renderInventory();
-            }
-            lucide.createIcons();
-        }
-
-        function completeSale() {
-            if (cart.length === 0) return;
-            cart.forEach(item => { const p = inventory.find(inv => inv.id === item.id); if (p) p.stock -= item.qty; });
-            localStorage.setItem('pos_v14_data', JSON.stringify(inventory));
-            cart = []; renderCart(); alert("✅ Venta Completada");
-        }
-
-        document.getElementById('product-form').onsubmit = (e) => {
-            e.preventDefault();
-            inventory.push({
-                id: Date.now(),
-                name: document.getElementById('p-name').value,
-                code: document.getElementById('p-code').value,
-                price: parseFloat(document.getElementById('p-price').value),
-                stock: parseFloat(document.getElementById('p-stock').value),
-                min: parseFloat(document.getElementById('p-min').value)
+                container.appendChild(card);
             });
-            localStorage.setItem('pos_v14_data', JSON.stringify(inventory));
-            e.target.reset(); renderInventory(); alert("Guardado");
-        };
 
-        function renderCatalog(f = "") {
-            document.getElementById('product-catalog').innerHTML = inventory.filter(p => p.name.toLowerCase().includes(f.toLowerCase())).map(p => `
-                <button onclick="addToCart(${p.id})" class="p-2 bg-white border border-slate-100 rounded-2xl shadow-sm text-center active:scale-95 transition-all">
-                    <p class="text-[8px] font-black truncate text-slate-400 uppercase">${p.name}</p>
-                    <p class="text-xs font-black text-indigo-600 mt-1">$${p.price.toFixed(2)}</p>
-                </button>
-            `).join('');
+            checkAlerts();
         }
 
-        function renderInventory() {
-            document.getElementById('inventory-list').innerHTML = inventory.map((p, i) => `
-                <div class="bg-white p-4 rounded-[1.5rem] flex justify-between items-center shadow-sm border border-slate-50">
-                    <div><p class="font-black text-xs uppercase">${p.name}</p><p class="text-[10px] text-slate-400 font-bold">Stock: ${p.stock} | Cód: ${p.code || 'N/A'}</p></div>
-                    <button onclick="deleteProd(${i})" class="text-red-200 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-            `).join('');
-            lucide.createIcons();
+        // --- SISTEMA AUTOMÁTICO DE DETECCIÓN Y ALERTAS ---
+        function checkAlerts() {
+            const alertsContainer = document.getElementById('alerts-container');
+            alertsContainer.innerHTML = '';
+            let alertsHtml = [];
+            const hoy = new Date();
+            
+            products.forEach(p => {
+                // Alerta: Inventario por debajo de lo requerido
+                if(p.stock <= p.minStock) {
+                    alertsHtml.push(`<div class="alert-item alert-danger">⚠️ <strong>${p.name}:</strong> Stock bajo crítico (${p.stock} pzas restantes).</div>`);
+                }
+
+                // Alerta: Margen de caducidad
+                if(p.dateExpiry) {
+                    const fCaducidad = new Date(p.dateExpiry);
+                    const diasRestantes = (fCaducidad - hoy) / (1000 * 60 * 60 * 24);
+                    if(diasRestantes < 0) {
+                        alertsHtml.push(`<div class="alert-item alert-danger">🛑 <strong>${p.name}:</strong> ¡CADUCADO! Venció el ${p.dateExpiry}.</div>`);
+                    } else if(diasRestantes <= 15) {
+                        alertsHtml.push(`<div class="alert-item alert-warning">⏳ <strong>${p.name}:</strong> Próximo a caducar (${Math.ceil(diasRestantes)} días restantes).</div>`);
+                    }
+                }
+
+                // Alerta: Rezago / Antigüedad en Almacén (90 días)
+                if(p.dateBuy && p.stock > 0) {
+                    const fCompra = new Date(p.dateBuy);
+                    const diasAlmacenado = (hoy - fCompra) / (1000 * 60 * 60 * 24);
+                    if(diasAlmacenado >= 90) {
+                        alertsHtml.push(`<div class="alert-item alert-warning">🕒 <strong>${p.name}:</strong> Producto rezagado (${Math.floor(diasAlmacenado)} días en stock sin liquidar).</div>`);
+                    }
+                }
+            });
+
+            if(alertsHtml.length > 0) {
+                alertsContainer.innerHTML = `<div class="alert-box">${alertsHtml.join('')}</div>`;
+            } else {
+                alertsContainer.innerHTML = '<div class="alert-item alert-success">✨ Todo al día. No tienes alertas de inventario pendientes.</div>';
+            }
         }
 
-        function deleteProd(i) { if(confirm("¿Eliminar?")) { inventory.splice(i,1); localStorage.setItem('pos_v14_data', JSON.stringify(inventory)); renderInventory(); } }
+        // --- INTERFAZ DE ADMINISTRACIÓN DE PROMOCIONES ---
+        function populatePromoSelect() {
+            const select = document.getElementById('promo-product-select');
+            select.innerHTML = '';
+            products.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.innerText = p.name;
+                select.appendChild(opt);
+            });
+        }
 
-        function forceRestart(type) { if(type === 'pos') initPosScanner(); }
+        function togglePromoFields() {
+            const type = document.getElementById('promo-type').value;
+            document.getElementById('div-promo-desc').style.display = type === 'descuento' ? 'block' : 'none';
+            document.getElementById('div-promo-quantity').style.display = type === 'xporx' ? 'flex' : 'none';
+        }
 
-        switchView('pos');
+        function applyPromo(e) {
+            e.preventDefault();
+            const prodId = parseInt(document.getElementById('promo-product-select').value);
+            const type = document.getElementById('promo-type').value;
+            
+            let promoData = { type };
+            if(type === 'descuento') {
+                promoData.value = parseInt(document.getElementById('promo-discount').value);
+            } else {
+                promoData.buy = parseInt(document.getElementById('promo-buy').value);
+                promoData.pay = parseInt(document.getElementById('promo-pay').value);
+            }
+
+            products = products.map(p => p.id === prodId ? { ...p, promo: promoData } : p);
+            localStorage.setItem('pwa_products', JSON.stringify(products));
+            renderPromos();
+            alert("¡Promoción aplicada con éxito!");
+        }
+
+        function removePromo(id) {
+            products = products.map(p => p.id === id ? { ...p, promo: null } : p);
+            localStorage.setItem('pwa_products', JSON.stringify(products));
+            renderPromos();
+        }
+
+        function renderPromos() {
+            const container = document.getElementById('promos-active-container');
+            container.innerHTML = '';
+            const listWithPromo = products.filter(p => p.promo);
+
+            if(listWithPromo.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:0.9rem; padding:20px;">No hay promociones activas.</p>';
+                return;
+            }
+
+            listWithPromo.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'product-card';
+                const labelPromo = p.promo.type === 'descuento' ? `Descuento del ${p.promo.value}%` : `Especial: Lleva ${p.promo.buy} y paga ${p.promo.pay}`;
+
+                item.innerHTML = `
+                    <div class="product-title">${p.name}</div>
+                    <div class="product-stock" style="margin-top:8px; background-color: var(--primary-light); color: var(--primary);">🔥 ${labelPromo}</div>
+                    <div class="card-actions" style="margin-top:8px;">
+                        <button class="btn-danger" onclick="removePromo(${p.id})">Remover Oferta</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.onload = () => { renderProducts(); };
     </script>
 </body>
 </html>
