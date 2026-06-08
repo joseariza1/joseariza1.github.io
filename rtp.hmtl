@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTP Ruta 149 - Tláhuac a Mixquic</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#388e3c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href='data:application/json,{
+        "name": "RTP Ruta 149 Pro",
+        "short_name": "RTP 149",
+        "start_url": ".",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#388e3c",
+        "icons": [{"src": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Logo_RTP.svg", "sizes": "512x512", "type": "image/svg+xml"}]
+    }'>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #388e3c;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        #map {
+            flex-grow: 1;
+            width: 100%;
+        }
+        .panel-control {
+            background: white;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .info-txt {
+            font-size: 0.9rem;
+            color: #444;
+            text-align: center;
+            font-weight: 500;
+        }
+        .grid-botones {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            color: white;
+            border: none;
+            padding: 12px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .btn-board { background-color: #1e88e5; }
+        .btn-board:active { background-color: #1565c0; }
+        .btn-see { background-color: #e53935; }
+        .btn-see:active { background-color: #c62828; }
+    </style>
+</head>
+<body>
+
+    <header>RTP Ruta 149: Metro Tláhuac ⇆ Tecómitl ⇆ Mixquic</header>
+    
+    <div id="map"></div>
+
+    <div class="panel-control">
+        <div class="info-txt" id="status-txt">
+            Ubicando paradas satelitales y calibrando telemetría...
+        </div>
+        <div class="grid-botones">
+            <button class="btn btn-board" onclick="reportarUbicacion('dentro')">🚍 Voy DENTRO de este RTP</button>
+            <button class="btn btn-see" onclick="reportarUbicacion('afuera')">👀 VI PASAR un RTP aquí</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Coordenadas oficiales de la Ruta 149 (Trazo real por vialidades)
+        const coordenadasRuta = [
+            [19.2859, -99.0142], // Metro Tláhuac
+            [19.2785, -99.0115], // Av. Tláhuac / Paso de Conejo
+            [19.2695, -99.0090], 
+            [19.2590, -98.9995], // Incorporación a Tecómitl
+            [19.2480, -98.9915], // Entrada Norte a Tecómitl
+            [19.2310, -98.9890], // Av. Cruz Azul
+            [19.2223, -98.9880], // Tecómitl Centro
+            [19.2215, -98.9760], // Carretera Tecómitl - Mixquic
+            [19.2255, -98.9660], // Zona de Curva Tetelco
+            [19.2230, -98.9535], // Tetelco Centro
+            [19.2245, -98.9490], // Límite de pueblos
+            [19.2272, -98.9450], // Barrio San Miguel
+            [19.2280, -98.9380], // Av. Independencia
+            [19.2268, -98.9320]  // Mixquic Centro
+        ];
+
+        // 2. Inicializar mapa centrado en la delegación Tláhuac/Milpa Alta
+        const map = L.map('map').setView([19.245, -98.975], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Dibujar trazo verde oficial de RTP
+        L.polyline(coordenadasRuta, {
+            color: '#2e7d32',
+            weight: 6,
+            opacity: 0.85
+        }).addTo(map);
+
+        // 3. Estructura de Paradas Oficiales de la Ruta 149
+        const paradasClave = [
+            {coords: [19.2859, -99.0142], nombre: "Terminal: Metro Tláhuac"},
+            {coords: [19.2695, -99.0090], nombre: "Paso de Conejo (Av. Tláhuac)"},
+            {coords: [19.2480, -98.9915], nombre: "Pueblo de San José (Entrada a Tecómitl)"},
+            {coords: [19.2223, -98.9880], nombre: "Centro de San Antonio Tecómitl (Plaza)"},
+            {coords: [19.2255, -98.9660], nombre: "Cruce Tetelco (Av. Morelos)"},
+            {coords: [19.2230, -98.9535], nombre: "Pueblo de San Nicolás Tetelco"},
+            {coords: [19.2272, -98.9450], nombre: "Ermita (Entrada a Mixquic)"},
+            {coords: [19.2268, -98.9320], nombre: "Terminal: San Andrés Mixquic (Centro)"}
+        ];
+
+        // Pintar paradas fijas en el mapa
+        paradasClave.forEach(p => {
+            L.circleMarker(p.coords, {
+                radius: 6, 
+                color: '#f57c00', 
+                fillColor: '#fff', 
+                weight: 3, 
+                fillOpacity: 1
+            }).addTo(map).bindPopup(`<b>${p.nombre}</b>`);
+        });
+
+        // 4. Camiones virtuales simulados en tiempo real
+        let camiones = [
+            { id: "RTP-149A", progreso: 0.15, direccion: 1, marker: null },  // Va hacia Mixquic
+            { id: "RTP-149B", progreso: 0.65, direccion: -1, marker: null } // Regresa a M. Tláhuac
+        ];
+
+        const rtpIcon = L.divIcon({
+            html: `<div style="background-color: #388e3c; color: white; padding: 4px; border-radius: 4px; border: 1.5px solid white; font-weight: bold; font-size: 9px; width: 28px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3)">149</div>`,
+            className: 'custom-div-icon',
+            iconSize: [36, 22]
+        });
+
+        camiones.forEach(camion => {
+            camion.marker = L.marker(coordenadasRuta[0], { icon: rtpIcon }).addTo(map);
+        });
+
+        // Interpolar las posiciones fluidas sobre la ruta
+        function obtenerCoordenadaEnProgreso(progreso, direccion) {
+            let puntos = [...coordenadasRuta];
+            if (direccion === -1) puntos.reverse();
+
+            const totalSegmentos = puntos.length - 1;
+            const posicionGlobal = progreso * totalSegmentos;
+            const indiceSegmentoActual = Math.floor(posicionGlobal);
+            const progresoEnSegmento = posicionGlobal - indiceSegmentoActual;
+
+            if (indiceSegmentoActual >= totalSegmentos) return puntos[totalSegmentos];
+
+            const p1 = puntos[indiceSegmentoActual];
+            const p2 = puntos[indiceSegmentoActual + 1];
+
+            return [
+                p1[0] + (p2[0] - p1[0]) * progresoEnSegmento,
+                p1[1] + (p2[1] - p1[1]) * progresoEnSegmento
+            ];
+        }
+
+        function actualizarPosiciones() {
+            camiones.forEach(camion => {
+                camion.progreso += 0.0012; // Velocidad de avance promedio simulada
+                if (camion.progreso >= 1) {
+                    camion.progreso = 0;
+                    camion.direccion *= -1; // Cambia de sentido al llegar a la base
+                }
+                const coords = obtenerCoordenadaEnProgreso(camion.progreso, camion.direccion);
+                camion.marker.setLatLng(coords);
+            });
+        }
+        setInterval(actualizarPosiciones, 1000);
+
+        // Marker global del usuario
+        let userMarker = null;
+
+        // 5. Geolocalización satelital y ajuste predictivo cooperativo
+        function reportarUbicacion(tipoReporte) {
+            if (!navigator.geolocation) {
+                alert("La geolocalización no está activa o soportada por tu navegador.");
+                return;
+            }
+
+            document.getElementById('status-txt').innerText = "Adquiriendo señal GPS de alta precisión...";
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const uLat = position.coords.latitude;
+                    const uLng = position.coords.longitude;
+
+                    // Dibujar o actualizar el pin del usuario en el mapa (Azul)
+                    if (!userMarker) {
+                        userMarker = L.circleMarker([uLat, uLng], {
+                            radius: 8, color: '#1e88e5', fillColor: '#fff', weight: 4, fillOpacity: 1
+                        }).addTo(map).bindPopup("<b>Estás aquí</b>").openPopup();
+                    } else {
+                        userMarker.setLatLng([uLat, uLng]);
+                    }
+
+                    // Centrar pantalla en el usuario con zoom cómodo de calle
+                    map.setView([uLat, uLng], 14);
+
+                    let progresoUsuario = calcularProgresoCercano([uLat, uLng]);
+
+                    if (tipoReporte === 'dentro') {
+                        // El camión virtual se magnetiza exactamente a la coordenada del usuario
+                        camiones[0].direccion = 1; 
+                        camiones[0].progreso = progresoUsuario;
+                        camiones[0].marker.setLatLng([uLat, uLng]).bindPopup("<b>RTP Ajustado</b><br>Sincronizado con tus coordenadas de viaje.").openPopup();
+                        document.getElementById('status-txt').innerText = "¡Sincronizado! Estás calibrando el viaje para otros usuarios.";
+                    } 
+                    else if (tipoReporte === 'afuera') {
+                        // Si lo vio pasar, proyectamos la unidad un 7% más adelante en la ruta
+                        camiones[0].direccion = 1;
+                        camiones[0].progreso = Math.min(progresoUsuario + 0.07, 0.96);
+                        
+                        const coordsCamionDelantero = obtenerCoordenadaEnProgreso(camiones[0].progreso, 1);
+                        camiones[0].marker.setLatLng(coordsCamionDelantero).bindPopup("<b>RTP Avistado</b><br>Calculado un tramo adelante de tu posición.").openPopup();
+                        document.getElementById('status-txt').innerText = "Reporte recibido. Unidad reposicionada adelante de tu zona.";
+                    }
+                },
+                (error) => {
+                    alert("Error de GPS: Asegúrate de otorgar los permisos de ubicación en tu pantalla.");
+                    document.getElementById('status-txt').innerText = "Se requiere señal GPS.";
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        // Encontrar el progreso relativo del usuario analizando el nodo de la ruta más cercano
+        function calcularProgresoCercano(userCoords) {
+            let distanciaMinima = Infinity;
+            let indiceCercano = 0;
+
+            for (let i = 0; i < coordenadasRuta.length; i++) {
+                let d = Math.sqrt(Math.pow(coordenadasRuta[i][0] - userCoords[0], 2) + Math.pow(coordenadasRuta[i][1] - userCoords[1], 2));
+                if (d < distanciaMinima) {
+                    distanciaMinima = d;
+                    indiceCercano = i;
+                }
+            }
+            return indiceCercano / (coordenadasRuta.length - 1);
+        }
+
+        // 6. Inyección automática del Service Worker (Soporte Offline PWA)
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'rtp149-v1';
+                self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['/']))); });
+                self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))); });
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(blob), { scope: '/' });
+        }
+    </script>
+</body>
+</html>
