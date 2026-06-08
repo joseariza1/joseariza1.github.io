@@ -178,6 +178,7 @@
                             <tr>
                                 <th class="p-4 text-left">Producto</th>
                                 <th class="p-4 text-center">Stock</th>
+                                <th class="p-4 text-center text-red-500">Costo U.</th>
                                 <th class="p-4 text-center">P. Venta</th>
                                 <th class="p-4 text-center text-orange-500">Oferta</th>
                                 <th class="p-4 text-right">Acción</th>
@@ -187,6 +188,7 @@
                             <tr v-for="p in productosStockFiltrados" :key="p.id">
                                 <td class="p-4 font-bold">{{ p.nombre }} <span v-if="p.esPaquete" class="text-[8px] bg-purple-100 text-purple-600 px-1 py-0.5 rounded">PACK</span></td>
                                 <td class="p-4 text-center font-black">{{ obtenerStockReal(p) }}</td>
+                                <td class="p-4 text-center font-bold text-red-600">${{ p.costo || 0 }}</td>
                                 <td class="p-4 text-center font-black text-gray-600">${{ p.precioVenta }}</td>
                                 <td class="p-4 text-center">
                                     <div v-if="p.precioOferta" class="flex flex-col items-center">
@@ -200,7 +202,7 @@
                                 <td class="p-4 text-right flex justify-end gap-2">
                                     <button v-if="!p.esPaquete" @click="resurtirProducto(p)" class="text-green-500"><i class="bi bi-plus-square-fill text-lg"></i></button>
                                     <button @click="editarProducto(p)" class="text-blue-500"><i class="bi bi-pencil-square text-lg"></i></button>
-                                    <button @click="eliminarProducto(p.id)" class="text-red-400"><i class="bi bi-trash-fill text-lg"></i></button>
+                                    <button @click="eliminarProducto(id)" class="text-red-400"><i class="bi bi-trash-fill text-lg"></i></button>
                                 </td>
                             </tr>
                         </tbody>
@@ -274,7 +276,7 @@
                 <h2 class="text-xl font-bold mb-6 text-indigo-700 italic text-center">
                     {{ editandoAgendaId ? 'Editar Pedido' : 'Agendar Pedido' }}
                 </h2>
-                <div class="space-y-4">
+                <div class="space-y-4 max-h-[70vh] overflow-y-auto px-1">
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Cliente</label>
                         <input type="text" v-model="agenda.cliente" class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
@@ -286,6 +288,31 @@
                     <div>
                         <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Lugar</label>
                         <input type="text" v-model="agenda.lugar" placeholder="Ej. Local, Domicilio..." class="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+
+                    <div v-if="editandoAgendaId" class="border-t pt-4">
+                        <label class="text-[10px] font-bold text-indigo-600 uppercase ml-1 block mb-2">Lista de Compra del Pedido</label>
+                        <div class="space-y-2">
+                            <div v-for="(p, idx) in agenda.productos" :key="p.id" class="flex items-center justify-between bg-gray-50 p-2 rounded-xl border">
+                                <span class="text-xs font-bold text-gray-700 truncate max-w-[180px]">{{ p.nombre }}</span>
+                                <div class="flex items-center gap-2">
+                                    <button @click="cambiarCantidadProductoAgendado(idx, -1)" class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-black text-xs">-</button>
+                                    <span class="text-xs font-black min-w-[16px] text-center">{{ p.cantidad }}</span>
+                                    <button @click="cambiarCantidadProductoAgendado(idx, 1)" class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-black text-xs">+</button>
+                                    <button @click="eliminarProductoAgendado(idx)" class="text-red-500 ml-1"><i class="bi bi-trash3-fill"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="text-[9px] font-bold text-gray-400 uppercase ml-1 block mb-1">Agregar Producto al Pedido</label>
+                            <select @change="agregarProductoAAgendadoExistente" class="w-full border p-2 rounded-xl text-xs bg-white outline-none focus:ring-2 focus:ring-indigo-400">
+                                <option value="">-- Seleccionar producto para añadir --</option>
+                                <option v-for="prod in productos" :key="prod.id" :value="prod.id" :disabled="obtenerStockReal(prod) <= 0">
+                                    {{ prod.nombre }} (Stock: {{ obtenerStockReal(prod) }})
+                                </option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-2 mt-8">
@@ -335,7 +362,7 @@
                     nuevoProd: { nombre: '', costo: null, piezas: null, precioVenta: null, precioOferta: null },
                     editandoId: null,
                     editandoAgendaId: null,
-                    agenda: { cliente: '', fecha: '', lugar: '' },
+                    agenda: { cliente: '', fecha: '', lugar: '', productos: [] },
                     mostrarModalAgenda: false,
                     mostrarModalPaquete: false,
                     paqueteNuevo: { nombre: '', precioVenta: null },
@@ -385,7 +412,6 @@
                     finally { this.cargando = false; }
                 },
 
-                // FUNCIÓN DE DEPURACIÓN
                 depurarRegistros() {
                     Swal.fire({
                         title: '¿Limpiar historial?',
@@ -399,7 +425,6 @@
                     }).then((result) => {
                         if (result.isConfirmed) {
                             if (this.ventasDia.length > 20) {
-                                // Mantiene solo los últimos 20 elementos del array
                                 this.ventasDia = this.ventasDia.slice(-20);
                                 this.persistir();
                                 Swal.fire('Limpieza completada', 'Se optimizó la base de datos.', 'success');
@@ -500,14 +525,81 @@
                     this.carrito = []; this.persistir(); Swal.fire('Venta registrada', '', 'success');
                 },
 
-                abrirModalAgenda() { this.editandoAgendaId = null; this.agenda = { cliente: '', fecha: '', lugar: '' }; this.mostrarModalAgenda = true; },
-                editarAgendado(v) { this.editandoAgendaId = v.id; this.agenda = { cliente: v.cliente, fecha: v.fechaEntrega, lugar: v.lugar }; this.mostrarModalAgenda = true; },
+                abrirModalAgenda() { this.editandoAgendaId = null; this.agenda = { cliente: '', fecha: '', lugar: '', productos: [] }; this.mostrarModalAgenda = true; },
+                
+                editarAgendado(v) { 
+                    this.editandoAgendaId = v.id; 
+                    this.agenda = { 
+                        cliente: v.cliente, 
+                        fecha: v.fechaEntrega, 
+                        lugar: v.lugar,
+                        productos: JSON.parse(JSON.stringify(v.productos || []))
+                    }; 
+                    this.mostrarModalAgenda = true; 
+                },
+                
                 cerrarModalAgenda() { this.mostrarModalAgenda = false; this.editandoAgendaId = null; },
+
+                cambiarCantidadProductoAgendado(index, cambio) {
+                    const prodEnAgenda = this.agenda.productos[index];
+                    const originalEnStock = this.productos.find(p => p.id === prodEnAgenda.id);
+                    
+                    if (cambio > 0) {
+                        if (this.obtenerStockReal(originalEnStock) <= 0) return Swal.fire('Sin stock', 'No quedan unidades disponibles en el inventario', 'warning');
+                        prodEnAgenda.cantidad++;
+                        this.actualizarStock(originalEnStock, -1);
+                    } else if (cambio < 0 && prodEnAgenda.cantidad > 1) {
+                        prodEnAgenda.cantidad--;
+                        this.actualizarStock(originalEnStock, 1);
+                    }
+                },
+
+                eliminarProductoAgendado(index) {
+                    const prodEnAgenda = this.agenda.productos[index];
+                    const originalEnStock = this.productos.find(p => p.id === prodEnAgenda.id);
+                    if (originalEnStock) {
+                        this.actualizarStock(originalEnStock, prodEnAgenda.cantidad);
+                    }
+                    this.agenda.productos.splice(index, 1);
+                },
+
+                agregarProductoAAgendadoExistente(e) {
+                    const prodId = parseInt(e.target.value);
+                    if (!prodId) return;
+                    
+                    const prodOriginal = this.productos.find(p => p.id === prodId);
+                    if (!prodOriginal) return;
+
+                    if (this.obtenerStockReal(prodOriginal) <= 0) {
+                        Swal.fire('Sin stock', '', 'warning');
+                        e.target.value = "";
+                        return;
+                    }
+
+                    const existente = this.agenda.productos.find(p => p.id === prodId);
+                    if (existente) {
+                        existente.cantidad++;
+                    } else {
+                        this.agenda.productos.push({ ...prodOriginal, cantidad: 1, descuento: 0 });
+                    }
+                    
+                    this.actualizarStock(prodOriginal, -1);
+                    e.target.value = ""; 
+                },
 
                 finalizarVentaAgendada() {
                     if (this.editandoAgendaId) {
                         const v = this.ventasDia.find(v => v.id === this.editandoAgendaId);
-                        if (v) { v.cliente = this.agenda.cliente; v.fechaEntrega = this.agenda.fecha; v.lugar = this.agenda.lugar; }
+                        if (v) { 
+                            v.cliente = this.agenda.cliente; 
+                            v.fechaEntrega = this.agenda.fecha; 
+                            v.lugar = this.agenda.lugar; 
+                            v.productos = [...this.agenda.productos];
+                            v.total = v.productos.reduce((acc, item) => {
+                                const precio = this.obtenerPrecioActual(item);
+                                return acc + ((precio * item.cantidad) - (item.descuento || 0));
+                            }, 0);
+                        }
                     } else {
                         this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), fechaEntrega: this.agenda.fecha, cliente: this.agenda.cliente || 'Sin Nombre', lugar: this.agenda.lugar, productos: [...this.carrito], total: this.totalVenta, tipo: 'agendado', completado: false, devuelta: false });
                         this.carrito = [];
