@@ -202,7 +202,7 @@
                                 <td class="p-4 text-right flex justify-end gap-2">
                                     <button v-if="!p.esPaquete" @click="resurtirProducto(p)" class="text-green-500"><i class="bi bi-plus-square-fill text-lg"></i></button>
                                     <button @click="editarProducto(p)" class="text-blue-500"><i class="bi bi-pencil-square text-lg"></i></button>
-                                    <button @click="eliminarProducto(id)" class="text-red-400"><i class="bi bi-trash-fill text-lg"></i></button>
+                                    <button @click="eliminarProducto(p.id)" class="text-red-400"><i class="bi bi-trash-fill text-lg"></i></button>
                                 </td>
                             </tr>
                         </tbody>
@@ -258,6 +258,7 @@
                                         <span class="font-bold text-gray-700">• {{ p.nombre }}</span> 
                                         <span class="text-indigo-500 font-bold ml-1">x{{ p.cantidad }}</span>
                                     </div>
+                               ' width=100%>
                                 </td>
                                 <td class="p-4 text-center font-black text-lg">${{ v.total }}</td>
                                 <td class="p-4 text-right">
@@ -503,9 +504,23 @@
 
                 editarProducto(p) { this.editandoId = p.id; this.nuevoProd = { ...p }; window.scrollTo(0,0); },
                 cancelarEdicion() { this.editandoId = null; this.nuevoProd = { nombre: '', costo: null, piezas: null, precioVenta: null, precioOferta: null }; },
+                
                 eliminarProducto(id) { 
-                    Swal.fire({ title: '¿Eliminar producto?', icon: 'warning', showCancelButton: true }).then(r => {
-                        if(r.isConfirmed) { this.productos = this.productos.filter(p => p.id !== id); this.persistir(); }
+                    Swal.fire({ 
+                        title: '¿Eliminar producto?', 
+                        text: "Esta acción quitará el producto permanentemente de la lista de stock.",
+                        icon: 'warning', 
+                        showCancelButton: true,
+                        confirmButtonColor: '#ef4444',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    }).then(r => {
+                        if(r.isConfirmed) { 
+                            this.productos = this.productos.filter(p => p.id !== id); 
+                            this.persistir(); 
+                            Swal.fire('Eliminado', 'El producto ha sido removido del stock.', 'success');
+                        }
                     });
                 },
 
