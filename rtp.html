@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RTP Monitor - Firebase Link Sync</title>
+    <title>RTP Monitor - Conexión Dinámica Firebase</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -13,6 +13,21 @@
             margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
             background-color: #f0f2f5;
         }
+
+        /* Pantalla de Bloqueo / Configuración de Firebase */
+        #pantalla-setup {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(27, 94, 32, 0.95); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-setup {
+            background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .modal-setup h2 { margin-top: 0; color: #1b5e20; text-align: center; font-size: 1.5rem; }
+        .modal-setup p { font-size: 0.85rem; color: #666; line-height: 1.4; }
+
+        /* Estructura Principal */
         .navbar {
             background-color: #1b5e20; color: white; padding: 10px 20px;
             display: flex; justify-content: space-between; align-items: center; z-index: 1100;
@@ -39,6 +54,7 @@
         .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; margin-top: 5px; }
         .btn-primary { background-color: #1565c0; }
         .btn-success { background-color: #2e7d32; }
+        .btn-setup-action { background-color: #1b5e20; font-size: 1rem; margin-top: 15px; }
         
         .mapa-contenedor { flex-grow: 1; position: relative; }
         #map { width: 100%; height: 100%; }
@@ -62,8 +78,21 @@
 </head>
 <body>
 
+    <div id="pantalla-setup">
+        <div class="modal-setup">
+            <h2>Configuración del Servidor</h2>
+            <p>Ingresa la URL del Realtime Database de tu proyecto Firebase para inicializar los mapas dinámicos en este dispositivo.</p>
+            <div class="input-group">
+                <label>Enlace Base de Firebase (URL)</label>
+                <input type="text" id="setup-url" placeholder="https://tu-proyecto-rtdb.firebaseio.com/">
+            </div>
+            <p style="font-size: 0.75rem; color: #888;">* Asegúrate de que las reglas de lectura y escritura estén en modo público (true) dentro de Firebase.</p>
+            <button class="btn btn-setup-action" onclick="conectarEntornoFirebase()">Sincronizar y Conectar</button>
+        </div>
+    </div>
+
     <div class="navbar">
-        <div style="font-weight: bold;">🛰️ RTP Firebase Link-REST</div>
+        <div style="font-weight: bold;">🛰️ RTP Universal Firebase Sync</div>
         <div class="tabs-roles">
             <button class="tab-btn" id="btn-tab-admin" onclick="cambiarFiltroVista('admin')">💻 Panel Admin</button>
             <button class="tab-btn active" id="btn-tab-user" onclick="cambiarFiltroVista('user')">📱 Modo Pasajero</button>
@@ -74,7 +103,7 @@
         
         <div class="panel-lateral" id="panel-admin">
             <div class="seccion">
-                <h3>🛠️ Consola de Infraestructura</h3>
+                <h3>🛠 shrink; Consola de Infraestructura</h3>
                 <p style="font-size: 0.8rem; color:#666; margin: 0;">Control exclusivo para agregar, trazar y eliminar rutas de la base de datos.</p>
             </div>
             <div class="seccion">
@@ -110,18 +139,15 @@
 
         <div class="mapa-contenedor">
             <div id="map"></div>
-            <div class="status-float"><b>Canal Firebase:</b> <span id="txt-status">Conectando...</span></div>
+            <div class="status-float"><b>Canal Firebase:</b> <span id="txt-status">Esperando credenciales...</span></div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // =========================================================================
-        // 🔗 ENLACE ÚNICO DE TU REALTIME DATABASE DE FIREBASE
-        // Reemplaza esto con tu URL de Firebase terminando estrictamente en "/rutas.json"
-        // =========================================================================
-        const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com";
+        // Esta variable se llenará dinámicamente con lo que escriba el usuario
+        let FIREBASE_LINK = "";
 
         let mapaBase = L.map('map').setView([19.245, -98.975], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapaBase);
@@ -137,7 +163,38 @@
         let grupoIconosBuses = [];
         let userMarkerGps = null;
 
-        // --- CONEXIÓN DIRECTA HTTP REST (SIN SDKs) ---
+        // --- VALIDADOR E INICIALIZADOR DE ENTORNO ---
+        window.conectarEntornoFirebase = function() {
+            let urlIngresada = document.getElementById('setup-url').value.trim();
+            
+            if(!urlIngresada) {
+                alert("Por favor introduce una dirección URL de Firebase válida.");
+                return;
+            }
+
+            // Validar y limpiar la URL para que siempre termine en "/rutas.json"
+            if(urlIngresada.endsWith("/")) {
+                urlIngresada = urlIngresada.slice(0, -1);
+            }
+            if(!urlIngresada.endsWith("/rutas.json")) {
+                urlIngresada = urlIngresada + "/rutas.json";
+            }
+
+            FIREBASE_LINK = urlIngresada;
+            
+            // Ocultar la pantalla de bloqueo y arrancar la sincronización
+            document.getElementById('pantalla-setup').style.display = 'none';
+            document.getElementById('txt-status').innerText = "Conectando al servidor...";
+            
+            descargarDatosFirebase();
+
+            // Activar el bucle de sincronización automática multi-dispositivo cada 7 segundos
+            setInterval(() => {
+                if(!modoTrazoAdminActivo && FIREBASE_LINK) descargarDatosFirebase();
+            }, 7000);
+        }
+
+        // --- CONEXIÓN DIRECTA HTTP REST ---
 
         // Descargar datos (GET)
         async function descargarDatosFirebase() {
@@ -154,9 +211,9 @@
                     idRutaVisualizandose = Object.keys(rutasGlobales)[0];
                     renderizarRutaEnMapa(idRutaVisualizandose);
                 }
-                document.getElementById('txt-status').innerText = "Sincronizado con Firebase.";
+                document.getElementById('txt-status').innerText = "Sincronizado vía Enlace.";
             } catch (e) {
-                document.getElementById('txt-status').innerText = "Enlace inválido o sin configurar.";
+                document.getElementById('txt-status').innerText = "Error: Enlace bloqueado o inaccesible.";
             }
         }
 
@@ -198,11 +255,10 @@
                 busesArray.push({ progreso: (i / numBuses), direccion: 1 });
             }
 
-            // Subir usando un método PATCH directo sobre la rama de la ruta
             const urlRutaEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${idDoc}.json`);
             
             try {
-                document.getElementById('txt-status').innerText = "Subiendo a Firebase...";
+                document.getElementById('txt-status').innerText = "Guardando...";
                 await fetch(urlRutaEspecifica, {
                     method: 'PUT',
                     body: JSON.stringify({
@@ -219,12 +275,12 @@
 
                 await descargarDatosFirebase();
             } catch (e) {
-                alert("Error al inyectar datos en Firebase.");
+                alert("Error al inyectar datos en el servidor.");
             }
         }
 
         window.eliminarRutaFirebase = async function(id) {
-            if(confirm("¿Deseas borrar esta ruta permanentemente de Firebase?")) {
+            if(confirm("¿Deseas borrar esta ruta de forma permanente?")) {
                 const urlRutaEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${id}.json`);
                 try {
                     if (id === idRutaVisualizandose) idRutaVisualizandose = "";
@@ -256,7 +312,6 @@
                     ruta.buses[0].direccion = sentido;
                 }
 
-                // Sincronizar actualización de buses con Firebase
                 const urlBusesEspecificos = FIREBASE_LINK.replace("rutas.json", `rutas/${idRutaVisualizandose}/buses.json`);
                 await fetch(urlBusesEspecificos, {
                     method: 'PUT',
@@ -321,7 +376,7 @@
             }
         }
 
-        // Animación de los autobuses
+        // Animación interna de los autobuses
         setInterval(() => {
             if (modoTrazoAdminActivo || !idRutaVisualizandose || !rutasGlobales[idRutaVisualizandose]) return;
             const datos = rutasGlobales[idRutaVisualizandose];
@@ -338,11 +393,6 @@
                 }
             });
         }, 1000);
-
-        // --- ESCUHA CADA 8 SEGUNDOS PARA SINCRONIZAR DISPOSITIVOS ---
-        setInterval(() => {
-            if(!modoTrazoAdminActivo) descargarDatosFirebase();
-        }, 8000);
 
         // --- AUXILIARES MATEMÁTICOS ---
         function interpolarCoordenadas(progreso, trazo) {
@@ -374,8 +424,6 @@
                 document.getElementById('btn-tab-user').classList.add('active');
             }
         }
-
-        descargarDatosFirebase();
     </script>
 </body>
 </html>
