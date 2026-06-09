@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RTP Monitor - Conexión por Enlace Único</title>
+    <title>RTP Monitor - Firebase Link Sync</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -63,7 +63,7 @@
 <body>
 
     <div class="navbar">
-        <div style="font-weight: bold;">🛰️ RTP Link-DB Sync</div>
+        <div style="font-weight: bold;">🛰️ RTP Firebase Link-REST</div>
         <div class="tabs-roles">
             <button class="tab-btn" id="btn-tab-admin" onclick="cambiarFiltroVista('admin')">💻 Panel Admin</button>
             <button class="tab-btn active" id="btn-tab-user" onclick="cambiarFiltroVista('user')">📱 Modo Pasajero</button>
@@ -75,14 +75,14 @@
         <div class="panel-lateral" id="panel-admin">
             <div class="seccion">
                 <h3>🛠️ Consola de Infraestructura</h3>
-                <p style="font-size: 0.8rem; color:#666; margin: 0;">Administración exclusiva de rutas y asignación de flota.</p>
+                <p style="font-size: 0.8rem; color:#666; margin: 0;">Control exclusivo para agregar, trazar y eliminar rutas de la base de datos.</p>
             </div>
             <div class="seccion">
                 <h3>🗺️ Inyectar Nueva Ruta</h3>
-                <div class="input-group"><label>Nombre de la Ruta</label><input type="text" id="adm-nombre" placeholder="Ej. Ruta 149 Ampliada"></div>
+                <div class="input-group"><label>Nombre de la Ruta</label><input type="text" id="adm-nombre" placeholder="Ej. Ruta 148 Extra"></div>
                 <div class="input-group"><label>Cantidad de Buses</label><input type="number" id="adm-buses" value="3" min="1" max="10"></div>
                 <button class="btn btn-primary" onclick="iniciarTrazoAdmin()">📍 Dibujar Paradas en Mapa</button>
-                <button class="btn btn-success" id="adm-btn-guardar" onclick="guardarRutaEnEnlace()" style="display:none;">☁️ Subir a Enlace Base</button>
+                <button class="btn btn-success" id="adm-btn-guardar" onclick="guardarRutaEnFirebase()" style="display:none;">☁️ Subir a Enlace Firebase</button>
             </div>
             <div class="seccion">
                 <h3>🗑️ Inventario de la Red</h3>
@@ -98,19 +98,19 @@
             </div>
             <div class="seccion">
                 <h3>📢 Compartir Reporte en Calle</h3>
-                <p style="font-size: 0.8rem; color:#555;">Tu reporte calibra los mapas de todos los dispositivos conectados al mismo enlace.</p>
+                <p style="font-size: 0.8rem; color:#555;">Tu reporte actualiza instantáneamente la posición en el enlace central de Firebase.</p>
                 <div class="input-group">
                     <label>Sentido del Viaje</label>
                     <select id="user-sentido"><option value="1">Hacia Destino (Ida)</option><option value="-1">Hacia Origen (Vuelta)</option></select>
                 </div>
-                <button class="btn btn-primary" onclick="enviarReporteEnlace('dentro')">🚍 Voy a bordo del RTP</button>
-                <button class="btn btn-success" style="background:#ef6c00;" onclick="enviarReporteEnlace('afuera')">👀 Lo vi pasar aquí</button>
+                <button class="btn btn-primary" onclick="enviarReporteFirebase('dentro')">🚍 Voy a bordo del RTP</button>
+                <button class="btn btn-success" style="background:#ef6c00;" onclick="enviarReporteFirebase('afuera')">👀 Lo vi pasar aquí</button>
             </div>
         </div>
 
         <div class="mapa-contenedor">
             <div id="map"></div>
-            <div class="status-float"><b>Enlace de Sincronización:</b> <span id="txt-status">Conectando...</span></div>
+            <div class="status-float"><b>Canal Firebase:</b> <span id="txt-status">Conectando...</span></div>
         </div>
     </div>
 
@@ -118,11 +118,10 @@
 
     <script>
         // =========================================================================
-        // 🔗 TU ENLACE ÚNICO DE BASE DE DATOS (JSON BIN)
-        // He dejado este de prueba público para que compruebes que ya se conecta.
+        // 🔗 ENLACE ÚNICO DE TU REALTIME DATABASE DE FIREBASE
+        // Reemplaza esto con tu URL de Firebase terminando estrictamente en "/rutas.json"
         // =========================================================================
-        const API_LINK = "https://api.jsonbin.io/v3/b/6664cfbcad19ca34f8762ba0";
-        const MASTER_KEY = "$2a$10$R3f8X9S0fE6mG9XvKqV2ReXyHw3/b8C7Bfe7/R72R8P.Ww2XyZJuC"; // Llave para poder escribir/leer
+        const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com";
 
         let mapaBase = L.map('map').setView([19.245, -98.975], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapaBase);
@@ -138,17 +137,14 @@
         let grupoIconosBuses = [];
         let userMarkerGps = null;
 
-        // --- MOTOR DE CONEXIÓN HTTP (GET / PUT) ---
-        
-        // 1. Descargar datos desde el enlace único
-        async function descargarDatosServidor() {
+        // --- CONEXIÓN DIRECTA HTTP REST (SIN SDKs) ---
+
+        // Descargar datos (GET)
+        async function descargarDatosFirebase() {
             try {
-                const respuesta = await fetch(API_LINK, {
-                    method: 'GET',
-                    headers: { 'X-Master-Key': MASTER_KEY }
-                });
-                const resultado = await respuesta.json();
-                rutasGlobales = resultado.record.rutas || {};
+                const respuesta = await fetch(FIREBASE_LINK);
+                const datos = await respuesta.json();
+                rutasGlobales = datos || {};
                 
                 refrescarComponentesUI();
                 
@@ -158,31 +154,13 @@
                     idRutaVisualizandose = Object.keys(rutasGlobales)[0];
                     renderizarRutaEnMapa(idRutaVisualizandose);
                 }
-                document.getElementById('txt-status').innerText = "Sincronizado vía URL.";
+                document.getElementById('txt-status').innerText = "Sincronizado con Firebase.";
             } catch (e) {
-                document.getElementById('txt-status').innerText = "Error de conexión.";
+                document.getElementById('txt-status').innerText = "Enlace inválido o sin configurar.";
             }
         }
 
-        // 2. Subir y guardar datos actualizados a través del enlace único
-        async function subirDatosAlServidor() {
-            try {
-                document.getElementById('txt-status').innerText = "Guardando en la nube...";
-                await fetch(API_LINK, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': MASTER_KEY
-                    },
-                    body: JSON.stringify({ rutas: rutasGlobales })
-                });
-                document.getElementById('txt-status').innerText = "Actualizado globalmente.";
-            } catch (e) {
-                alert("No se pudieron subir los datos.");
-            }
-        }
-
-        // --- LÓGICA DE ADMINISTRACIÓN ---
+        // --- OPERACIONES DE ADMINISTRACIÓN ---
         window.iniciarTrazoAdmin = function() {
             modoTrazoAdminActivo = true;
             nodosTrazoAdmin = [];
@@ -190,7 +168,7 @@
             marcadoresVisualesAdmin.forEach(m => mapaBase.removeLayer(m));
             marcadoresVisualesAdmin = [];
             document.getElementById('adm-btn-guardar').style.display = 'block';
-            document.getElementById('txt-status').innerText = "Modo Editor: Haz clics en el mapa.";
+            document.getElementById('txt-status').innerText = "Editor Activo: Haz clic en el mapa.";
         }
 
         mapaBase.on('click', function(e) {
@@ -205,7 +183,7 @@
             lineaGuiaAdmin = L.polyline(nodosTrazoAdmin, {color: '#666', weight: 3, dashArray: '5,5'}).addTo(mapaBase);
         });
 
-        window.guardarRutaEnEnlace = async function() {
+        window.guardarRutaEnFirebase = async function() {
             const nombre = document.getElementById('adm-nombre').value.trim();
             const numBuses = parseInt(document.getElementById('adm-buses').value) || 3;
 
@@ -220,34 +198,47 @@
                 busesArray.push({ progreso: (i / numBuses), direccion: 1 });
             }
 
-            // Añadir al JSON local y empujar al enlace
-            rutasGlobales[idDoc] = {
-                nombre: nombre,
-                trazado: nodosTrazoAdmin,
-                buses: busesArray
-            };
+            // Subir usando un método PATCH directo sobre la rama de la ruta
+            const urlRutaEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${idDoc}.json`);
+            
+            try {
+                document.getElementById('txt-status').innerText = "Subiendo a Firebase...";
+                await fetch(urlRutaEspecifica, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        nombre: nombre,
+                        trazado: nodosTrazoAdmin,
+                        buses: busesArray
+                    })
+                });
+                
+                modoTrazoAdminActivo = false;
+                document.getElementById('adm-btn-guardar').style.display = 'none';
+                if(lineaGuiaAdmin) mapaBase.removeLayer(lineaGuiaAdmin);
+                marcadoresVisualesAdmin.forEach(m => mapaBase.removeLayer(m));
 
-            modoTrazoAdminActivo = false;
-            document.getElementById('adm-btn-guardar').style.display = 'none';
-            if(lineaGuiaAdmin) mapaBase.removeLayer(lineaGuiaAdmin);
-            marcadoresVisualesAdmin.forEach(m => mapaBase.removeLayer(m));
-
-            await subirDatosAlServidor();
-            await descargarDatosServidor();
-        }
-
-        window.eliminarRutaLocal = async function(id) {
-            if(confirm("¿Eliminar esta ruta del enlace compartido?")) {
-                if (id === idRutaVisualizandose) idRutaVisualizandose = "";
-                delete rutasGlobales[id];
-                await subirDatosAlServidor();
-                await descargarDatosServidor();
+                await descargarDatosFirebase();
+            } catch (e) {
+                alert("Error al inyectar datos en Firebase.");
             }
         }
 
-        // --- LÓGICA DE USUARIOS (REPORTES) ---
-        window.enviarReporteEnlace = async function(tipo) {
-            if (!navigator.geolocation) return;
+        window.eliminarRutaFirebase = async function(id) {
+            if(confirm("¿Deseas borrar esta ruta permanentemente de Firebase?")) {
+                const urlRutaEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${id}.json`);
+                try {
+                    if (id === idRutaVisualizandose) idRutaVisualizandose = "";
+                    await fetch(urlRutaEspecifica, { method: 'DELETE' });
+                    await descargarDatosFirebase();
+                } catch(e) {
+                    alert("No se pudo eliminar.");
+                }
+            }
+        }
+
+        // --- OPERACIONES DE USUARIO ---
+        window.enviarReporteFirebase = async function(tipo) {
+            if (!navigator.geolocation || !idRutaVisualizandose) return;
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const uLat = pos.coords.latitude;
                 const uLng = pos.coords.longitude;
@@ -260,18 +251,22 @@
                 let progreso = buscarProgresoCercano([uLat, uLng], ruta.trazado);
                 if (tipo === 'afuera') progreso = Math.min(progreso + 0.04, 0.95);
 
-                // Modificar el primer bus disponible
-                if(ruta.buses.length > 0) {
+                if(ruta.buses && ruta.buses.length > 0) {
                     ruta.buses[0].progreso = progreso;
                     ruta.buses[0].direccion = sentido;
                 }
 
-                await subirDatosAlServidor();
+                // Sincronizar actualización de buses con Firebase
+                const urlBusesEspecificos = FIREBASE_LINK.replace("rutas.json", `rutas/${idRutaVisualizandose}/buses.json`);
+                await fetch(urlBusesEspecificos, {
+                    method: 'PUT',
+                    body: JSON.stringify(ruta.buses)
+                });
                 renderizarRutaEnMapa(idRutaVisualizandose);
             });
         }
 
-        // --- RENDERIZADO GRÁFICO ---
+        // --- INTERFAZ Y RENDERIZADO ---
         function refrescarComponentesUI() {
             const select = document.getElementById('user-select-ruta');
             const valorGuardado = select.value;
@@ -282,6 +277,7 @@
 
             for (let id in rutasGlobales) {
                 let r = rutasGlobales[id];
+                if(!r) continue;
                 
                 let opt = document.createElement('option');
                 opt.value = id; opt.innerText = r.nombre;
@@ -289,8 +285,8 @@
 
                 let item = document.createElement('div');
                 item.className = "item-ruta";
-                item.innerHTML = `<span><b>${r.nombre}</b> (${r.buses.length} Buses)</span> 
-                                  <button class="btn-del" onclick="eliminarRutaLocal('${id}')">X</button>`;
+                item.innerHTML = `<span><b>${r.nombre}</b> (${r.buses ? r.buses.length : 0} Buses)</span> 
+                                  <button class="btn-del" onclick="eliminarRutaFirebase('${id}')">X</button>`;
                 listaAdmin.appendChild(item);
             }
             if(rutasGlobales[valorGuardado]) select.value = valorGuardado;
@@ -316,17 +312,20 @@
                 className: 'icon-rtp-cloud', iconSize: [34, 20]
             });
 
-            datos.buses.forEach((bus) => {
-                const coords = interpolarCoordenadas(bus.progreso, datos.trazado);
-                let marker = L.marker(coords, {icon: busIcon}).addTo(mapaBase);
-                grupoIconosBuses.push(marker);
-            });
+            if(datos.buses) {
+                datos.buses.forEach((bus) => {
+                    const coords = interpolarCoordenadas(bus.progreso, datos.trazado);
+                    let marker = L.marker(coords, {icon: busIcon}).addTo(mapaBase);
+                    grupoIconosBuses.push(marker);
+                });
+            }
         }
 
-        // --- RELOJ DE ANIMACIÓN FLUIDA ---
+        // Animación de los autobuses
         setInterval(() => {
             if (modoTrazoAdminActivo || !idRutaVisualizandose || !rutasGlobales[idRutaVisualizandose]) return;
             const datos = rutasGlobales[idRutaVisualizandose];
+            if(!datos.buses) return;
 
             datos.buses.forEach((bus, index) => {
                 bus.progreso += (0.0002 * bus.direccion);
@@ -340,10 +339,10 @@
             });
         }, 1000);
 
-        // --- CONSULTA AUTOMÁTICA CADA 15 SEGUNDOS (Sincronización multi-dispositivo) ---
+        // --- ESCUHA CADA 8 SEGUNDOS PARA SINCRONIZAR DISPOSITIVOS ---
         setInterval(() => {
-            if(!modoTrazoAdminActivo) descargarDatosServidor();
-        }, 15000);
+            if(!modoTrazoAdminActivo) descargarDatosFirebase();
+        }, 8000);
 
         // --- AUXILIARES MATEMÁTICOS ---
         function interpolarCoordenadas(progreso, trazo) {
@@ -376,8 +375,7 @@
             }
         }
 
-        // Carga inicial al arrancar la pantalla
-        descargarDatosServidor();
+        descargarDatosFirebase();
     </script>
 </body>
 </html>
