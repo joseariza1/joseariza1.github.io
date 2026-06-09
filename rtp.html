@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RTP Monitor - Conexión Dinámica Firebase</title>
+    <title>Sistema de Transporte Cooperativo - RTP</title>
     
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
@@ -14,416 +15,612 @@
             background-color: #f0f2f5;
         }
 
-        /* Pantalla de Bloqueo / Configuración de Firebase */
-        #pantalla-setup {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(27, 94, 32, 0.95); z-index: 2000;
-            display: flex; justify-content: center; align-items: center;
-        }
-        .modal-setup {
-            background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .modal-setup h2 { margin-top: 0; color: #1b5e20; text-align: center; font-size: 1.5rem; }
-        .modal-setup p { font-size: 0.85rem; color: #666; line-height: 1.4; }
-
-        /* Estructura Principal */
-        .navbar {
+        /* Barra Superior */
+        .navbar-roles {
             background-color: #1b5e20; color: white; padding: 10px 20px;
-            display: flex; justify-content: space-between; align-items: center; z-index: 1100;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1100;
         }
-        .tabs-roles { display: flex; gap: 8px; }
+        .nav-title { font-weight: bold; font-size: 1.1rem; }
+        .tabs-roles { display: flex; gap: 10px; }
         .tab-btn {
             background-color: rgba(255,255,255,0.15); color: white; border: none;
-            padding: 6px 12px; border-radius: 20px; cursor: pointer; font-weight: bold;
+            padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold;
+            transition: background 0.2s;
         }
         .tab-btn.active { background-color: white; color: #1b5e20; }
-        
+
+        /* Contenedor Principal */
         .app-container { display: flex; flex-grow: 1; height: calc(100vh - 52px); }
+
+        /* Paneles Laterales */
         .panel-lateral {
-            width: 340px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            width: 350px; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             display: none; flex-direction: column; z-index: 1000; overflow-y: auto;
         }
         .panel-lateral.active { display: flex; }
-        .seccion { padding: 18px; border-bottom: 1px solid #eee; }
-        h3 { margin-top: 0; color: #2e7d32; display: flex; align-items: center; gap: 6px; font-size: 1.1rem; }
-        .input-group { margin-bottom: 10px; }
-        label { display: block; font-size: 0.8rem; font-weight: bold; color: #555; margin-bottom: 3px; }
+
+        .seccion { padding: 20px; border-bottom: 1px solid #eee; }
+        h3 { margin-top: 0; color: #2e7d32; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.85rem; font-weight: bold; color: #555; margin-bottom: 4px; }
         input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-        
-        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; margin-top: 5px; }
-        .btn-primary { background-color: #1565c0; }
+
+        /* Botonera */
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; margin-top: 5px; text-align: center; display: block;}
         .btn-success { background-color: #2e7d32; }
-        .btn-setup-action { background-color: #1b5e20; font-size: 1rem; margin-top: 15px; }
+        .btn-primary { background-color: #1565c0; }
+        .btn-danger { background-color: #d32f2f; }
+        .btn-orange { background-color: #ef6c00; }
+        .btn-mini { padding: 4px 8px; font-size: 0.75rem; width: auto; display: inline-block; margin-right: 4px; }
         
+        .btn-toggle-dibujo { background-color: #555; margin-bottom: 5px;}
+        .btn-toggle-dibujo.activo { background-color: #e65100; box-shadow: 0 0 8px rgba(230,81,0,0.6); }
+
+        /* Mapa */
         .mapa-contenedor { flex-grow: 1; position: relative; }
         #map { width: 100%; height: 100%; }
         .status-float {
             position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.95);
-            padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 1000; font-size: 0.8rem; pointer-events: none;
+            padding: 10px 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 1000; font-size: 0.85rem; pointer-events: none;
         }
-        .item-ruta {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 6px; border: 1px solid #eee; margin-bottom: 4px; font-size: 0.85rem; background: #fafafa;
+        .item-ruta-lista {
+            padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 8px; background: #fafafa; font-size: 0.85rem;
         }
-        .btn-del { background: #ff1744; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; }
+
+        /* CSS para el Bus con dirección (Giro de espejo) */
+        .bus-emoji-container {
+            font-size: 26px;
+            text-align: center;
+            line-height: 1;
+            transition: transform 0.2s linear;
+        }
+        .bus-derecha { transform: scaleX(1); }
+        .bus-izquierda { transform: scaleX(-1); }
 
         @media (max-width: 768px) {
             .app-container { flex-direction: column; }
-            .panel-lateral { width: 100%; height: 40vh; }
-            .mapa-contenedor { height: 60vh; }
+            .panel-lateral { width: 100%; height: 45vh; }
+            .mapa-contenedor { height: 55vh; }
         }
     </style>
 </head>
 <body>
 
-    <div id="pantalla-setup">
-        <div class="modal-setup">
-            <h2>Configuración del Servidor</h2>
-            <p>Ingresa la URL del Realtime Database de tu proyecto Firebase para inicializar los mapas dinámicos en este dispositivo.</p>
-            <div class="input-group">
-                <label>Enlace Base de Firebase (URL)</label>
-                <input type="text" id="setup-url" placeholder="https://tu-proyecto-rtdb.firebaseio.com/">
-            </div>
-            <p style="font-size: 0.75rem; color: #888;">* Asegúrate de que las reglas de lectura y escritura estén en modo público (true) dentro de Firebase.</p>
-            <button class="btn btn-setup-action" onclick="conectarEntornoFirebase()">Sincronizar y Conectar</button>
-        </div>
-    </div>
-
-    <div class="navbar">
-        <div style="font-weight: bold;">🛰️ RTP Universal Firebase Sync</div>
+    <div class="navbar-roles">
+        <div class="nav-title">🚍 Sistema RTP Cooperativo</div>
         <div class="tabs-roles">
-            <button class="tab-btn" id="btn-tab-admin" onclick="cambiarFiltroVista('admin')">💻 Panel Admin</button>
-            <button class="tab-btn active" id="btn-tab-user" onclick="cambiarFiltroVista('user')">📱 Modo Pasajero</button>
+            <button class="tab-btn active" id="btn-tab-admin" onclick="alternarPagina('admin')">💻 Vista: Moderador</button>
+            <button class="tab-btn" id="btn-tab-user" onclick="alternarPagina('user')">📱 Vista: Usuario / Pasajero</button>
         </div>
     </div>
 
     <div class="app-container">
         
-        <div class="panel-lateral" id="panel-admin">
+        <!-- PANEL DE CONTROL (MODERADOR) -->
+        <div class="panel-lateral active" id="panel-admin">
             <div class="seccion">
-                <h3>🛠 shrink; Consola de Infraestructura</h3>
-                <p style="font-size: 0.8rem; color:#666; margin: 0;">Control exclusivo para agregar, trazar y eliminar rutas de la base de datos.</p>
+                <h3>🛠️ Panel de Control Técnico</h3>
+                <p style="font-size: 0.85rem; color:#666; margin: 0;">Diseña el trazado de calles y establece de forma independiente las paradas oficiales del recorrido.</p>
             </div>
             <div class="seccion">
-                <h3>🗺️ Inyectar Nueva Ruta</h3>
-                <div class="input-group"><label>Nombre de la Ruta</label><input type="text" id="adm-nombre" placeholder="Ej. Ruta 148 Extra"></div>
-                <div class="input-group"><label>Cantidad de Buses</label><input type="number" id="adm-buses" value="3" min="1" max="10"></div>
-                <button class="btn btn-primary" onclick="iniciarTrazoAdmin()">📍 Dibujar Paradas en Mapa</button>
-                <button class="btn btn-success" id="adm-btn-guardar" onclick="guardarRutaEnFirebase()" style="display:none;">☁️ Subir a Enlace Firebase</button>
+                <h3 id="form-admin-titulo">🗺️ Configurar Ruta</h3>
+                <input type="hidden" id="admin-id-edicion" value="">
+                
+                <div class="input-group">
+                    <label>Nombre de la Ruta</label>
+                    <input type="text" id="admin-nombre" placeholder="Ej. Ruta 149 - San Antonio">
+                </div>
+                <div class="input-group">
+                    <label>Terminal A (Origen)</label>
+                    <input type="text" id="admin-origen" placeholder="Ej. Metro Tláhuac">
+                </div>
+                <div class="input-group">
+                    <label>Terminal B (Destino Final)</label>
+                    <input type="text" id="admin-destino" placeholder="Ej. Mixquic Centro">
+                </div>
+                <div class="input-group">
+                    <label>Flota Vehicular (Autobuses)</label>
+                    <input type="number" id="admin-buses" value="3" min="1" max="15">
+                </div>
+                
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+                <label>🛠️ Herramientas de Trazo Cartográfico:</label>
+                
+                <button class="btn btn-toggle-dibujo" id="btn-modo-ruta" onclick="cambiarModoHerramienta('ruta')">🗺️ Paso 1: Trazar Línea de Ruta</button>
+                <button class="btn btn-toggle-dibujo" id="btn-modo-paradas" onclick="cambiarModoHerramienta('paradas')">🚏 Paso 2: Ubicar Paradas Oficiales</button>
+                
+                <button class="btn btn-success" id="admin-btn-guardar" onclick="finalizarGuardadoAdmin()" style="margin-top: 15px;">💾 Publicar e Iniciar Ruta</button>
+                <button class="btn btn-danger btn-mini" id="admin-btn-cancelar" onclick="cancelarEdicionAdmin()" style="display:none; margin-top:5px;">Cancelar Edición</button>
             </div>
             <div class="seccion">
-                <h3>🗑️ Inventario de la Red</h3>
-                <div id="contenedor-lista-admin"></div>
+                <h3>🚦 Control Operativo de Tráfico</h3>
+                <div class="input-group">
+                    <label>Estado Global de la Red</label>
+                    <select id="admin-trafico" onchange="modificarTraficoAdmin(this.value)">
+                        <option value="fluido">🟢 Fluido (Velocidad Alta)</option>
+                        <option value="moderado" selected>🟡 Tránsito Moderado</option>
+                        <option value="pesado">🔴 Tránsito Pesado / Retrasos</option>
+                    </select>
+                </div>
+            </div>
+            <div class="seccion">
+                <h3>📋 Inventario de Rutas Activas</h3>
+                <div id="lista-rutas-admin"></div>
             </div>
         </div>
 
-        <div class="panel-lateral active" id="panel-user">
+        <!-- PANEL PASAJERO (USUARIO) -->
+        <div class="panel-lateral" id="panel-user">
             <div class="seccion">
-                <h3>🗺️ Selecciona tu Ruta</h3>
-                <select id="user-select-ruta" onchange="cambiarVisualizacionRuta(this.value)">
+                <h3>📱 Monitoreo de Unidades</h3>
+                <div class="input-group">
+                    <label>Selecciona tu Ruta de Viaje</label>
+                    <select id="user-selector-rutas" onchange="seleccionarRutaDesdeUsuario(this.value)">
+                        <!-- Dinámico -->
                     </select>
+                </div>
             </div>
             <div class="seccion">
-                <h3>📢 Compartir Reporte en Calle</h3>
-                <p style="font-size: 0.8rem; color:#555;">Tu reporte actualiza instantáneamente la posición en el enlace central de Firebase.</p>
+                <h3>📢 Reportar Localización Actual</h3>
+                <p style="font-size: 0.8rem; color:#555; margin-bottom:12px;">¿Divisaste o vas a bordo de un RTP? Ayuda a calibrar la simulación vuela-vuela del mapa.</p>
+                
                 <div class="input-group">
                     <label>Sentido del Viaje</label>
-                    <select id="user-sentido"><option value="1">Hacia Destino (Ida)</option><option value="-1">Hacia Origen (Vuelta)</option></select>
+                    <select id="user-direccion-reporte">
+                        <option value="1">Hacia Destino Final (Ida)</option>
+                        <option value="-1">Hacia Origen / Metro (Vuelta)</option>
+                    </select>
                 </div>
-                <button class="btn btn-primary" onclick="enviarReporteFirebase('dentro')">🚍 Voy a bordo del RTP</button>
-                <button class="btn btn-success" style="background:#ef6c00;" onclick="enviarReporteFirebase('afuera')">👀 Lo vi pasar aquí</button>
+
+                <button class="btn btn-primary" onclick="procesarReporteUsuario('dentro')">🚍 Voy a bordo del Autobús</button>
+                <button class="btn btn-orange" onclick="procesarReporteUsuario('afuera')">👀 Lo acabo de ver pasar</button>
             </div>
         </div>
 
+        <!-- MAPA -->
         <div class="mapa-contenedor">
             <div id="map"></div>
-            <div class="status-float"><b>Canal Firebase:</b> <span id="txt-status">Esperando credenciales...</span></div>
+            <div class="status-float">
+                <b>Red Central:</b> <span id="txt-notificaciones">Conectando...</span>
+            </div>
         </div>
+
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // Esta variable se llenará dinámicamente con lo que escriba el usuario
-        let FIREBASE_LINK = "";
+        const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com/rutas.json";
 
-        let mapaBase = L.map('map').setView([19.245, -98.975], 12);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapaBase);
+        const map = L.map('map').setView([19.285, -99.010], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
 
-        let rutasGlobales = {};
-        let idRutaVisualizandose = "";
-        let modoTrazoAdminActivo = false;
-        let nodosTrazoAdmin = [];
-        let marcadoresVisualesAdmin = [];
-        let lineaGuiaAdmin = null;
+        // Memoria del Estado de la Aplicación
+        let datasetRutas = {};
+        let rutaActivaId = "";
+        let esAdminLogueado = true; // Por defecto inicia en vista moderador
+        
+        // Variables de diseño del Moderador
+        let tipoHerramientaActiva = null; // 'ruta' o 'paradas'
+        let puntosTrazadoRuta = []; 
+        let coordenadasParadasOficiales = [];
+        
+        // Capas del Mapa
+        let capaLineaGrisRuta = null;
+        let grupoCapaParadasOficiales = L.layerGroup().addTo(map);
+        let grupoCapaBusesFlotantes = L.layerGroup().addTo(map);
+        let marcadoresTrazadoBorrador = [];
 
-        let capaCaminoVerde = null;
-        let grupoIconosBuses = [];
-        let userMarkerGps = null;
+        let modoTraficoGlobal = "moderado";
 
-        // --- VALIDADOR E INICIALIZADOR DE ENTORNO ---
-        window.conectarEntornoFirebase = function() {
-            let urlIngresada = document.getElementById('setup-url').value.trim();
-            
-            if(!urlIngresada) {
-                alert("Por favor introduce una dirección URL de Firebase válida.");
-                return;
-            }
-
-            // Validar y limpiar la URL para que siempre termine en "/rutas.json"
-            if(urlIngresada.endsWith("/")) {
-                urlIngresada = urlIngresada.slice(0, -1);
-            }
-            if(!urlIngresada.endsWith("/rutas.json")) {
-                urlIngresada = urlIngresada + "/rutas.json";
-            }
-
-            FIREBASE_LINK = urlIngresada;
-            
-            // Ocultar la pantalla de bloqueo y arrancar la sincronización
-            document.getElementById('pantalla-setup').style.display = 'none';
-            document.getElementById('txt-status').innerText = "Conectando al servidor...";
-            
-            descargarDatosFirebase();
-
-            // Activar el bucle de sincronización automática multi-dispositivo cada 7 segundos
-            setInterval(() => {
-                if(!modoTrazoAdminActivo && FIREBASE_LINK) descargarDatosFirebase();
-            }, 7000);
-        }
-
-        // --- CONEXIÓN DIRECTA HTTP REST ---
-
-        // Descargar datos (GET)
+        // --- 1. DESCARGA Y SINCRONIZACIÓN CON FIREBASE ---
         async function descargarDatosFirebase() {
             try {
                 const respuesta = await fetch(FIREBASE_LINK);
                 const datos = await respuesta.json();
-                rutasGlobales = datos || {};
-                
-                refrescarComponentesUI();
-                
-                if (idRutaVisualizandose && rutasGlobales[idRutaVisualizandose]) {
-                    renderizarRutaEnMapa(idRutaVisualizandose);
-                } else if (Object.keys(rutasGlobales).length > 0 && !idRutaVisualizandose) {
-                    idRutaVisualizandose = Object.keys(rutasGlobales)[0];
-                    renderizarRutaEnMapa(idRutaVisualizandose);
+                datasetRutas = datos || {};
+
+                actualizarComponentesUI();
+
+                if (rutaActivaId && datasetRutas[rutaActivaId]) {
+                    renderizarGeometriasRutaActual(rutaActivaId);
+                } else if (Object.keys(datasetRutas).length > 0 && !rutaActivaId) {
+                    rutaActivaId = Object.keys(datasetRutas)[0];
+                    renderizarGeometriasRutaActual(rutaActivaId);
                 }
-                document.getElementById('txt-status').innerText = "Sincronizado vía Enlace.";
+                document.getElementById('txt-notificaciones').innerText = "Nube Sincronizada.";
             } catch (e) {
-                document.getElementById('txt-status').innerText = "Error: Enlace bloqueado o inaccesible.";
+                document.getElementById('txt-notificaciones').innerText = "Error de enlace.";
             }
         }
 
-        // --- OPERACIONES DE ADMINISTRACIÓN ---
-        window.iniciarTrazoAdmin = function() {
-            modoTrazoAdminActivo = true;
-            nodosTrazoAdmin = [];
-            if(lineaGuiaAdmin) mapaBase.removeLayer(lineaGuiaAdmin);
-            marcadoresVisualesAdmin.forEach(m => mapaBase.removeLayer(m));
-            marcadoresVisualesAdmin = [];
-            document.getElementById('adm-btn-guardar').style.display = 'block';
-            document.getElementById('txt-status').innerText = "Editor Activo: Haz clic en el mapa.";
-        }
-
-        mapaBase.on('click', function(e) {
-            if (!modoTrazoAdminActivo) return;
-            const coord = [e.latlng.lat, e.latlng.lng];
-            nodosTrazoAdmin.push(coord);
-
-            let m = L.circleMarker(coord, {radius: 5, color: '#1565c0', fillColor: '#fff', weight: 2}).addTo(mapaBase);
-            marcadoresVisualesAdmin.push(m);
-
-            if (lineaGuiaAdmin) mapaBase.removeLayer(lineaGuiaAdmin);
-            lineaGuiaAdmin = L.polyline(nodosTrazoAdmin, {color: '#666', weight: 3, dashArray: '5,5'}).addTo(mapaBase);
-        });
-
-        window.guardarRutaEnFirebase = async function() {
-            const nombre = document.getElementById('adm-nombre').value.trim();
-            const numBuses = parseInt(document.getElementById('adm-buses').value) || 3;
-
-            if (!nombre || nodosTrazoAdmin.length < 2) {
-                alert("Asigna un nombre y marca al menos 2 puntos en el mapa.");
-                return;
-            }
-
-            const idDoc = "Ruta_" + Date.now();
-            let busesArray = [];
-            for(let i = 0; i < numBuses; i++) {
-                busesArray.push({ progreso: (i / numBuses), direccion: 1 });
-            }
-
-            const urlRutaEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${idDoc}.json`);
-            
-            try {
-                document.getElementById('txt-status').innerText = "Guardando...";
-                await fetch(urlRutaEspecifica, {
-                    method: 'PUT',
-                    body: JSON.stringify({
-                        nombre: nombre,
-                        trazado: nodosTrazoAdmin,
-                        buses: busesArray
-                    })
-                });
-                
-                modoTrazoAdminActivo = false;
-                document.getElementById('adm-btn-guardar').style.display = 'none';
-                if(lineaGuiaAdmin) mapaBase.removeLayer(lineaGuiaAdmin);
-                marcadoresVisualesAdmin.forEach(m => mapaBase.removeLayer(m));
-
-                await descargarDatosFirebase();
-            } catch (e) {
-                alert("Error al inyectar datos en el servidor.");
-            }
-        }
-
-        window.eliminarRutaFirebase = async function(id) {
-            if(confirm("¿Deseas borrar esta ruta de forma permanente?")) {
-                const urlRutaEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${id}.json`);
-                try {
-                    if (id === idRutaVisualizandose) idRutaVisualizandose = "";
-                    await fetch(urlRutaEspecifica, { method: 'DELETE' });
-                    await descargarDatosFirebase();
-                } catch(e) {
-                    alert("No se pudo eliminar.");
-                }
-            }
-        }
-
-        // --- OPERACIONES DE USUARIO ---
-        window.enviarReporteFirebase = async function(tipo) {
-            if (!navigator.geolocation || !idRutaVisualizandose) return;
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const uLat = pos.coords.latitude;
-                const uLng = pos.coords.longitude;
-                const sentido = parseInt(document.getElementById('user-sentido').value);
-
-                if(userMarkerGps) mapaBase.removeLayer(userMarkerGps);
-                userMarkerGps = L.circleMarker([uLat, uLng], {radius: 6, color: '#00bcd4', fillColor: '#fff', weight: 2}).addTo(mapaBase);
-
-                const ruta = rutasGlobales[idRutaVisualizandose];
-                let progreso = buscarProgresoCercano([uLat, uLng], ruta.trazado);
-                if (tipo === 'afuera') progreso = Math.min(progreso + 0.04, 0.95);
-
-                if(ruta.buses && ruta.buses.length > 0) {
-                    ruta.buses[0].progreso = progreso;
-                    ruta.buses[0].direccion = sentido;
-                }
-
-                const urlBusesEspecificos = FIREBASE_LINK.replace("rutas.json", `rutas/${idRutaVisualizandose}/buses.json`);
-                await fetch(urlBusesEspecificos, {
-                    method: 'PUT',
-                    body: JSON.stringify(ruta.buses)
-                });
-                renderizarRutaEnMapa(idRutaVisualizandose);
-            });
-        }
-
-        // --- INTERFAZ Y RENDERIZADO ---
-        function refrescarComponentesUI() {
-            const select = document.getElementById('user-select-ruta');
-            const valorGuardado = select.value;
-            select.innerHTML = "";
-            
-            const listaAdmin = document.getElementById('contenedor-lista-admin');
-            listaAdmin.innerHTML = "";
-
-            for (let id in rutasGlobales) {
-                let r = rutasGlobales[id];
-                if(!r) continue;
-                
-                let opt = document.createElement('option');
-                opt.value = id; opt.innerText = r.nombre;
-                select.appendChild(opt);
-
-                let item = document.createElement('div');
-                item.className = "item-ruta";
-                item.innerHTML = `<span><b>${r.nombre}</b> (${r.buses ? r.buses.length : 0} Buses)</span> 
-                                  <button class="btn-del" onclick="eliminarRutaFirebase('${id}')">X</button>`;
-                listaAdmin.appendChild(item);
-            }
-            if(rutasGlobales[valorGuardado]) select.value = valorGuardado;
-        }
-
-        window.cambiarVisualizacionRuta = function(id) {
-            idRutaVisualizandose = id;
-            renderizarRutaEnMapa(id);
-        }
-
-        function renderizarRutaEnMapa(id) {
-            const datos = rutasGlobales[id];
-            if (!datos) return;
-
-            if (capaCaminoVerde) mapaBase.removeLayer(capaCaminoVerde);
-            grupoIconosBuses.forEach(b => mapaBase.removeLayer(b));
-            grupoIconosBuses = [];
-
-            capaCaminoVerde = L.polyline(datos.trazado, {color: '#2e7d32', weight: 5}).addTo(mapaBase);
-
-            const busIcon = L.divIcon({
-                html: `<div style="background:#1b5e20; color:white; padding:3px; border-radius:4px; font-weight:bold; font-size:9px; text-align:center; border:1px solid white;">RTP</div>`,
-                className: 'icon-rtp-cloud', iconSize: [34, 20]
-            });
-
-            if(datos.buses) {
-                datos.buses.forEach((bus) => {
-                    const coords = interpolarCoordenadas(bus.progreso, datos.trazado);
-                    let marker = L.marker(coords, {icon: busIcon}).addTo(mapaBase);
-                    grupoIconosBuses.push(marker);
-                });
-            }
-        }
-
-        // Animación interna de los autobuses
-        setInterval(() => {
-            if (modoTrazoAdminActivo || !idRutaVisualizandose || !rutasGlobales[idRutaVisualizandose]) return;
-            const datos = rutasGlobales[idRutaVisualizandose];
-            if(!datos.buses) return;
-
-            datos.buses.forEach((bus, index) => {
-                bus.progreso += (0.0002 * bus.direccion);
-                if (bus.progreso >= 1) { bus.progreso = 1; bus.direccion = -1; }
-                if (bus.progreso <= 0) { bus.progreso = 0; bus.direccion = 1; }
-
-                if (grupoIconosBuses[index]) {
-                    const nuevasCoords = interpolarCoordenadas(bus.progreso, datos.trazado);
-                    grupoIconosBuses[index].setLatLng(nuevasCoords);
-                }
-            });
-        }, 1000);
-
-        // --- AUXILIARES MATEMÁTICOS ---
-        function interpolarCoordenadas(progreso, trazo) {
-            const max = trazo.length - 1; const pos = progreso * max;
-            const idx = Math.floor(pos); const sub = pos - idx;
-            if (idx >= max) return trazo[max];
-            return [trazo[idx][0] + (trazo[idx+1][0]-trazo[idx][0])*sub, trazo[idx][1] + (trazo[idx+1][1]-trazo[idx][1])*sub];
-        }
-
-        function buscarProgresoCercano(user, trazo) {
-            let min = Infinity; let idx = 0;
-            for(let i=0; i<trazo.length; i++) {
-                let d = Math.sqrt(Math.pow(trazo[i][0]-user[0],2)+Math.pow(trazo[i][1]-user[1],2));
-                if(d < min) { min = d; idx = i; }
-            }
-            return idx / (trazo.length - 1);
-        }
-
-        window.cambiarFiltroVista = function(rol) {
+        // --- 2. GESTIÓN DE ROLES Y VISTAS ---
+        function alternarPagina(rol) {
             document.getElementById('panel-admin').classList.remove('active');
             document.getElementById('panel-user').classList.remove('active');
             document.getElementById('btn-tab-admin').classList.remove('active');
             document.getElementById('btn-tab-user').classList.remove('active');
+
             if (rol === 'admin') {
+                esAdminLogueado = true;
                 document.getElementById('panel-admin').classList.add('active');
                 document.getElementById('btn-tab-admin').classList.add('active');
             } else {
+                esAdminLogueado = false;
+                cancelarEdicionAdmin();
                 document.getElementById('panel-user').classList.add('active');
                 document.getElementById('btn-tab-user').classList.add('active');
             }
         }
+
+        // --- 3. PASOS DE DISEÑO (LÍNEA DE RUTA VS PARADAS OFICIALES) ---
+        function cambiarModoHerramienta(modo) {
+            tipoHerramientaActiva = modo;
+            document.getElementById('btn-modo-ruta').classList.remove('activo');
+            document.getElementById('btn-modo-paradas').classList.remove('activo');
+
+            if(modo === 'ruta') {
+                document.getElementById('btn-modo-ruta').classList.add('activo');
+                document.getElementById('txt-notificaciones').innerText = "Modo: Haz clics continuos en el mapa para delinear las calles del recorrido.";
+            } else if(modo === 'paradas') {
+                document.getElementById('btn-modo-paradas').classList.add('activo');
+                document.getElementById('txt-notificaciones').innerText = "Modo: Marca los puntos exactos donde se ubicarán las Paradas Oficiales.";
+            }
+        }
+
+        // Captura de clics unificada en el mapa
+        map.on('click', function(e) {
+            if (!tipoHerramientaActiva) return;
+            const latlng = [e.latlng.lat, e.latlng.lng];
+
+            if (tipoHerramientaActiva === 'ruta') {
+                puntosTrazadoRuta.push(latlng);
+                
+                let marker = L.circleMarker(latlng, {radius: 4, color: '#555', fillColor: '#fff', weight: 2}).addTo(map);
+                marcadoresTrazadoBorrador.push(marker);
+
+                if (capaLineaGrisRuta) map.removeLayer(capaLineaGrisRuta);
+                capaLineaGrisRuta = L.polyline(puntosTrazadoRuta, {color: '#757575', weight: 4, dashArray: '5, 5'}).addTo(map);
+
+            } else if (tipoHerramientaActiva === 'paradas') {
+                coordenadasParadasOficiales.push(latlng);
+                
+                let markerParada = L.circleMarker(latlng, {
+                    radius: 7, color: '#e65100', fillColor: '#fff', weight: 3, fillOpacity: 1
+                }).addTo(grupoCapaParadasOficiales).bindPopup(`<b>🚏 Parada Oficial #${coordenadasParadasOficiales.length}</b>`);
+                
+                marcadoresTrazadoBorrador.push(markerParada);
+            }
+        });
+
+        // Guardado estructurado a la Base de Datos
+        async function finalizarGuardadoAdmin() {
+            const nombre = document.getElementById('admin-nombre').value.trim();
+            const origen = document.getElementById('admin-origen').value.trim();
+            const destino = document.getElementById('admin-destino').value.trim();
+            const numBuses = parseInt(document.getElementById('admin-buses').value) || 3;
+            const idEdicion = document.getElementById('admin-id-edicion').value;
+
+            if (!nombre || puntosTrazadoRuta.length < 2) {
+                alert("Por favor ingresa un nombre y traza al menos la línea base del recorrido en el mapa.");
+                return;
+            }
+
+            const idDoc = idEdicion ? idEdicion : "Ruta_" + Date.now();
+            
+            // Generar flota vehicular distribuida
+            let busesArray = [];
+            for(let i = 0; i < numBuses; i++) {
+                busesArray.push({ 
+                    progreso: (i / numBuses), 
+                    direccion: (i % 2 === 0) ? 1 : -1,
+                    velocidadLocal: 0.0003,
+                    traficoLocal: "moderado"
+                });
+            }
+
+            const urlEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${idDoc}.json`);
+
+            try {
+                await fetch(urlEspecifica, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        id: idDoc,
+                        nombre: nombre,
+                        origen: origen || "Terminal A",
+                        destino: destino || "Terminal B",
+                        puntosRuta: puntosTrazadoRuta,
+                        paradas: coordenadasParadasOficiales,
+                        buses: busesArray
+                    })
+                });
+
+                cancelarEdicionAdmin();
+                await descargarDatosFirebase();
+            } catch (e) {
+                alert("Error de comunicación con Firebase.");
+            }
+        }
+
+        window.cargarRutaParaEditar = function(id) {
+            const r = datasetRutas[id];
+            if(!r) return;
+
+            cancelarEdicionAdmin();
+
+            document.getElementById('form-admin-titulo').innerText = "✏️ Modificar Estructura";
+            document.getElementById('admin-id-edicion').value = id;
+            document.getElementById('admin-nombre').value = r.nombre;
+            document.getElementById('admin-origen').value = r.origen || "";
+            document.getElementById('admin-destino').value = r.destino || "";
+            document.getElementById('admin-buses').value = r.buses ? r.buses.length : 3;
+            document.getElementById('admin-btn-cancelar').style.display = 'inline-block';
+
+            puntosTrazadoRuta = r.puntosRuta || [];
+            coordenadasParadasOficiales = r.paradas || [];
+            
+            rutaActivaId = id;
+            renderizarGeometriasRutaActual(id);
+            cambiarModoHerramienta('ruta');
+        }
+
+        window.cancelarEdicionAdmin = function() {
+            document.getElementById('form-admin-titulo').innerText = "🗺️ Configurar Ruta";
+            document.getElementById('admin-id-edicion').value = "";
+            document.getElementById('admin-nombre').value = "";
+            document.getElementById('admin-origen').value = "";
+            document.getElementById('admin-destino').value = "";
+            document.getElementById('admin-buses').value = "3";
+            document.getElementById('admin-btn-cancelar').style.display = 'none';
+
+            document.getElementById('btn-modo-ruta').classList.remove('activo');
+            document.getElementById('btn-modo-paradas').classList.remove('activo');
+            
+            tipoHerramientaActiva = null;
+            puntosTrazadoRuta = [];
+            coordenadasParadasOficiales = [];
+            
+            marcadoresTrazadoBorrador.forEach(m => map.removeLayer(m));
+            marcadoresTrazadoBorrador = [];
+            
+            if(rutaActivaId) renderizarGeometriasRutaActual(rutaActivaId);
+        }
+
+        window.eliminarRutaFirebase = async function(id) {
+            if (confirm("¿Remover ruta permanentemente de Firebase?")) {
+                const urlEspecifica = FIREBASE_LINK.replace("rutas.json", `rutas/${id}.json`);
+                try {
+                    if (id === rutaActivaId) rutaActivaId = "";
+                    await fetch(urlEspecifica, { method: 'DELETE' });
+                    cancelarEdicionAdmin();
+                    await descargarDatosFirebase();
+                } catch(e) {
+                    alert("Error al borrar.");
+                }
+            }
+        }
+
+        function modificarTraficoAdmin(nivel) {
+            modoTraficoGlobal = nivel;
+        }
+
+        // --- 4. RENDERIZACIÓN DE MAPAS, LÍNEAS Y EMOJIS DINÁMICOS ---
+        function renderizarGeometriasRutaActual(idRuta) {
+            const datos = datasetRutas[idRuta];
+            if(!datos) return;
+
+            // Limpiar lienzos previos
+            if (capaLineaGrisRuta) map.removeLayer(capaLineaGrisRuta);
+            grupoCapaParadasOficiales.clearLayers();
+            
+            // Colores basados en tráfico para la línea troncal
+            let coloresTrafico = { "fluido": "#2e7d32", "moderado": "#4caf50", "pesado": "#e53935" };
+            let colorTrazo = coloresTrafico[modoTraficoGlobal] || "#4caf50";
+
+            // 1. Dibujar Recorrido de calles completo
+            if(datos.puntosRuta && datos.puntosRuta.length > 0) {
+                capaLineaGrisRuta = L.polyline(datos.puntosRuta, {
+                    color: colorTrazo, weight: 6, opacity: 0.9
+                }).addTo(map);
+            }
+
+            // 2. Dibujar Paradas Oficiales
+            if(datos.paradas && datos.paradas.length > 0) {
+                datos.paradas.forEach((parada, idx) => {
+                    L.circleMarker(parada, {
+                        radius: 6, color: '#e65100', fillColor: '#fff', weight: 2.5, fillOpacity: 1
+                    }).addTo(grupoCapaParadasOficiales)
+                    .bindPopup(`<b>🚏 Parada Oficial</b><br>Línea: ${datos.nombre}`);
+                });
+            }
+
+            // Marcadores de terminales principales
+            if(datos.puntosRuta && datos.puntosRuta.length > 1) {
+                L.circleMarker(datos.puntosRuta[0], {radius: 8, color: '#1b5e20', fillColor:'#fff', weight:4})
+                    .addTo(grupoCapaParadasOficiales).bindPopup(`<b>Terminal de Origen:</b><br>${datos.origen}`);
+                L.circleMarker(datos.puntosRuta[datos.puntosRuta.length-1], {radius: 8, color: '#b71c1c', fillColor:'#fff', weight:4})
+                    .addTo(grupoCapaParadasOficiales).bindPopup(`<b>Terminal de Destino:</b><br>${datos.destino}`);
+            }
+
+            actualizarMarcadoresBusesEnMapa();
+        }
+
+        function actualizarMarcadoresBusesEnMapa() {
+            grupoCapaBusesFlotantes.clearLayers();
+            const datos = datasetRutas[rutaActivaId];
+            if(!datos || !datos.buses || !datos.puntosRuta || datos.puntosRuta.length < 2) return;
+
+            datos.buses.forEach((bus) => {
+                const coordenadasActuales = interpolarCoordenadas(bus.progreso, datos.puntosRuta);
+                
+                // Determinar orientación del espejo del emoji dependiendo de su dirección física
+                let claseDireccion = (bus.direccion === 1) ? "bus-derecha" : "bus-izquierda";
+                let destinoFinal = (bus.direccion === 1) ? datos.destino : datos.origen;
+
+                // Generar icono nativo con el emoji
+                let htmlIcono = L.divIcon({
+                    html: `<div class="bus-emoji-container ${claseDireccion}">🚍</div>`,
+                    className: 'marker-emoji-bus',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                let textoTrafico = bus.traficoLocal === "pesado" ? "🚨 Tránsito Pesado" : (bus.traficoLocal === "fluido" ? "🟢 Vía Libre" : "🟡 Moderado");
+
+                L.marker(coordenadasActuales, {icon: htmlIcono})
+                    .addTo(grupoCapaBusesFlotantes)
+                    .bindPopup(`
+                        <b style="color:#2e7d32; font-size:1rem;">Camión en Movimiento</b><br>
+                        <b>Servicio:</b> ${datos.nombre}<br>
+                        <b>Destino inmediato:</b> ${destinoFinal}<br>
+                        <b>Estado Vial:</b> <span>${textoTrafico}</span>
+                    `);
+            });
+        }
+
+        // --- 5. MOTOR CINEMÁTICO EN TIEMPO REAL (REQUISITO FUNDAMENTAL) ---
+        // Mueve los buses localmente de forma inmediata para máxima fluidez y el admin empuja a Firebase
+        setInterval(async () => {
+            if (!rutaActivaId || !datasetRutas[rutaActivaId]) return;
+            const datos = datasetRutas[rutaActivaId];
+            if(!datos.buses || !datos.puntosRuta || datos.puntosRuta.length < 2) return;
+
+            datos.buses.forEach((bus) => {
+                // Variación asíncrona de tráfico en camino
+                if(Math.random() < 0.15) {
+                    let randomico = Math.random();
+                    if(modoTraficoGlobal === "pesado" || randomico < 0.2) {
+                        bus.velocidadLocal = 0.00008;
+                        bus.traficoLocal = "pesado";
+                    } else if (modoTraficoGlobal === "fluido" || randomico > 0.7) {
+                        bus.velocidadLocal = 0.0012;
+                        bus.traficoLocal = "fluido";
+                    } else {
+                        bus.velocidadLocal = 0.0004;
+                        bus.traficoLocal = "moderado";
+                    }
+                }
+
+                // Incrementar progreso cinemático
+                bus.progreso += (bus.velocidadLocal * bus.direccion);
+                
+                // Efecto rebote en terminales de ruta
+                if (bus.progreso >= 1) { bus.progreso = 1; bus.direccion = -1; }
+                if (bus.progreso <= 0) { bus.progreso = 0; bus.direccion = 1; }
+            });
+
+            // Redibujar en mapa inmediatamente
+            actualizarMarcadoresBusesEnMapa();
+
+            // RESPONSABILIDAD: El Moderador actualiza constantemente la nube central para los pasajeros
+            if(esAdminLogueado && !tipoHerramientaActiva) {
+                const urlBuses = FIREBASE_LINK.replace("rutas.json", `rutas/${rutaActivaId}/buses.json`);
+                fetch(urlBuses, { method: 'PUT', body: JSON.stringify(datos.buses) });
+            }
+        }, 1000);
+
+        // Los Pasajeros consumen los datos cada 4 segundos para acoplar reportes o movimientos del admin
+        setInterval(() => {
+            if(!esAdminLogueado && !tipoHerramientaActiva) {
+                descargarDatosFirebase();
+            }
+        }, 4000);
+
+        // --- 6. REPORTES DE PASAJEROS ---
+        window.procesarReporteUsuario = async function(tipoReporte) {
+            if (!navigator.geolocation || !rutaActivaId) return;
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const uLat = pos.coords.latitude;
+                const uLng = pos.coords.longitude;
+                const sentido = parseInt(document.getElementById('user-direccion-reporte').value);
+
+                const ruta = datasetRutas[rutaActivaId];
+                if(!ruta || !ruta.puntosRuta) return;
+                
+                let progresoCalculado = buscarProgresoRutaCercano([uLat, uLng], r.puntosRuta);
+                if (tipoReporte === 'afuera') progresoCalculado = Math.min(progresoCalculado + 0.03, 0.95);
+
+                if (ruta.buses && ruta.buses.length > 0) {
+                    ruta.buses[0].progreso = progresoCalculado;
+                    ruta.buses[0].direccion = sentido;
+                }
+
+                const urlBuses = FIREBASE_LINK.replace("rutas.json", `rutas/${rutaActivaId}/buses.json`);
+                await fetch(urlBuses, { method: 'PUT', body: JSON.stringify(ruta.buses) });
+                
+                document.getElementById('txt-notificaciones').innerText = "Reporte de parada inyectado.";
+                renderizarGeometriasRutaActual(rutaActivaId);
+            });
+        }
+
+        // --- 7. UTILERÍAS ---
+        function actualizarComponentesUI() {
+            const selectorUser = document.getElementById('user-selector-rutas');
+            const valorGuardado = selectorUser.value;
+            selectorUser.innerHTML = "";
+
+            const contenedorAdmin = document.getElementById('lista-rutas-admin');
+            contenedorAdmin.innerHTML = "";
+
+            for(let id in datasetRutas) {
+                let r = datasetRutas[id];
+                if (!r) continue;
+
+                let option = document.createElement('option');
+                option.value = id;
+                option.innerText = `${r.nombre}`;
+                selectorUser.appendChild(option);
+
+                let item = document.createElement('div');
+                item.className = "item-ruta-lista";
+                item.innerHTML = `
+                    <div><strong>${r.nombre}</strong></div>
+                    <div style="font-size:0.75rem; color:#666; margin: 4px 0;">
+                        🚏 Paradas registradas: ${r.paradas ? r.paradas.length : 0}<br>
+                        🚍 Unidades activas: ${r.buses ? r.buses.length : 0}
+                    </div>
+                    <div>
+                        <button class="btn btn-warning btn-mini" onclick="cargarRutaParaEditar('${id}')">✏️ Editar</button>
+                        <button class="btn btn-danger btn-mini" onclick="eliminarRutaFirebase('${id}')">🗑️ Eliminar</button>
+                    </div>
+                `;
+                contenedorAdmin.appendChild(item);
+            }
+            if(datasetRutas[valorGuardado]) selectorUser.value = valorGuardado;
+        }
+
+        function seleccionarRutaDesdeUsuario(idRuta) {
+            rutaActivaId = idRuta;
+            renderizarGeometriasRutaActual(idRuta);
+        }
+
+        function interpolarCoordenadas(progreso, listaPuntos) {
+            const maxSegmentos = listaPuntos.length - 1;
+            const posMapeada = progreso * maxSegmentos;
+            const index = Math.floor(posMapeada);
+            const subProgreso = posMapeada - index;
+
+            if (index >= maxSegmentos) return listaPuntos[maxSegmentos];
+            const pA = listaPuntos[index];
+            const pB = listaPuntos[index + 1];
+            return [ pA[0] + (pB[0] - pA[0]) * subProgreso, pA[1] + (pB[1] - pA[1]) * subProgreso ];
+        }
+
+        function buscarProgresoRutaCercano(coordsUser, listaPuntos) {
+            let distMinima = Infinity; let indexCercano = 0;
+            for(let i=0; i<listaPuntos.length; i++) {
+                let d = Math.sqrt(Math.pow(listaPuntos[i][0]-coordsUser[0],2)+Math.pow(listaPuntos[i][1]-coordsUser[1],2));
+                if(d < distMinima) { distMinima = d; indexCercano = i; }
+            }
+            return indexCercano / (listaPuntos.length - 1);
+        }
+
+        descargarDatosFirebase();
     </script>
 </body>
 </html>
