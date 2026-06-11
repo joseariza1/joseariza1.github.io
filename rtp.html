@@ -98,8 +98,23 @@
         .item-ruta-lista, .item-bus-activo {
             padding: 10px; border: 2px solid var(--border); border-radius: 6px; margin-bottom: 8px; background: #fafafa; font-size: 0.85rem;
         }
+        .item-bus-activo.enfocado {
+            border-color: var(--accent-orange);
+            background-color: #fffde7;
+        }
 
         .marker-emoji-bus { transition: all 1s linear !important; }
+        
+        @keyframes resaltarFoco {
+            0% { transform: scale(1); filter: drop-shadow(0 0 0px #ffeb3b); }
+            50% { transform: scale(1.4); filter: drop-shadow(0 0 15px #d32f2f); }
+            100% { transform: scale(1); filter: drop-shadow(0 0 0px #ffeb3b); }
+        }
+        .bus-resaltado {
+            animation: resaltarFoco 0.6s ease infinite;
+            z-index: 2000 !important;
+        }
+
         .bus-emoji-container { font-size: 28px; text-align: center; position: relative; width: 40px; height: 40px;}
         
         .bus-derecha { transform: scaleX(1); }
@@ -185,8 +200,8 @@
 
             <div class="seccion" style="background-color: #e8f5e9;">
                 <h3>🎛️ Monitoreo de Unidades Activas</h3>
-                <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #555;">💡 Tip: Haz clic directo en el mapa sobre las líneas, buses o paradas para gestionarlos con comodidad.</p>
-                <div id="lista-buses-monitoreo" style="max-height:150px; overflow-y:auto; margin-top:6px;"></div>
+                <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #555;">💡 Tip: Escribe el progreso numérico y presiona Enter para guardar. Mientras edites, la lista no se moverá.</p>
+                <div id="lista-buses-monitoreo" style="max-height:280px; overflow-y:auto; margin-top:6px;"></div>
             </div>
             
             <div class="seccion">
@@ -208,8 +223,18 @@
             </div>
             
             <div class="seccion" style="background: #fff;">
-                <h3>📡 Validation a Bordo</h3>
+                <h3>📡 Validación a Bordo</h3>
                 <p style="margin:0 0 8px 0; font-size:0.8rem; color:#555;">Si vas arriba de un RTP, activa el botón para reportar la posición real del bus a toda la comunidad.</p>
+                
+                <div class="input-group">
+                    <label>🎯 Mi Dirección de Viaje</label>
+                    <select id="user-direccion-viaje">
+                        <option value="auto">🌐 Detección Automática por GPS</option>
+                        <option value="1">🟢 IDA (Hacia Terminal Destino)</option>
+                        <option value="-1">🔵 REGRESO (Hacia Terminal Origen)</option>
+                    </select>
+                </div>
+
                 <button class="btn btn-success" id="btn-abordar-gps" onclick="activarRastreoAbordoPasajero()">🚍 ¡Voy a bordo de esta ruta!</button>
                 
                 <div class="viaje-status-box" id="viaje-status-container">
@@ -241,6 +266,7 @@
         let rutaActivaId = ""; 
         let esAdminLogueado = true;
         let tipoHerramientaActiva = null;
+        let busSeleccionadoId = null; 
 
         // Geometrías
         let puntosIda = []; let puntosRegreso = [];
@@ -299,6 +325,17 @@
 
         // --- 2. INTERACCIÓN DIRECTA EN EL MAPA ---
         map.on('click', function(e) {
+            // CORRECCIÓN SINTÓNICA: Si haces clic en una zona libre del mapa, remueve el parpadeo de forma definitiva
+            if (!tipoHerramientaActiva) {
+                busSeleccionadoId = null;
+                document.querySelectorAll('.item-bus-activo').forEach(el => el.classList.remove('enfocado'));
+                for (let id in marcadoresBusesMemoria) {
+                    if (marcadoresBusesMemoria[id] && marcadoresBusesMemoria[id]._icon) {
+                        marcadoresBusesMemoria[id]._icon.classList.remove('bus-resaltado');
+                    }
+                }
+            }
+
             if (tipoHerramientaActiva === 'ruta_ida') {
                 const latlng = [e.latlng.lat, e.latlng.lng];
                 puntosIda.push(latlng);
@@ -412,7 +449,7 @@
             }
         }
 
-        // --- 4. PERSISTENCIA DE TRÁFICO CORREGIDA ---
+        // --- 4. PERSISTENCIA DE TRÁFICO ---
         async function guardarEstadoTraficoNube(sentido, indiceTramo, tieneTrafico) {
             if(!rutaActivaId) return;
             const urlTrafico = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/reportesTrafico/${sentido}/${indiceTramo}.json`);
@@ -421,7 +458,6 @@
             if (tieneTrafico) {
                 await fetch(urlTrafico, { method: 'PUT', body: 'true' });
             } else {
-                // Se utiliza DELETE para limpiar el tramo y refrescar las capas dinámicas
                 await fetch(urlTrafico, { method: 'DELETE' });
             }
             await descargarDatosServidor();
@@ -507,7 +543,6 @@
                 timestampSalida: timestampSalidaAjustado, telemetriaReal: false
             };
 
-            map.closePopup();
             await fetch(urlBus, { method: 'PUT', body: JSON.stringify(payloadAjustado) });
             await descargarDatosServidor();
         }
@@ -516,18 +551,43 @@
             if(confirm("¿Retirar esta unidad RTP de la circulación del mapa?")) {
                 const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busId}.json`);
                 map.closePopup();
+                if(busSeleccionadoId === busId) busSeleccionadoId = null;
                 await fetch(url, { method: 'DELETE' });
                 await descargarDatosServidor();
             }
         }
 
-        // --- 7. ALGORITMO TELEMETRÍA COLABORATIVA (PASAJEROS) ---
+        // --- ACCIÓN DE RESALTADO FIJO EN EL MAPA ---
+        window.resaltarUnidadEnMapa = function(busId) {
+            for (let id in marcadoresBusesMemoria) {
+                if (marcadoresBusesMemoria[id] && marcadoresBusesMemoria[id]._icon) {
+                    marcadoresBusesMemoria[id]._icon.classList.remove('bus-resaltado');
+                }
+            }
+            
+            busSeleccionadoId = busId; 
+            const marcador = marcadoresBusesMemoria[busId];
+            if (marcador) {
+                map.panTo(marcador.getLatLng());
+                if (marcador._icon) {
+                    marcador._icon.classList.add('bus-resaltado');
+                }
+            }
+
+            document.querySelectorAll('.item-bus-activo').forEach(el => el.classList.remove('enfocado'));
+            const contenedorLista = document.getElementById(`card-bus-${busId}`);
+            if(contenedorLista) contenedorLista.classList.add('enfocado');
+        }
+
+        // --- 7. ALGORITMO TELEMETRÍA COLABORATIVA (PASAJEROS MEJORADO) ---
         function activarRastreoAbordoPasajero() {
             if (!navigator.geolocation) { alert("Tu equipo no soporta geolocalización."); return; }
             const r = datasetRutas[rutaActivaId]; if(!r) return;
 
             document.getElementById('viaje-status-container').style.display = 'block';
             document.getElementById('viaje-status-texto').innerText = "Validando proximidad a las unidades...";
+
+            const direccionSeleccionada = document.getElementById('user-direccion-viaje').value;
 
             idWatcherGpsPasajero = navigator.geolocation.watchPosition(async (pos) => {
                 const uLat = pos.coords.latitude; const uLng = pos.coords.longitude;
@@ -537,13 +597,19 @@
                 let evalReg = calcularDistanciaMinimaRuta(userLoc, r.geometriaRegreso);
                 let distMinimaRuta = Math.min(evalIda.distancia, evalReg.distancia);
 
-                if(distMinimaRuta > 60) {
+                if(distMinimaRuta > 250) {
                     document.getElementById('viaje-status-texto').innerText = "⚠️ Desviado de la ruta. Bajada inferida.";
                     setTimeout(() => { detenerRastreoAbordoPasajero(); }, 3000);
                     return;
                 }
 
-                let sentidoAsignado = (evalIda.distancia <= evalReg.distancia) ? 1 : -1;
+                let sentidoAsignado;
+                if (direccionSeleccionada === "auto") {
+                    sentidoAsignado = (evalIda.distancia <= evalReg.distancia) ? 1 : -1;
+                } else {
+                    sentidoAsignado = parseInt(direccionSeleccionada);
+                }
+
                 let progresoCalculado = (sentidoAsignado === 1) ? evalIda.progreso : evalReg.progreso;
 
                 if (!busAsignadoAlPasajeroId) {
@@ -586,7 +652,7 @@
             document.getElementById('viaje-status-container').style.display = 'none';
         }
 
-        // --- 8. RENDERIZADO Y DINÁMICA DE MOVIMIENTO ---
+        // --- 8. RENDERIZADO Y DINÁMICA DE MOVIMIENTO CORREGIDA ---
         function renderizarGeometriasRuta(idRuta) {
             const r = datasetRutas[idRuta]; if(!r) return;
             
@@ -654,14 +720,12 @@
                     const trazoCompleto = (sentido === 1) ? r.geometriaIda : rRegresoOInvertido(r);
                     for (let idx in r.reportesTrafico[sentido]) {
                         let i = parseInt(idx);
-                        // Validación de seguridad para asegurar que el valor en el nodo es explícitamente true
                         if (r.reportesTrafico[sentido][idx] === true && trazoCompleto[i] && trazoCompleto[i + 1]) {
                             let capaTrafico = L.polyline([trazoCompleto[i], trazoCompleto[i + 1]], {
                                 color: '#d32f2f', className: 'tramo-trafico-pesado', weight: 8
                             }).addTo(map);
                             capaTrafico.bindTooltip("🛑 Tráfico Pesado", {sticky: true});
                             
-                            // Re-vincular evento de clic directo sobre la misma capa de tráfico para facilitar su edición/borrado rápido
                             configurarEventosClickLineas(capaTrafico, sentido);
                             capasTramosTrafico.push(capaTrafico);
                         }
@@ -700,12 +764,19 @@
         }
 
         async function calcularCinematicaFlotaActiva(ruta) {
-            if(!ruta || !ruta.busesActivos) { limpiarMarcadoresBusesMesa(); elistaxBusesMonitiores(null); return; }
+            if(!ruta || !ruta.busesActivos) { limpiarMarcadoresBusesMesa(); return; }
             
             const ahora = Date.now();
             const duracionMs = (ruta.duracionMinutos || 30) * 60 * 1000;
             let llavesActivasEsteCiclo = [];
-            let htmlListaMonitoreo = "";
+            
+            const idInputEnFoco = document.activeElement ? document.activeElement.getAttribute('data-bus-id') : null;
+            const listaContenedorDOM = document.getElementById('lista-buses-monitoreo');
+
+            // CORRECCIÓN SINTÓNICA: Si el foco general del navegador se pierde o cambia a un elemento sin ID de bus, limpiamos la selección
+            if (!idInputEnFoco && busSeleccionadoId !== null && !document.querySelector(`.item-bus-activo.enfocado`)) {
+                busSeleccionadoId = null;
+            }
 
             for(let id in ruta.busesActivos) {
                 let bus = ruta.busesActivos[id];
@@ -746,7 +817,7 @@
                     }
 
                     if(progresoFinal >= 1.0) {
-                        if (esAdminLogueado) {
+                        if (esAdminLogueado && idInputEnFoco !== id) {
                             fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${ruta.id}/busesActivos/${id}.json`), { method: 'DELETE' });
                         }
                         continue;
@@ -763,21 +834,44 @@
 
                 const pctUI = Math.floor(Math.max(0, Math.min(1, progresoFinal)) * 100);
 
-                htmlListaMonitoreo += `
-                    <div class="item-bus-activo" style="margin-bottom: 10px;">
+                if (esAdminLogueado && listaContenedorDOM) {
+                    let tarjetaExistente = document.getElementById(`card-bus-${id}`);
+                    let claseEnfocado = (busSeleccionadoId === id) ? "enfocado" : "";
+
+                    let htmlTarjetaEstructura = `
                         <b>Unidad:</b> ${id.substring(0,8)}... ⇄ ${nombreTerminalDestino}<br>
-                        <b>Progreso:</b> <span id="txt-pct-dinamico-${id}">${pctUI}</span>% | ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Proyección"}<br>
-                        <input type="range" min="0" max="100" value="${pctUI}" style="width: 100%; margin-top: 5px; accent-color: var(--primary);"
-                            oninput="document.getElementById('txt-pct-dinamico-${id}').innerText = this.value"
-                            onchange="modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value)">
-                    </div>`;
+                        <b>Estado:</b> ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Proyección"}<br>
+                        <div style="margin-top: 6px; display:flex; gap:6px; align-items:center;">
+                            <label style="margin:0; font-size:11px;">Progreso (%):</label>
+                            <input type="number" min="0" max="100" value="${pctUI}" data-bus-id="${id}" style="width: 80px; padding: 4px; font-size:12px;"
+                                onfocus="resaltarUnidadEnMapa('${id}')"
+                                onkeydown="if(event.key === 'Enter') { modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value); this.blur(); }"
+                                onblur="modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value)">
+                        </div>
+                    `;
+
+                    if (!tarjetaExistente) {
+                        let nuevaCard = document.createElement('div');
+                        nuevaCard.id = `card-bus-${id}`;
+                        nuevaCard.className = `item-bus-activo ${claseEnfocado}`;
+                        nuevaCard.setAttribute('onclick', `if(document.activeElement.getAttribute('data-bus-id')!=='${id}') resaltarUnidadEnMapa('${id}')`);
+                        nuevaCard.innerHTML = htmlTarjetaEstructura;
+                        listaContenedorDOM.appendChild(nuevaCard);
+                    } else if (idInputEnFoco !== id) {
+                        tarjetaExistente.className = `item-bus-activo ${claseEnfocado}`;
+                        tarjetaExistente.innerHTML = htmlTarjetaEstructura;
+                    }
+                }
 
                 let claseDir = (bus.direccion === 1) ? "bus-derecha" : "bus-izquierda";
                 let colorTag = (bus.direccion === 1) ? "#1b5e20" : "#1565c0";
                 if(transitandoPorTrafico && !bus.telemetriaReal) colorTag = "var(--accent-orange)";
                 
+                // CORRECCIÓN SINTÓNICA: Evalúa estrictamente si coincide con el ID global de selección para aplicar el parpadeo CSS
+                let claseResaltadoMarcador = (busSeleccionadoId === id) ? "bus-resaltado" : "";
+
                 let htmlIcono = L.divIcon({
-                    html: `<div class="bus-emoji-container ${claseDir}">🚍<span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span></div>`,
+                    html: `<div class="bus-emoji-container ${claseDir} ${claseResaltadoMarcador}">🚍<span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span></div>`,
                     className: 'marker-emoji-bus', iconSize: [36, 36], iconAnchor: [18, 18]
                 });
 
@@ -821,7 +915,15 @@
                 }
             }
 
-            elistaxBusesMonitiores(htmlListaMonitoreo);
+            if (esAdminLogueado && listaContenedorDOM) {
+                let tarjetasActuales = listaContenedorDOM.querySelectorAll('.item-bus-activo');
+                tarjetasActuales.forEach(tarjeta => {
+                    let tarjetaId = tarjeta.id.replace('card-bus-', '');
+                    if (!llavesActivasEsteCiclo.includes(tarjetaId)) {
+                        tarjeta.remove();
+                    }
+                });
+            }
 
             for (let k in marcadoresBusesMemoria) {
                 if (!llavesActivasEsteCiclo.includes(k)) {
@@ -832,8 +934,12 @@
         }
 
         function rRegresoOInvertido(ruta) { return ruta.geometriaRegreso || [...ruta.geometriaIda].reverse(); }
-        function elistaxBusesMonitiores(html) { const el = document.getElementById('lista-buses-monitoreo'); if(el && html !== null) el.innerHTML = html; }
-        function limpiarMarcadoresBusesMesa() { for (let k in marcadoresBusesMemoria) { map.removeLayer(marcadoresBusesMemoria[k]); } marcadoresBusesMemoria = {}; }
+        function limpiarMarcadoresBusesMesa() { 
+            for (let k in marcadoresBusesMemoria) { map.removeLayer(marcadoresBusesMemoria[k]); } 
+            marcadoresBusesMemoria = {}; 
+            const list = document.getElementById('lista-buses-monitoreo');
+            if(list) list.innerHTML = "";
+        }
 
         // --- 9. RELOJ E HILOS OPERATIVOS ---
         setInterval(() => {
@@ -871,6 +977,7 @@
             return [ pA[0] + (pB[0] - pA[0]) * subProgreso, pA[1] + (pB[1] - pA[1]) * subProgreso ];
         }
 
+        // --- 11. ACTUALIZADORES ---
         function actualizarComponentesUI() {
             const selectorUser = document.getElementById('user-selector-rutas'); const valGuardado = selectorUser.value;
             selectorUser.innerHTML = ""; document.getElementById('lista-rutas-admin').innerHTML = "";
@@ -886,7 +993,12 @@
             if(datasetRutas[valGuardado]) selectorUser.value = valGuardado;
         }
 
-        function seleccionarRutaDesdeUsuario(idRuta) { rutaActivaId = idRuta; limpiarMarcadoresBusesMesa(); renderizarGeometriasRuta(idRuta); }
+        function seleccionarRutaDesdeUsuario(idRuta) { 
+            rutaActivaId = idRuta; 
+            busSeleccionadoId = null;
+            limpiarMarcadoresBusesMesa(); 
+            renderizarGeometriasRuta(idRuta); 
+        }
         
         window.cancelarEdicionAdmin = function() { 
             puntosIda = []; 
@@ -907,7 +1019,10 @@
         window.eliminarRutaCompleta = async function(id) { 
             if(confirm("¿Eliminar?")) { 
                 await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${id}.json`), {method:'DELETE'}); 
-                if(rutaActivaId === id) rutaActivaId = ""; 
+                if(rutaActivaId === id) {
+                    rutaActivaId = ""; 
+                    busSeleccionadoId = null;
+                }
                 await descargarDatosServidor(); 
             } 
         };
@@ -922,6 +1037,7 @@
             puntosIda = r.geometriaIda || []; 
             puntosRegreso = r.geometriaRegreso || []; 
             rutaActivaId = id; 
+            busSeleccionadoId = null;
             renderizarGeometriasRuta(id); 
         };
 
