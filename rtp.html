@@ -104,9 +104,11 @@
         .bus-derecha { transform: scaleX(1); }
         .bus-izquierda { transform: scaleX(-1); }
 
+        /* Estilo para los iconos de Paradas */
+        .parada-emoji-container { font-size: 22px; text-align: center; line-height: 24px; cursor: pointer; }
+
         .btn-cerrar-menu { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #333; font-weight: bold; }
 
-        /* Animación para tramos con tráfico pesado */
         @keyframes parpadeoTrafico {
             0% { opacity: 0.4; stroke-width: 8; }
             50% { opacity: 1; stroke-width: 12; }
@@ -162,12 +164,12 @@
                     <label style="margin-bottom:6px;">Trazar Calles e Infraestructura:</label>
                     <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-ida" onclick="cambiarModoHerramienta('ruta_ida')">🔄 Trazar IDA (Verde)</button>
                     <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-regreso" onclick="cambiarModoHerramienta('ruta_regreso')">🔄 Trazar REGRESO (Azul)</button>
+                    <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')" style="margin-top: 4px;">🚏 Agregar Paradas</button>
                 </div>
 
                 <div style="border: 2px solid var(--accent-orange); padding: 10px; border-radius: 6px; margin-bottom: 12px; background: #fff3e0;">
                     <label style="color: var(--accent-orange); margin-bottom:6px;">⚠️ Control de Tráfico Vial:</label>
                     <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-trafico" onclick="cambiarModoHerramienta('reportar_trafico')">🛑 Activar Modo Tráfico</button>
-                    <p style="margin: 4px 0 0 0; font-size: 0.75rem; color: #666;">Al activarlo, haz clic sobre cualquier punto de la ruta en el mapa para indicar congestión.</p>
                 </div>
 
                 <div class="input-group">
@@ -181,8 +183,8 @@
 
             <div class="seccion" style="background-color: #e8f5e9;">
                 <h3>🎛️ Monitoreo de Unidades Activas</h3>
-                <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #555;">💡 Tip: Puedes hacer clic sobre las líneas o sobre los buses del mapa para gestionarlos directamente.</p>
-                <div id="lista-buses-monitoreo" style="max-height:180px; overflow-y:auto; margin-top:6px;"></div>
+                <p style="margin: 0 0 8px 0; font-size: 0.8rem; color: #555;">💡 Tip: Haz clic directo en el mapa sobre las líneas, buses o paradas para gestionarlos con comodidad.</p>
+                <div id="lista-buses-monitoreo" style="max-height:150px; overflow-y:auto; margin-top:6px;"></div>
             </div>
             
             <div class="seccion">
@@ -243,7 +245,8 @@
         let capaLineaIda = null; let capaLineaRegreso = null;
         let marcadoresBorradorGrafico = [];
         let marcadoresBusesMemoria = {};
-        let capasTramosTrafico = []; // Almacena las capas de tráfico visibles
+        let capasTramosTrafico = [];
+        let marcadoresParadasMemoria = []; // Guarda los iconos de paradas visibles
 
         // Tracking Pasajero
         let idWatcherGpsPasajero = null;
@@ -288,10 +291,12 @@
             document.getElementById('btn-modo-ida').classList.toggle('activo', tipoHerramientaActiva === 'ruta_ida');
             document.getElementById('btn-modo-regreso').classList.toggle('activo', tipoHerramientaActiva === 'ruta_regreso');
             document.getElementById('btn-modo-trafico').classList.toggle('activo', tipoHerramientaActiva === 'reportar_trafico');
+            document.getElementById('btn-modo-paradas').classList.toggle('activo', tipoHerramientaActiva === 'agregar_paradas');
         }
 
-        // --- 2. TRAZADO E INTERACCIÓN DIRECTA EN EL MAPA ---
+        // --- 2. INTERACCIÓN DIRECTA EN EL MAPA ---
         map.on('click', function(e) {
+            // Caso 1: Trazar Línea Ida
             if (tipoHerramientaActiva === 'ruta_ida') {
                 const latlng = [e.latlng.lat, e.latlng.lng];
                 puntosIda.push(latlng);
@@ -300,6 +305,7 @@
                 if (capaLineaIda) map.removeLayer(capaLineaIda);
                 capaLineaIda = L.polyline(puntosIda, {color: '#4caf50', weight: 4}).addTo(map);
             } 
+            // Caso 2: Trazar Línea Regreso
             else if (tipoHerramientaActiva === 'ruta_regreso') {
                 const latlng = [e.latlng.lat, e.latlng.lng];
                 puntosRegreso.push(latlng);
@@ -308,20 +314,42 @@
                 if (capaLineaRegreso) map.removeLayer(capaLineaRegreso);
                 capaLineaRegreso = L.polyline(puntosRegreso, {color: '#2196f3', weight: 4}).addTo(map);
             }
+            // Caso 3: Inyectar Parada directamente haciendo clic en el Mapa
+            else if (esAdminLogueado && tipoHerramientaActiva === 'agregar_paradas') {
+                if(!rutaActivaId) { alert("Selecciona o crea una ruta primero."); return; }
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+
+                L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent(`
+                        <div style="font-family:sans-serif; padding:5px; min-width:180px;">
+                            <b style="color:var(--primary-dark);">🚏 Nueva Parada / Estación</b><br>
+                            <label style="font-size:10px; font-weight:bold; margin-top:5px; display:block;">NOMBRE:</label>
+                            <input type="text" id="pop-nom-parada" placeholder="Ej. Av. Jalisco" style="padding:5px; width:100%; box-sizing:border-box; margin-bottom:6px;">
+                            <button class="btn btn-success btn-mini" style="width:100%;" 
+                                onclick="guardarParadaNube(${lat}, ${lng}, document.getElementById('pop-nom-parada').value)">
+                                💾 Fijar Parada 🚏
+                            </button>
+                        </div>
+                    `)
+                    .openOn(map);
+            }
         });
 
-        // Configuración unificada de clics sobre las líneas de la ruta
         function configurarEventosClickLineas(polylineObj, sentidoCapa) {
             polylineObj.on('click', function(e) {
                 const ruta = datasetRutas[rutaActivaId];
                 if (!ruta) return;
+
+                if (tipoHerramientaActiva === 'agregar_paradas') return; // Delegar al mapa
 
                 const clicCoords = [e.latlng.lat, e.latlng.lng];
                 const trazoPuntos = (sentidoCapa === 1) ? ruta.geometriaIda : rRegresoOInvertido(ruta);
                 const evalResultado = calcularDistanciaMinimaRuta(clicCoords, trazoPuntos);
                 const indiceTramo = evalResultado.indiceFiel;
 
-                // CASO A: MODO TRÁFICO ACTIVADO (MONITORISTA)
+                // MODO TRÁFICO ACTIVADO
                 if (esAdminLogueado && tipoHerramientaActiva === 'reportar_trafico') {
                     let traficoActual = ruta.reportesTrafico && ruta.reportesTrafico[sentidoCapa] && ruta.reportesTrafico[sentidoCapa][indiceTramo] ? true : false;
                     
@@ -345,7 +373,7 @@
                     return;
                 }
 
-                // CASO B: MODO DESPACHO COMÚN (MONITORISTA SIN HERRAMIENTAS ACTIVAS)
+                // MODO DESPACHO COMÚN (MONITORISTA SIN HERRAMIENTAS)
                 if (esAdminLogueado && !tipoHerramientaActiva) {
                     const progresoEstimado = Math.round(evalResultado.progreso * 100);
                     L.popup()
@@ -366,11 +394,30 @@
             });
         }
 
-        // --- 3. PERSISTENCIA DE TRÁFICO ---
+        // --- 3. PERSISTENCIA DE PARADAS ---
+        async function guardarParadaNube(lat, lng, nombreParada) {
+            const nomFiel = nombreParada.trim() || "Parada General";
+            const paradaId = "Parada_" + Date.now();
+            const urlParada = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/paradas/${paradaId}.json`);
+
+            map.closePopup();
+            await fetch(urlParada, { method: 'PUT', body: JSON.stringify({ id: paradaId, lat: lat, lng: lng, nombre: nomFiel }) });
+            await descargarDatosServidor();
+        }
+
+        window.eliminarParadaNube = async function(paradaId) {
+            if(confirm("¿Remover esta parada de autobús de la infraestructura de la ruta?")) {
+                const urlParada = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/paradas/${paradaId}.json`);
+                map.closePopup();
+                await fetch(urlParada, { method: 'DELETE' });
+                await descargarDatosServidor();
+            }
+        }
+
+        // --- 4. PERSISTENCIA DE TRÁFICO ---
         async function guardarEstadoTraficoNube(sentido, indiceTramo, tieneTrafico) {
             if(!rutaActivaId) return;
             const urlTrafico = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/reportesTrafico/${sentido}/${indiceTramo}.json`);
-            
             map.closePopup();
             if (tieneTrafico) {
                 await fetch(urlTrafico, { method: 'PUT', body: 'true' });
@@ -380,7 +427,7 @@
             await descargarDatosServidor();
         }
 
-        // --- 4. PERSISTENCIA DE RUTAS ---
+        // --- 5. PERSISTENCIA DE RUTAS ---
         async function finalizarGuardadoAdmin() {
             const nombre = document.getElementById('admin-nombre').value.trim();
             const origen = document.getElementById('admin-origen').value.trim() || "Origen Terminal";
@@ -398,7 +445,8 @@
                 geometriaIda: puntosIda, 
                 geometriaRegreso: puntosRegreso.length > 0 ? puntosRegreso : [...puntosIda].reverse(),
                 busesActivos: (idEdicion && datasetRutas[idEdicion]) ? (datasetRutas[idEdicion].busesActivos || {}) : {},
-                reportesTrafico: (idEdicion && datasetRutas[idEdicion]) ? (datasetRutas[idEdicion].reportesTrafico || {}) : {}
+                reportesTrafico: (idEdicion && datasetRutas[idEdicion]) ? (datasetRutas[idEdicion].reportesTrafico || {}) : {},
+                paradas: (idEdicion && datasetRutas[idEdicion]) ? (datasetRutas[idEdicion].paradas || {}) : {}
             };
 
             await fetch(url, { method: 'PUT', body: JSON.stringify(payload) });
@@ -406,7 +454,7 @@
             await descargarDatosServidor();
         }
 
-        // --- 5. GESTIÓN INTEGRADA DE BUSES DESDE EL MAPA ---
+        // --- 6. GESTIÓN INTEGRADA DE BUSES DESDE EL MAPA ---
         async function inyectarAutobusMapaClick(sentido, progresoInicial) {
             if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
             const busId = "Bus_" + Date.now();
@@ -452,7 +500,7 @@
             }
         }
 
-        // --- 6. ALGORITMO TELEMETRÍA COLABORATIVA (PASAJEROS) ---
+        // --- 7. ALGORITMO TELEMETRÍA COLABORATIVA (PASAJEROS) ---
         function activarRastreoAbordoPasajero() {
             if (!navigator.geolocation) { alert("Tu equipo no soporta geolocalización."); return; }
             const ruta = datasetRutas[rutaActivaId]; if(!ruta) return;
@@ -517,15 +565,15 @@
             document.getElementById('viaje-status-container').style.display = 'none';
         }
 
-        // --- 7. RENDERIZADO Y DINÁMICA DE MOVIMIENTO ---
+        // --- 8. RENDERIZADO Y DINÁMICA DE MOVIMIENTO ---
         function renderizarGeometriasRuta(idRuta) {
             const r = datasetRutas[idRuta]; if(!r) return;
             
-            // Limpiar trazos viejos y tramos de tráfico antiguos
+            // Limpiar todo lo anterior
             if(capaLineaIda) map.removeLayer(capaLineaIda);
             if(capaLineaRegreso) map.removeLayer(capaLineaRegreso);
-            capasTramosTrafico.forEach(capa => map.removeLayer(capa));
-            capasTramosTrafico = [];
+            capasTramosTrafico.forEach(capa => map.removeLayer(capa)); capasTramosTrafico = [];
+            marcadoresParadasMemoria.forEach(m => map.removeLayer(m)); marcadoresParadasMemoria = [];
 
             if(r.geometriaIda) {
                 capaLineaIda = L.polyline(r.geometriaIda, {color: '#1b5e20', weight: 6, opacity: 0.85}).addTo(map);
@@ -536,25 +584,49 @@
                 configurarEventosClickLineas(capaLineaRegreso, -1);
             }
 
-            // Renderizar los tramos con reporte de Tráfico Activo
+            // Renderizar Tráficos
             [1, -1].forEach(sentido => {
                 if (r.reportesTrafico && r.reportesTrafico[sentido]) {
                     const trazoCompleto = (sentido === 1) ? r.geometriaIda : rRegresoOInvertido(r);
                     for (let idx in r.reportesTrafico[sentido]) {
                         let i = parseInt(idx);
                         if (trazoCompleto[i] && trazoCompleto[i + 1]) {
-                            let tramoCoords = [trazoCompleto[i], trazoCompleto[i + 1]];
-                            let capaTrafico = L.polyline(tramoCoords, {
-                                color: '#d32f2f',
-                                className: 'tramo-trafico-pesado'
+                            let capaTrafico = L.polyline([trazoCompleto[i], trazoCompleto[i + 1]], {
+                                color: '#d32f2f', className: 'tramo-trafico-pesado'
                             }).addTo(map);
-                            
-                            capaTrafico.bindTooltip("🛑 Tráfico Pesado Reportado por Despacho", {sticky: true});
+                            capaTrafico.bindTooltip("🛑 Tráfico Pesado", {sticky: true});
                             capasTramosTrafico.push(capaTrafico);
                         }
                     }
                 }
             });
+
+            // Renderizar emojis de paradas 🚏
+            if (r.paradas) {
+                for(let pId in r.paradas) {
+                    let p = r.paradas[pId];
+                    let htmlParada = L.divIcon({
+                        html: `<div class="parada-emoji-container">🚏</div>`,
+                        className: '', iconSize: [24, 24], iconAnchor: [12, 12]
+                    });
+
+                    let mParada = L.marker([p.lat, p.lng], {icon: htmlParada}).addTo(map);
+                    
+                    if (esAdminLogueado) {
+                        mParada.bindPopup(`
+                            <div style="font-family:sans-serif; text-align:center;">
+                                <b>🚏 Estación:</b> ${p.nombre}<br>
+                                <button class="btn btn-danger btn-mini" style="margin-top:6px; width:100%;" onclick="eliminarParadaNube('${pId}')">
+                                    🗑️ Quitar Parada
+                                </button>
+                            </div>
+                        `);
+                    } else {
+                        mParada.bindPopup(`<b>🚏 Estación RTP:</b> ${p.nombre}`);
+                    }
+                    marcadoresParadasMemoria.push(mParada);
+                }
+            }
             
             calcularCinematicaFlotaActiva(r);
         }
@@ -642,7 +714,7 @@
                     marcadoresBusesMemoria[id].bindPopup(`
                         <b>RTP Monitoreado</b><br>
                         <b>Destino:</b> Hacia ${nombreTerminalDestino}<br>
-                        <b>Estado:</b> ${bus.telemetriaReal ? "📡 Sincronizado por Pasajero" : "⚙️ Predictivo informático"}<br>
+                        <b>Estado:</b> ${bus.telemetriaReal ? "📡 En Vivo" : "⚙️ Predictivo"}<br>
                         <b>Progreso:</b> ${pctUI}%
                     `);
                 }
@@ -662,7 +734,7 @@
         function elistaxBusesMonitiores(html) { const el = document.getElementById('lista-buses-monitoreo'); if(el && html !== null) el.innerHTML = html; }
         function limpiarMarcadoresBusesMesa() { for (let k in marcadoresBusesMemoria) { map.removeLayer(marcadoresBusesMemoria[k]); } marcadoresBusesMemoria = {}; }
 
-        // --- 8. RELOJ E HILOS OPERATIVOS ---
+        // --- 9. RELOJ E HILOS OPERATIVOS ---
         setInterval(() => {
             if(rutaActivaId && datasetRutas[rutaActivaId]) {
                 calcularCinematicaFlotaActiva(datasetRutas[rutaActivaId]);
@@ -671,7 +743,7 @@
 
         setInterval(() => { descargarDatosServidor(); }, 5000);
 
-        // --- 9. MÓDULOS MATEMÁTICOS DE SOPORTE ---
+        // --- 10. MÓDULOS MATEMÁTICOS DE SOPORTE ---
         function calcularDistanciaMinimaRuta(userCoords, listaPuntosRuta) {
             if(!listaPuntosRuta || listaPuntosRuta.length === 0) return { distancia: Infinity, progreso: 0, indiceFiel: 0 };
             let distMin = Infinity; let indiceCercano = 0;
@@ -679,11 +751,7 @@
                 let d = calcularHaversine(userCoords, listaPuntosRuta[i]);
                 if(d < distMin) { distMin = d; indiceCercano = i; }
             }
-            return { 
-                distancia: distMin, 
-                progreso: indiceCercano / (listaPuntosRuta.length - 1),
-                indiceFiel: indiceCercano 
-            };
+            return { distancia: distMin, progreso: indiceCercano / (listaPuntosRuta.length - 1), indiceFiel: indiceCercano };
         }
 
         function calcularHaversine(p1, p2) {
