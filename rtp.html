@@ -595,6 +595,27 @@
                                 color: '#d32f2f', className: 'tramo-trafico-pesado'
                             }).addTo(map);
                             capaTrafico.bindTooltip("🛑 Tráfico Pesado", {sticky: true});
+                            
+                            // MODIFICACIÓN 1: Evento de click para eliminar la zona de tráfico directamente en el mapa
+                            capaTrafico.on('click', function(e) {
+                                L.DomEvent.stopPropagation(e); // Evita activar otros triggers de la línea base
+                                if (esAdminLogueado) {
+                                    L.popup()
+                                        .setLatLng(e.latlng)
+                                        .setContent(`
+                                            <div style="font-family:sans-serif; padding:5px; text-align:center;">
+                                                <b style="color:var(--accent-orange);">Gestionar Alerta</b><br>
+                                                ¿Quitar este reporte de tráfico vial?<br>
+                                                <button class="btn btn-success btn-mini" style="width:100%; margin-top:8px;" 
+                                                    onclick="guardarEstadoTraficoNube(${sentido}, ${i}, false)">
+                                                    🟢 Vialidad Libre (Eliminar)
+                                                </button>
+                                            </div>
+                                        `)
+                                        .openOn(map);
+                                }
+                            });
+
                             capasTramosTrafico.push(capaTrafico);
                         }
                     }
@@ -650,8 +671,36 @@
                     coords = [bus.latReal, bus.lngReal];
                     llavesActivasEsteCiclo.push(id);
                 } else {
+                    // MODIFICACIÓN 2: Lógica predictiva avanzada afectada por reportes de tráfico
                     let tiempoTranscurrido = ahora - bus.timestampSalida;
-                    progresoFinal = tiempoTranscurrido / duracionMs;
+                    
+                    // Cálculo dinámico tramo por tramo simulando desaceleración
+                    let maxSegmentos = trazoDestino.length - 1;
+                    let tiempoPorSegmentoEstandar = duracionMs / maxSegmentos;
+                    
+                    let tiempoAcumuladoMesa = 0;
+                    let segmentoActualCalculado = 0;
+                    
+                    while (segmentoActualCalculado < maxSegmentos) {
+                        let esTramoConTrafico = (ruta.reportesTrafico && 
+                                                 ruta.reportesTrafico[bus.direccion] && 
+                                                 ruta.reportesTrafico[bus.direccion][segmentoActualCalculado]) ? true : false;
+                        
+                        // Si hay tráfico en el tramo actual, el bus avanza al doble de tiempo (50% más lento)
+                        let costoTiempoTramo = esTramoConTrafico ? (tiempoPorSegmentoEstandar * 2.0) : tiempoPorSegmentoEstandar;
+                        
+                        if (tiempoAcumuladoMesa + costoTiempoTramo > tiempoTranscurrido) {
+                            let tiempoRestanteEnSegmento = tiempoTranscurrido - tiempoAcumuladoMesa;
+                            progresoFinal = (segmentoActualCalculado + (tiempoRestanteEnSegmento / costoTiempoTramo)) / maxSegmentos;
+                            break;
+                        }
+                        
+                        tiempoAcumuladoMesa += costoTiempoTramo;
+                        segmentoActualCalculado++;
+                        if (segmentoActualCalculado === maxSegmentos) {
+                            progresoFinal = 1.0;
+                        }
+                    }
 
                     if(progresoFinal >= 1.0) {
                         if (esAdminLogueado) {
@@ -664,16 +713,23 @@
                     llavesActivasEsteCiclo.push(id);
                 }
 
+                // Evaluar si la posición de render actual del bus está inmersa en tráfico para la UI
+                let idxSegmentoUI = Math.floor(progresoFinal * (trazoDestino.length - 1));
+                let transitandoPorTrafico = (ruta.reportesTrafico && 
+                                             ruta.reportesTrafico[bus.direccion] && 
+                                             ruta.reportesTrafico[bus.direccion][idxSegmentoUI]) ? true : false;
+
                 const pctUI = Math.floor(Math.max(0, Math.min(1, progresoFinal)) * 100);
 
                 htmlListaMonitoreo += `
                     <div class="item-bus-activo">
                         <b>Unidad:</b> ${id.substring(0,8)}... ⇄ ${nombreTerminalDestino}<br>
-                        <b>Progreso:</b> ${pctUI}% | ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Proyección"}
+                        <b>Progreso:</b> ${pctUI}% | ${bus.telemetriaReal ? "📡 En Vivo" : (transitandoPorTrafico ? "🛑 Retrasado p/ Tráfico" : "🤖 Proyección")}
                     </div>`;
 
                 let claseDir = (bus.direccion === 1) ? "bus-derecha" : "bus-izquierda";
                 let colorTag = (bus.direccion === 1) ? "#1b5e20" : "#1565c0";
+                if(transitandoPorTrafico && !bus.telemetriaReal) colorTag = "var(--accent-orange)";
                 
                 let htmlIcono = L.divIcon({
                     html: `<div class="bus-emoji-container ${claseDir}">🚍<span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span></div>`,
@@ -714,7 +770,7 @@
                     marcadoresBusesMemoria[id].bindPopup(`
                         <b>RTP Monitoreado</b><br>
                         <b>Destino:</b> Hacia ${nombreTerminalDestino}<br>
-                        <b>Estado:</b> ${bus.telemetriaReal ? "📡 En Vivo" : "⚙️ Predictivo"}<br>
+                        <b>Estado:</b> ${bus.telemetriaReal ? "📡 En Vivo" : (transitandoPorTrafico ? "⚠️ Demorado por Tráfico" : "⚙️ Predictivo")}<br>
                         <b>Progreso:</b> ${pctUI}%
                     `);
                 }
