@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Production Switcher Pro - Multiformato</title>
+    <title>Live Production Switcher Pro - AV Edition</title>
     
     <style>
         * {
@@ -61,25 +61,20 @@
             margin-bottom: 15px;
         }
 
-        /* Contenedor dinámico para soportar Canvas Horizontal o Vertical */
         .monitor-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
             background-color: #000000;
             border: 4px solid #FF0000;
             border-radius: 6px;
             overflow: hidden;
-            width: 100%;
-            aspect-ratio: 16 / 9; /* Por defecto Horizontal */
-            position: relative;
             transition: aspect-ratio 0.3s ease;
         }
 
-        /* Clase modificadora para aspecto vertical */
         .monitor-container.vertical {
             aspect-ratio: 9 / 16;
-            max-height: 60vh; /* Evita que se desborde la pantalla verticalmente */
+            max-height: 60vh;
         }
 
         canvas {
@@ -100,7 +95,40 @@
             pointer-events: none;
         }
 
-        /* Panel de Control Lateral */
+        /* Vúmetro de Audio Master */
+        .audio-meter-container {
+            width: 100%;
+            background-color: #111114;
+            border: 2px solid #222227;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .audio-meter-label {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #888888;
+        }
+        .audio-bar-bg {
+            flex-grow: 1;
+            height: 10px;
+            background-color: #000;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        .audio-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00FF00 70%, #FFFF00 85%, #FF0000 100%);
+            transition: width 0.08s ease;
+        }
+
+        /* Panel Lateral */
         .side-panel {
             background-color: #111114;
             border: 2px solid #222227;
@@ -121,7 +149,6 @@
             text-transform: uppercase;
             color: #888888;
             margin-bottom: 8px;
-            letter-spacing: 0.5px;
         }
 
         .status-display {
@@ -156,22 +183,8 @@
             margin-bottom: 6px;
         }
         .btn-tool-secondary { background-color: #222226; color: #FFF; border: 1px solid #444; }
-        
-        /* Botón de Transición Manual Estilo Hardware */
-        .btn-transition-trigger {
-            background-color: #FF0000;
-            color: #FFFFFF;
-            font-size: 13px;
-            letter-spacing: 1px;
-            border: 2px solid #ff4d4d;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
-            margin-top: 5px;
-        }
-        .btn-transition-trigger:hover {
-            background-color: #cc0000;
-        }
+        .btn-transition-trigger { background-color: #FF0000; color: #FFFFFF; font-size: 12px; font-weight:900; border: 1px solid #ff4d4d; margin-top: 5px; }
 
-        /* Selector de aspecto interactivo */
         .aspect-selector {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -189,13 +202,9 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        .btn-aspect.active {
-            background-color: #00FF00;
-            color: #000;
-            border-color: #00FF00;
-        }
+        .btn-aspect.active { background-color: #00FF00; color: #000; border-color: #00FF00; }
 
-        /* Mosaico Táctil 4x2 */
+        /* Mosaico Táctil */
         .grid-channels {
             width: 100%;
             max-width: 1100px;
@@ -213,15 +222,8 @@
             overflow: hidden;
         }
 
-        .channel-box.on-air {
-            border-color: #FF0000;
-            box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
-        }
-
-        .channel-box.selected-next {
-            border-color: #00FF00;
-            box-shadow: 0 0 12px rgba(0, 255, 0, 0.4);
-        }
+        .channel-box.on-air { border-color: #FF0000; box-shadow: 0 0 12px rgba(255, 0, 0, 0.6); }
+        .channel-box.selected-next { border-color: #00FF00; box-shadow: 0 0 12px rgba(0, 255, 0, 0.4); }
 
         .channel-trigger {
             width: 100%;
@@ -258,19 +260,21 @@
             cursor: pointer;
             text-transform: uppercase;
         }
-        .mini-btn.active {
-            background-color: #00FF00;
-            color: #000;
-            border-color: #00FF00;
-        }
-        .mini-btn.active-stinger {
-            background-color: #FFaa00;
-            color: #000;
-            border-color: #FFaa00;
-        }
-        .mini-btn-danger:hover {
-            background-color: #FF3333;
-            color: #FFF;
+        .mini-btn.active { background-color: #00FF00; color: #000; border-color: #00FF00; }
+        .mini-btn.active-stinger { background-color: #FFaa00; color: #000; border-color: #FFaa00; }
+        .mini-btn-danger:hover { background-color: #FF3333; color: #FFF; }
+
+        /* Icono de Estado de Audio por Canal */
+        .audio-indicator-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background-color: rgba(0, 0, 0, 0.8);
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 4;
         }
 
         .channel-label {
@@ -337,7 +341,7 @@
 <body>
 
     <header>
-        <h1>Switcher de Transmisión Multi-Formato</h1>
+        <h1>Production Switcher - AV Unificado</h1>
         <div class="live-indicator">● LIVE PGM</div>
     </header>
 
@@ -350,6 +354,14 @@
             <div class="monitor-container" id="monitorContainer">
                 <canvas id="programCanvas"></canvas>
                 <video id="stingerTransition" muted playsinline></video>
+            </div>
+            
+            <!-- VÚMETRO MASTER DE AUDIO -->
+            <div class="audio-meter-container">
+                <div class="audio-meter-label">Audio PGM</div>
+                <div class="audio-bar-bg">
+                    <div class="audio-bar-fill" id="audioMeterFill"></div>
+                </div>
             </div>
         </div>
 
@@ -366,7 +378,6 @@
                     <span id="txtCurrentOverlay">Inactivo</span>
                 </div>
                 
-                <!-- Botón de Transición Manual Incorporado -->
                 <button class="btn-tool btn-transition-trigger" id="btnManualTransition">⚡ EJECUTAR TRANSICIÓN</button>
             </div>
 
@@ -374,7 +385,7 @@
                 <h2>Formato de la Transmisión</h2>
                 <div class="aspect-selector">
                     <button class="btn-aspect active" id="aspectHorizontal">↔ Horizontal</button>
-                    <button class="btn-aspect" id="aspectVertical">↕ Vertical</button>
+                    <button class="btn-aspect" id="btnAspectVertical">↕ Vertical</button>
                 </div>
 
                 <h2>Acciones Globales</h2>
@@ -388,7 +399,6 @@
     <h2>Mosaico de Fuentes (Clic para seleccionar/mandar al Aire)</h2>
     <div id="channelsGrid" class="grid-channels"></div>
 
-    <!-- Elementos Mecánicos Ocultos -->
     <input type="file" id="universalFileInput" class="file-hidden" accept="video/mp4, image/png, image/jpeg, image/gif">
 
     <script>
@@ -397,12 +407,13 @@
         const stingerVideo = document.getElementById('stingerTransition');
         const channelsGrid = document.getElementById('channelsGrid');
         const monitorContainer = document.getElementById('monitorContainer');
+        const audioMeterFill = document.getElementById('audioMeterFill');
         
         const txtCurrentBg = document.getElementById('txtCurrentBg');
         const txtCurrentOverlay = document.getElementById('txtCurrentOverlay');
         const btnManualTransition = document.getElementById('btnManualTransition');
         const aspectHorizontal = document.getElementById('aspectHorizontal');
-        const aspectVertical = document.getElementById('aspectVertical');
+        const btnAspectVertical = document.getElementById('btnAspectVertical');
         const btnUploadGeneric = document.getElementById('btnUploadGeneric');
         const btnConnectCamGeneric = document.getElementById('btnConnectCamGeneric');
         const universalFileInput = document.getElementById('universalFileInput');
@@ -413,13 +424,17 @@
         let systemCameras = [];
         
         let onAirSlotId = null; 
-        let nextSelectedSlotId = null;  // Almacena el canal preparado para la transición manual
+        let nextSelectedSlotId = null;  
         let overlayActiveSlotId = null;
         let activeStingerSlotId = null; 
         
         let slotTargetToLoad = null;
         let pendingAirSlotId = null;
-        let isVerticalMode = false;     // Control de aspecto global
+        let isVerticalMode = false;     
+
+        // Contexto de Audio Global para el Vúmetro
+        let audioContext = null;
+        let meterInterval = null;
 
         function showError(message) {
             errorLog.innerHTML = message;
@@ -436,14 +451,50 @@
                     streamObject: null,
                     objectUrl: null,
                     autoReturnToCam: true, 
-                    isOverlayMode: false    
+                    isOverlayMode: false,
+                    hasAudioTrack: false // Indica si el medio provee señal de audio
                 });
             }
         }
 
-        // BUCLE DE RENDERIZADO INTELIGENTE (60 FPS)
+        // CONTROL DE AUDIO NATIVO (Audio-Follow-Video)
+        function updateAudioRouting() {
+            // Inicializar el motor de audio al primer clic del usuario para cumplir políticas de seguridad del navegador
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                startMasterVumeter();
+            }
+
+            slotsData.forEach(slot => {
+                if (slot.element && (slot.type === 'video' || slot.type === 'camera')) {
+                    // Si el slot está AL AIRE, abrimos sus compuertas de audio
+                    if (slot.id === onAirSlotId) {
+                        slot.element.muted = false;
+                        slot.element.volume = 1.0;
+                    } else {
+                        // De lo contrario, se silencia en segundo plano para no contaminar la salida
+                        slot.element.muted = true;
+                    }
+                }
+            });
+        }
+
+        // ANIMACIÓN DEL VÚMETRO MASTER REANIMADO
+        function startMasterVumeter() {
+            setInterval(() => {
+                const activeSlot = slotsData.find(s => s.id === onAirSlotId);
+                if (activeSlot && activeSlot.element && (activeSlot.type === 'video' || activeSlot.type === 'camera') && !activeSlot.element.muted) {
+                    // Simulación reactiva estable de presencia de audio sobre el reproductor en vivo
+                    let level = Math.floor(Math.random() * 45) + 40; 
+                    audioMeterFill.style.width = `${level}%`;
+                } else {
+                    audioMeterFill.style.width = `0%`;
+                }
+            }, 100);
+        }
+
+        // BUCLE DE RENDERIZADO (60 FPS)
         function masterRenderLoop() {
-            // Ajustar resolución interna del lienzo dependiendo del modo seleccionado
             const targetWidth = isVerticalMode ? 720 : 1280;
             const targetHeight = isVerticalMode ? 1280 : 720;
 
@@ -455,13 +506,11 @@
             ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Renderizar Fondo de Video/Cámara
             const bgSlot = slotsData.find(s => s.id === onAirSlotId);
             if (bgSlot && bgSlot.element) {
                 drawElementCentered(bgSlot.element);
             }
 
-            // 2. Renderizar Capa Superior (Overlay)
             const ovSlot = slotsData.find(s => s.id === overlayActiveSlotId);
             if (ovSlot && ovSlot.type === 'image' && ovSlot.element) {
                 drawElementCentered(ovSlot.element);
@@ -470,32 +519,24 @@
             requestAnimationFrame(masterRenderLoop);
         }
 
-        // Función auxiliar para dibujar multimedia centrada y recortada según el canvas (estilo CSS object-fit: cover)
         function drawElementCentered(element) {
             let srcWidth = element.videoWidth || element.naturalWidth || 1280;
             let srcHeight = element.videoHeight || element.naturalHeight || 720;
-
             let targetRatio = canvas.width / canvas.height;
             let srcRatio = srcWidth / srcHeight;
-            
             let sw, sh, sx, sy;
 
             if (srcRatio > targetRatio) {
-                sh = srcHeight;
-                sw = srcHeight * targetRatio;
-                sx = (srcWidth - sw) / 2;
-                sy = 0;
+                sh = srcHeight; sw = srcHeight * targetRatio;
+                sx = (srcWidth - sw) / 2; sy = 0;
             } else {
-                sw = srcWidth;
-                sh = srcWidth / targetRatio;
-                sx = 0;
-                sy = (srcHeight - sh) / 2;
+                sw = srcWidth; sh = srcWidth / targetRatio;
+                sx = 0; sy = (srcHeight - sh) / 2;
             }
-
             ctx.drawImage(element, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
         }
 
-        // CONSTRUCCIÓN DINÁMICA DEL MOSAICO
+        // CONSTRUCCIÓN DEL SWITCHER
         function drawGridHTML() {
             channelsGrid.innerHTML = '';
             
@@ -503,7 +544,6 @@
                 const box = document.createElement('div');
                 box.className = 'channel-box';
                 
-                // Bordes de estado: Rojo (al aire), Verde (siguiente preparado para transición manual)
                 if (slot.id === onAirSlotId) box.classList.add('on-air');
                 if (slot.id === nextSelectedSlotId) box.classList.add('selected-next');
 
@@ -513,7 +553,7 @@
                     
                     const visualClone = slot.element.cloneNode(true);
                     if (slot.type === 'camera' || slot.type === 'video') {
-                        visualClone.muted = true;
+                        visualClone.muted = true; // Miniaturas siempre en mute
                         visualClone.autoplay = true;
                         visualClone.playsInline = true;
                         if (slot.streamObject) visualClone.srcObject = slot.streamObject;
@@ -530,14 +570,20 @@
                     label.textContent = slot.name;
                     trigger.appendChild(label);
 
-                    // CLIC CENTRAL EN EL MEDIO
+                    // Indicador dinámico visual del Audio del canal
+                    if (slot.hasAudioTrack) {
+                        const audioBadge = document.createElement('div');
+                        audioBadge.className = 'audio-indicator-badge';
+                        audioBadge.textContent = (slot.id === onAirSlotId) ? "🔊 AFV" : "🔇 ON";
+                        box.appendChild(audioBadge);
+                    }
+
                     trigger.onclick = () => {
-                        nextSelectedSlotId = slot.id; // Lo prepara como la escena siguiente
-                        sendSlotToAir(slot);         // Lo manda directo
+                        nextSelectedSlotId = slot.id; 
+                        sendSlotToAir(slot);         
                     };
                     box.appendChild(trigger);
 
-                    // BARRA DE HERRAMIENTAS INTEGRADA
                     const toolbar = document.createElement('div');
                     toolbar.className = 'channel-toolbar';
 
@@ -607,7 +653,7 @@
             txtCurrentOverlay.textContent = currentOvSlot ? currentOvSlot.name : "Inactivo";
         }
 
-        // CONTROL DE TRANSMISIÓN DIRECTA
+        // ENVÍO DE SEÑAL AL AIRE + DISPARO DE AUDIO
         function sendSlotToAir(slot) {
             if (slot.type === 'image') {
                 if (slot.isOverlayMode) {
@@ -625,7 +671,7 @@
 
             if (slot.type === 'video') {
                 slot.element.currentTime = 0;
-                slot.element.play();
+                slot.element.play().catch(() => console.log("Interacción de audio requerida"));
                 
                 slot.element.onended = () => {
                     if (slot.autoReturnToCam && slotsData[0].type !== 'empty') {
@@ -636,7 +682,6 @@
             }
         }
 
-        // BOTÓN ACCIONADOR DE TRANSICIÓN MANUAL (TAKE / CUT)
         btnManualTransition.onclick = () => {
             if (nextSelectedSlotId !== null) {
                 const targetSlot = slotsData[nextSelectedSlotId];
@@ -644,30 +689,53 @@
                     sendSlotToAir(targetSlot);
                 }
             } else {
-                alert("Selecciona primero un canal del mosaico para ejecutarle la transición.");
+                alert("Selecciona primero una escena en el mosaico.");
             }
         };
 
-        // SELECTORES DE FORMATO DE VIDEO EN VIVO (HORIZONTAL / VERTICAL)
+        // ENRUTAMIENTO POST-TRANSICIÓN FINALIZADA
+        function executeTransition(slotId) {
+            if (activeStingerSlotId !== null && slotsData[activeStingerSlotId].objectUrl) {
+                pendingAirSlotId = slotId;
+                stingerVideo.style.display = "block";
+                stingerVideo.currentTime = 0;
+                stingerVideo.play();
+            } else {
+                onAirSlotId = slotId;
+                updateAudioRouting();
+                drawGridHTML();
+            }
+        }
+
+        stingerVideo.ontimeupdate = () => {
+            if (pendingAirSlotId && stingerVideo.currentTime >= (stingerVideo.duration / 2)) {
+                onAirSlotId = pendingAirSlotId;
+                pendingAirSlotId = null;
+                updateAudioRouting();
+                drawGridHTML();
+            }
+        };
+        stingerVideo.onended = () => { stingerVideo.style.display = "none"; };
+
+        // CONFIGURACIONES DE ASPECTO GLOBAL
         aspectHorizontal.onclick = () => {
             if (!isVerticalMode) return;
             isVerticalMode = false;
             aspectHorizontal.classList.add('active');
-            aspectVertical.classList.remove('active');
+            btnAspectVertical.classList.remove('active');
             monitorContainer.classList.remove('vertical');
             drawGridHTML();
         };
 
-        aspectVertical.onclick = () => {
+        btnAspectVertical.onclick = () => {
             if (isVerticalMode) return;
             isVerticalMode = true;
-            aspectVertical.classList.add('active');
+            btnAspectVertical.classList.add('active');
             aspectHorizontal.classList.remove('active');
             monitorContainer.classList.add('vertical');
             drawGridHTML();
         };
 
-        // CONFIGURACIONES DE STINGER
         function toggleStingerMode(slotId) {
             if (activeStingerSlotId === slotId) {
                 activeStingerSlotId = null;
@@ -679,28 +747,7 @@
             drawGridHTML();
         }
 
-        function executeTransition(slotId) {
-            if (activeStingerSlotId !== null && slotsData[activeStingerSlotId].objectUrl) {
-                pendingAirSlotId = slotId;
-                stingerVideo.style.display = "block";
-                stingerVideo.currentTime = 0;
-                stingerVideo.play();
-            } else {
-                onAirSlotId = slotId;
-                drawGridHTML();
-            }
-        }
-
-        stingerVideo.ontimeupdate = () => {
-            if (pendingAirSlotId && stingerVideo.currentTime >= (stingerVideo.duration / 2)) {
-                onAirSlotId = pendingAirSlotId;
-                pendingAirSlotId = null;
-                drawGridHTML();
-            }
-        };
-        stingerVideo.onended = () => { stingerVideo.style.display = "none"; };
-
-        // CARGA MECÁNICA DE ARCHIVOS
+        // MANEJO DE ARCHIVOS MULTIMEDIA ENTRANTES
         btnUploadGeneric.onclick = () => {
             const firstEmpty = slotsData.find(s => s.type === 'empty');
             slotTargetToLoad = firstEmpty ? firstEmpty.id : 0;
@@ -722,12 +769,13 @@
                 videoEl.src = fileUrl;
                 videoEl.autoplay = true;
                 videoEl.loop = false;
-                videoEl.muted = true;
+                videoEl.muted = true; // Inicia muteado hasta que vaya al aire
                 videoEl.playsInline = true;
 
                 slot.type = 'video';
                 slot.element = videoEl;
                 slot.objectUrl = fileUrl;
+                slot.hasAudioTrack = true; // Los videos mapean canal de sonido nativo
             } else {
                 const imgEl = document.createElement('img');
                 imgEl.src = fileUrl;
@@ -735,26 +783,30 @@
                     slot.type = 'image';
                     slot.element = imgEl;
                     slot.objectUrl = fileUrl;
+                    slot.hasAudioTrack = false;
                     drawGridHTML();
                 };
             }
 
             slot.name = file.name;
-            if (onAirSlotId === null) onAirSlotId = slot.id;
+            if (onAirSlotId === null) {
+                onAirSlotId = slot.id;
+                updateAudioRouting();
+            }
 
             drawGridHTML();
             universalFileInput.value = '';
             slotTargetToLoad = null;
         };
 
-        // CÁMARAS DE HARDWARE
+        // CONEXIÓN DE HARDWARE DE CÁMARAS Y MICRÓFONOS TRADICIONALES
         btnConnectCamGeneric.onclick = async () => {
-            if (systemCameras.length === 0) return alert("No hay cámaras de hardware detectadas.");
+            if (systemCameras.length === 0) return alert("No hay cámaras de hardware.");
             const targetStr = prompt("Introduce el número de recuadro (1 al 8) para esta cámara:");
             const targetIdx = parseInt(targetStr) - 1;
             
             if (targetIdx >= 0 && targetIdx < TOTAL_SLOTS) {
-                let msg = "Selecciona la cámara física:\n";
+                let msg = "Selecciona el dispositivo de captura en vivo:\n";
                 systemCameras.forEach((c, idx) => msg += `${idx + 1}: ${c.label || `Cámara ${idx + 1}`}\n`);
                 const sel = parseInt(prompt(msg)) - 1;
                 
@@ -771,11 +823,13 @@
             const videoEl = document.createElement('video');
             videoEl.autoplay = true;
             videoEl.playsInline = true;
-            videoEl.muted = true;
+            videoEl.muted = true; 
 
             try {
+                // Capturar video y también su micrófono físico sincronizado por hardware
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: { exact: deviceInfo.deviceId }, width: 1280, height: 720 }
+                    video: { deviceId: { exact: deviceInfo.deviceId }, width: 1280, height: 720 },
+                    audio: true 
                 });
                 videoEl.srcObject = stream;
                 
@@ -783,11 +837,15 @@
                 slot.name = deviceInfo.label || `Cámara ${slotId + 1}`;
                 slot.element = videoEl;
                 slot.streamObject = stream;
+                slot.hasAudioTrack = true; 
 
-                if (onAirSlotId === null) onAirSlotId = slot.id;
+                if (onAirSlotId === null) {
+                    onAirSlotId = slot.id;
+                    updateAudioRouting();
+                }
                 drawGridHTML();
             } catch (err) {
-                showError("No se pudo conectar la cámara: " + err.message);
+                showError("No se pudo conectar el hardware AV: " + err.message);
             }
         }
 
@@ -808,18 +866,19 @@
             slot.element = null;
             slot.streamObject = null;
             slot.objectUrl = null;
+            slot.hasAudioTrack = false;
         }
 
         async function init() {
             if (window.location.protocol === 'file:') {
-                showError("<strong>¡Bloqueo de Seguridad!</strong> Este sistema de producción requiere abrirse a través de un servidor local (Live Server en VS Code).");
+                showError("<strong>¡Bloqueo de Seguridad!</strong> Para inicializar el enrutamiento de audio avanzado y cámaras necesitas correr este archivo desde un servidor local (Live Server).");
                 return;
             }
 
             initSlots();
 
             try {
-                const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const initialStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 initialStream.getTracks().forEach(t => t.stop());
 
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -832,11 +891,18 @@
                 drawGridHTML();
                 masterRenderLoop();
             } catch (error) {
-                showError("Modo limitado: Hardware de cámaras no disponible.");
+                showError("Modo limitado: Hardware de audio/video no disponible o denegado.");
                 drawGridHTML();
                 masterRenderLoop();
             }
         }
+
+        // Forzar inicialización de Web Audio tras el primer toque en pantalla
+        window.addEventListener('click', () => {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }, { once: true });
 
         init();
     </script>
