@@ -3,11 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Switcher Auto-Automatizado</title>
-    
-    <meta name="theme-color" content="#000000">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Live Production Switcher Pro</title>
     
     <style>
         * {
@@ -18,29 +14,29 @@
         }
 
         body {
-            background-color: #050507;
+            background-color: #060608;
             color: #FFFFFF;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 15px;
             overflow-y: auto;
         }
 
         header {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid #FFFFFF;
+            border-bottom: 2px solid #222227;
             padding-bottom: 10px;
             margin-bottom: 15px;
         }
 
         h1 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -54,32 +50,17 @@
             font-size: 11px;
             border-radius: 4px;
             text-transform: uppercase;
-            animation: blink 1.5s infinite;
         }
 
-        @keyframes blink { 50% { opacity: 0.3; } }
-
-        h2 {
-            font-size: 12px;
-            font-weight: 900;
-            text-transform: uppercase;
-            margin: 15px 0 8px 0;
-            letter-spacing: 0.5px;
-            width: 100%;
-            max-width: 1000px;
-            color: #AAAAAA;
-        }
-
-        /* Layout Principal */
         .main-layout {
             display: grid;
-            grid-template-columns: 3fr 1fr;
-            gap: 20px;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
+            margin-bottom: 15px;
         }
 
-        /* Monitor de Programa */
         .program-monitor {
             position: relative;
             width: 100%;
@@ -108,7 +89,7 @@
             pointer-events: none;
         }
 
-        /* Panel Lateral de Estado */
+        /* Panel de Control Lateral */
         .side-panel {
             background-color: #111114;
             border: 2px solid #222227;
@@ -116,52 +97,62 @@
             border-radius: 6px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            justify-content: space-between;
         }
 
-        .status-box {
+        .panel-section {
+            margin-bottom: 15px;
+        }
+
+        h2 {
             font-size: 11px;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #888888;
-            background-color: #09090b;
-            padding: 10px;
-            border-radius: 4px;
-            border-left: 3px solid #FF0000;
-        }
-
-        .status-box span {
-            display: block;
-            color: #FFFFFF;
-            font-size: 13px;
             font-weight: 900;
-            margin-top: 3px;
+            text-transform: uppercase;
+            color: #888888;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
         }
 
-        .btn-action {
+        .status-display {
+            background-color: #09090b;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            border-left: 3px solid #FF0000;
+            margin-bottom: 10px;
+        }
+
+        .status-display span {
+            display: block;
+            font-size: 14px;
+            font-weight: 900;
+            color: #FFF;
+            margin-top: 2px;
+        }
+
+        .btn-tool {
             width: 100%;
             padding: 10px;
             font-size: 11px;
             font-weight: 900;
             text-transform: uppercase;
             border-radius: 4px;
-            cursor: pointer;
             border: none;
+            cursor: pointer;
             background-color: #FFFFFF;
             color: #000000;
+            margin-bottom: 6px;
         }
-        .btn-secondary { background-color: #222226; color: #FFFFFF; border: 2px solid #44444a; margin-top: 5px;}
-        .btn-danger { background-color: #221111; color: #FF3333; border: 2px solid #FF3333; margin-top: auto;}
-        .btn-danger:hover { background-color: #FF3333; color: #FFFFFF; }
+        .btn-tool-secondary { background-color: #222226; color: #FFF; border: 1px solid #444; }
 
-        /* Mosaico Estricto 4x2 */
+        /* Mosaico Táctil 4x2 */
         .grid-channels {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 12px;
-            margin-bottom: 25px;
         }
 
         .channel-box {
@@ -169,22 +160,66 @@
             background-color: #111114;
             border: 3px solid #333338;
             border-radius: 6px;
-            aspect-ratio: 4 / 3;
+            aspect-ratio: 16 / 10;
             overflow: hidden;
-            cursor: pointer;
         }
 
-        /* Indicador de Transmisión Activa */
+        /* Indicador de En el Aire */
         .channel-box.on-air {
             border-color: #FF0000;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+            box-shadow: 0 0 12px rgba(255, 0, 0, 0.6);
         }
 
-        .channel-box video, .channel-box img {
+        /* Zona de click principal del medio */
+        .channel-trigger {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .channel-trigger video, .channel-trigger img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             pointer-events: none;
+        }
+
+        /* Barra de herramientas flotante por canal */
+        .channel-toolbar {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: flex;
+            gap: 4px;
+            z-index: 5;
+        }
+
+        .mini-btn {
+            background-color: rgba(0, 0, 0, 0.85);
+            color: #888;
+            border: 1px solid #444;
+            font-size: 8px;
+            font-weight: 900;
+            padding: 3px 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .mini-btn.active {
+            background-color: #00FF00;
+            color: #000;
+            border-color: #00FF00;
+        }
+        .mini-btn.active-stinger {
+            background-color: #FFaa00;
+            color: #000;
+            border-color: #FFaa00;
+        }
+        .mini-btn-danger:hover {
+            background-color: #FF3333;
+            color: #FFF;
         }
 
         .channel-label {
@@ -192,55 +227,56 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: rgba(0, 0, 0, 0.85);
+            background-color: rgba(0, 0, 0, 0.8);
             font-size: 9px;
             font-weight: 700;
-            padding: 5px;
+            padding: 4px;
             text-align: center;
+            pointer-events: none;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            text-transform: uppercase;
         }
 
         .badge-type {
             position: absolute;
-            top: 5px;
-            left: 5px;
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 2px 5px;
+            top: 4px;
+            left: 4px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 2px 4px;
             font-size: 8px;
             font-weight: 900;
-            border-radius: 3px;
-            text-transform: uppercase;
+            border-radius: 2px;
+            pointer-events: none;
         }
 
         .empty-slot {
+            width: 100%;
+            height: 100%;
             background-color: #08080a;
-            border: 3px dashed #1c1c22;
-            border-radius: 6px;
-            aspect-ratio: 4 / 3;
+            border: 2px dashed #1c1c22;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             color: #444449;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 900;
-            text-transform: uppercase;
+            cursor: pointer;
         }
 
         .error-message {
             color: #FF3333;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             text-align: center;
-            padding: 12px;
+            padding: 10px;
             border: 2px dashed #FF3333;
             border-radius: 6px;
             background-color: #110000;
-            max-width: 1000px;
+            max-width: 1100px;
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             display: none;
         }
 
@@ -250,46 +286,49 @@
 <body>
 
     <header>
-        <h1>Master Switcher Automatizado</h1>
-        <div class="live-indicator">● EN AIRE</div>
+        <h1>Switcher de Transmisión Directa (Un Clic)</h1>
+        <div class="live-indicator">● LIVE PGM</div>
     </header>
 
     <div id="errorLog" class="error-message"></div>
 
     <div class="main-layout">
+        <!-- MONITOR CENTRAL -->
         <div>
-            <h2>Monitor de Salida (PGM)</h2>
+            <h2>Salida Principal de Video (Program)</h2>
             <div class="program-monitor">
                 <canvas id="programCanvas"></canvas>
                 <video id="stingerTransition" muted playsinline></video>
             </div>
         </div>
 
+        <!-- PANEL DE ESTADO -->
         <div class="side-panel">
-            <h2>Estado de la Señal</h2>
-            <div class="status-box">
-                Fondo Actual
-                <span id="txtCurrentBg">Ninguno</span>
-            </div>
-            <div class="status-box" style="border-left-color: #00FF00;">
-                Capa Overlay
-                <span id="txtCurrentOverlay">Ninguna (Apagada)</span>
+            <div class="panel-section">
+                <h2>Monitoreo de Capas</h2>
+                <div class="status-display">
+                    Fondo PGM
+                    <span id="txtCurrentBg">Vacío</span>
+                </div>
+                <div class="status-display" style="border-left-color: #00FF00;">
+                    Overlay PNG
+                    <span id="txtCurrentOverlay">Inactivo</span>
+                </div>
             </div>
 
-            <div style="margin-top: 10px;">
-                <h2>Administrar Mosaico</h2>
-                <button class="btn-action" id="btnLoadMedia">Cargar Video / Imagen</button>
-                <button class="btn-action btn-secondary" id="btnLoadCamera">Asignar Cámara</button>
+            <div class="panel-section" style="margin-top: auto;">
+                <h2>Acciones Globales</h2>
+                <button class="btn-tool" id="btnUploadGeneric">Cargar Archivo al Mosaico</button>
+                <button class="btn-tool btn-tool-secondary" id="btnConnectCamGeneric">Conectar Cámara Física</button>
             </div>
-            
-            <button class="btn-action btn-danger" id="btnClearSelected">Limpiar Recuadro</button>
         </div>
     </div>
 
-    <h2>Mosaico de Medios e Insumos (Fijo 4x2 — Clic para mandar al Aire)</h2>
-    <div id="channelsGrid" class="grid-channels">
-        </div>
+    <!-- MOSAICO -->
+    <h2>Mosaico de Fuentes (Clic en el centro para mandar al Aire)</h2>
+    <div id="channelsGrid" class="grid-channels"></div>
 
+    <!-- Elementos Mecánicos Ocultos -->
     <input type="file" id="universalFileInput" class="file-hidden" accept="video/mp4, image/png, image/jpeg, image/gif">
 
     <script>
@@ -300,9 +339,8 @@
         
         const txtCurrentBg = document.getElementById('txtCurrentBg');
         const txtCurrentOverlay = document.getElementById('txtCurrentOverlay');
-        const btnLoadMedia = document.getElementById('btnLoadMedia');
-        const btnLoadCamera = document.getElementById('btnLoadCamera');
-        const btnClearSelected = document.getElementById('btnClearSelected');
+        const btnUploadGeneric = document.getElementById('btnUploadGeneric');
+        const btnConnectCamGeneric = document.getElementById('btnConnectCamGeneric');
         const universalFileInput = document.getElementById('universalFileInput');
         const errorLog = document.getElementById('errorLog');
 
@@ -310,11 +348,11 @@
         let slotsData = [];
         let systemCameras = [];
         
-        let onAirSlotId = null;         // Canal asignado al fondo de la pantalla
-        let overlayActiveSlotId = null;   // Canal asignado a la capa superior
-        let targetSlotToConfigure = null; // Cuál recuadro vacío estamos poblando
+        let onAirSlotId = null; 
+        let overlayActiveSlotId = null;
+        let activeStingerSlotId = null; // Almacena qué canal actúa como cortinilla Stinger
         
-        let stingerSrcUrl = null;       // Archivo de transición guardado
+        let slotTargetToLoad = null;
         let pendingAirSlotId = null;
 
         function showError(message) {
@@ -322,55 +360,62 @@
             errorLog.style.display = "block";
         }
 
-        // Inicializar slots vacíos de la tabla 4x2
-        function initSlotsStructure() {
+        function initSlots() {
             for (let i = 0; i < TOTAL_SLOTS; i++) {
                 slotsData.push({
                     id: i,
                     type: 'empty', // empty, camera, video, image
-                    name: `Ranura ${i + 1}`,
+                    name: `Canal ${i + 1}`,
                     element: null,
                     streamObject: null,
-                    objectUrl: null
+                    objectUrl: null,
+                    // Configuraciones de comportamiento sin ventanas emergentes:
+                    autoReturnToCam: true, // Si es video, ¿regresa al terminar?
+                    isOverlayMode: false    // Si es imagen, ¿se monta encima o va al fondo?
                 });
             }
         }
 
-        // BUCLE DE RENDERIZADO DEL MASTER CANVAS (60 FPS)
+        // BUCLE DE RENDERIZADO DEL MONITOR PRINCIPAL (60 FPS)
         function masterRenderLoop() {
             ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Capa Inferior: Fondo de Programa
-            const activeSlot = slotsData.find(s => s.id === onAirSlotId);
-            if (activeSlot && activeSlot.element) {
-                let srcWidth = activeSlot.element.videoWidth || activeSlot.element.naturalWidth || 1280;
-                let srcHeight = activeSlot.element.videoHeight || activeSlot.element.naturalHeight || 720;
+            // 1. Renderizar Fondo Activo
+            const bgSlot = slotsData.find(s => s.id === onAirSlotId);
+            if (bgSlot && bgSlot.element) {
+                let srcWidth = bgSlot.element.videoWidth || bgSlot.element.naturalWidth || 1280;
+                let srcHeight = bgSlot.element.videoHeight || bgSlot.element.naturalHeight || 720;
                 if (canvas.width !== srcWidth) {
                     canvas.width = srcWidth;
                     canvas.height = srcHeight;
                 }
-                ctx.drawImage(activeSlot.element, 0, 0, canvas.width, canvas.height);
+                ctx.drawImage(bgSlot.element, 0, 0, canvas.width, canvas.height);
             }
 
-            // 2. Capa Superior: Superposición (Overlay)
-            const overlaySlot = slotsData.find(s => s.id === overlayActiveSlotId);
-            if (overlaySlot && overlaySlot.type === 'image' && overlaySlot.element) {
-                ctx.drawImage(overlaySlot.element, 0, 0, canvas.width, canvas.height);
+            // 2. Renderizar Overlay Activo
+            const ovSlot = slotsData.find(s => s.id === overlayActiveSlotId);
+            if (ovSlot && ovSlot.type === 'image' && ovSlot.element) {
+                ctx.drawImage(ovSlot.element, 0, 0, canvas.width, canvas.height);
             }
 
             requestAnimationFrame(masterRenderLoop);
         }
 
-        // DIBUJAR LA PARRILLA VISUAL FIJA
+        // CONSTRUCCIÓN DINÁMICA DEL MOSAICO TÁCTIL
         function drawGridHTML() {
             channelsGrid.innerHTML = '';
+            
             slotsData.forEach(slot => {
                 const box = document.createElement('div');
                 box.className = 'channel-box';
                 if (slot.id === onAirSlotId) box.classList.add('on-air');
 
                 if (slot.type !== 'empty' && slot.element) {
+                    // CONTENEDOR DE DISPARO DIRECTO (Clic central envía al aire)
+                    const trigger = document.createElement('div');
+                    trigger.className = 'channel-trigger';
+                    
                     const visualClone = slot.element.cloneNode(true);
                     if (slot.type === 'camera' || slot.type === 'video') {
                         visualClone.muted = true;
@@ -378,134 +423,187 @@
                         visualClone.playsInline = true;
                         if (slot.streamObject) visualClone.srcObject = slot.streamObject;
                     }
+                    trigger.appendChild(visualClone);
 
                     const badge = document.createElement('div');
                     badge.className = 'badge-type';
-                    badge.textContent = slot.type === 'camera' ? 'En Vivo' : slot.type;
+                    badge.textContent = slot.type;
+                    trigger.appendChild(badge);
 
                     const label = document.createElement('div');
                     label.className = 'channel-label';
                     label.textContent = slot.name;
+                    trigger.appendChild(label);
 
-                    box.appendChild(visualClone);
-                    box.appendChild(badge);
-                    box.appendChild(label);
+                    // AL CLICAR EL MEDIO SE ENVÍA DIRECTAMENTE AL AIRE
+                    trigger.onclick = () => sendSlotToAir(slot);
+                    box.appendChild(trigger);
 
-                    // AL HACER CLIC EN UN MEDIO CARGADO: SE VA DIRECTO AL AIRE CON LA NUEVA LÓGICA
-                    box.onclick = () => processLiveSwitch(slot);
-                } else {
-                    // Si está vacío, al hacer clic permite cargarle un archivo o cámara
-                    const emptyContent = document.createElement('div');
-                    emptyContent.className = 'empty-slot';
-                    emptyContent.innerHTML = `<span>[Recuadro ${slot.id + 1}]</span><span style="font-size:8px;color:#333;margin-top:3px;">+ Asignar</span>`;
-                    box.appendChild(emptyContent);
-                    
-                    box.onclick = () => {
-                        targetSlotToConfigure = slot.id;
-                        btnLoadMedia.click();
+                    // BARRA DE HERRAMIENTAS INTEGRADA EN EL CUADRO (Sin popups)
+                    const toolbar = document.createElement('div');
+                    toolbar.className = 'channel-toolbar';
+
+                    // Herramientas específicas según el tipo de medio
+                    if (slot.type === 'video') {
+                        // Botón de Transición (Stinger)
+                        const btnStinger = document.createElement('button');
+                        btnStinger.className = `mini-btn ${activeStingerSlotId === slot.id ? 'active-stinger' : ''}`;
+                        btnStinger.textContent = "Stinger";
+                        btnStinger.title = "Usar este video como transición global";
+                        btnStinger.onclick = (e) => {
+                            e.stopPropagation();
+                            toggleStingerMode(slot.id);
+                        };
+                        toolbar.appendChild(btnStinger);
+
+                        // Botón Auto-Retorno a Cámara Principal
+                        const btnReturn = document.createElement('button');
+                        btnReturn.className = `mini-btn ${slot.autoReturnToCam ? 'active' : ''}`;
+                        btnReturn.textContent = "Auto-Cam";
+                        btnReturn.title = "Volver a la Cámara 1 automáticamente al terminar el video";
+                        btnReturn.onclick = (e) => {
+                            e.stopPropagation();
+                            slot.autoReturnToCam = !slot.autoReturnToCam;
+                            drawGridHTML();
+                        };
+                        toolbar.appendChild(btnReturn);
+                    }
+
+                    if (slot.type === 'image') {
+                        // Botón modo Overlay vs Modo Fondo Completo
+                        const btnMode = document.createElement('button');
+                        btnMode.className = `mini-btn ${slot.isOverlayMode ? 'active' : ''}`;
+                        btnMode.textContent = slot.isOverlayMode ? "Modo: Logo" : "Modo: Fondo";
+                        btnMode.title = "Cambiar si se superpone como logo o va a pantalla completa";
+                        btnMode.onclick = (e) => {
+                            e.stopPropagation();
+                            slot.isOverlayMode = !slot.isOverlayMode;
+                            drawGridHTML();
+                        };
+                        toolbar.appendChild(btnMode);
+                    }
+
+                    // Botón para vaciar ranura directamente
+                    const btnDel = document.createElement('button');
+                    btnDel.className = 'mini-btn mini-btn-danger';
+                    btnDel.textContent = "X";
+                    btnDel.onclick = (e) => {
+                        e.stopPropagation();
+                        clearSlotData(slot);
+                        drawGridHTML();
                     };
+                    toolbar.appendChild(btnDel);
+
+                    box.appendChild(toolbar);
+
+                } else {
+                    // Ranura Vacía
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-slot';
+                    empty.innerHTML = `<span>[Ranura ${slot.id + 1}]</span><span style="font-size:8px;color:#444;margin-top:2px;">+ Cargar</span>`;
+                    empty.onclick = () => {
+                        slotTargetToLoad = slot.id;
+                        universalFileInput.click();
+                    };
+                    box.appendChild(empty);
                 }
 
                 channelsGrid.appendChild(box);
             });
 
-            // Actualizar textos del panel lateral
-            const bgSlot = slotsData.find(s => s.id === onAirSlotId);
-            txtCurrentBg.textContent = bgSlot ? bgSlot.name : "Ninguno";
+            // Actualizar labels del Panel de Control
+            const currentBgSlot = slotsData.find(s => s.id === onAirSlotId);
+            txtCurrentBg.textContent = currentBgSlot ? currentBgSlot.name : "Vacío";
             
-            const ovSlot = slotsData.find(s => s.id === overlayActiveSlotId);
-            txtCurrentOverlay.textContent = ovSlot ? `[ACTIVO] ${ovSlot.name}` : "Ninguna (Apagada)";
+            const currentOvSlot = slotsData.find(s => s.id === overlayActiveSlotId);
+            txtCurrentOverlay.textContent = currentOvSlot ? currentOvSlot.name : "Inactivo";
         }
 
-        // CONTROL INTELIGENTE DE CORTES Y MULTIMEDIA EN VIVO
-        function processLiveSwitch(slot) {
-            // CASO 1: ES UNA CÁMARA EN VIVO
-            if (slot.type === 'camera') {
-                programWithTransition(slot.id);
-            } 
-            
-            // CASO 2: ES UN VIDEO O GIF ANIMADO
-            else if (slot.type === 'video') {
-                const isStinger = confirm(`¿Cómo deseas usar este video ("${slot.name}")?\n\n✔ Presiona ACEPTAR si es un VIDEO DE TRANSICIÓN (Stinger).\n\n❌ Presiona CANCELAR si es un VIDEO DE FONDO normal.`);
-                
-                if (isStinger) {
-                    // Se guarda como la cortinilla de transición global
-                    if (stingerSrcUrl) URL.revokeObjectURL(stingerSrcUrl);
-                    stingerSrcUrl = slot.objectUrl;
-                    stingerVideo.src = stingerSrcUrl;
-                    alert("¡Video configurado como Transición Estilo Stinger con éxito!");
-                } else {
-                    // Es un video normal: Va al aire de inmediato
-                    programWithTransition(slot.id);
-                    
-                    // Escuchar el final del video para regresar automáticamente a la cámara principal (Slot 0)
-                    slot.element.onended = () => {
-                        console.log("El video de fondo ha terminado. Regresando a la Cámara Principal.");
-                        // Verificamos si la cámara principal está disponible
-                        if (slotsData[0].type !== 'empty') {
-                            programWithTransition(0);
-                        }
-                    };
-                }
-            } 
-            
-            // CASO 3: ES UNA IMAGEN ESTÁTICA
-            else if (slot.type === 'image') {
-                const overlayMode = confirm(`¿Deseas SUPERPONER esta imagen como capa flotante?\n\n✔ Presiona ACEPTAR para usarla como LOGO/OVERLAY.\n\n❌ Presiona CANCELAR para mostrarla en la PANTALLA PRINCIPAL completa.`);
-                
-                if (overlayMode) {
-                    // Si ya estaba activa la quitamos, si no, la encendemos
-                    if (overlayActiveSlotId === slot.id) {
-                        overlayActiveSlotId = null;
-                    } else {
-                        overlayActiveSlotId = slot.id;
-                    }
+        // CONTROL DE TRANSMISIÓN DE UN SOLO CLIC
+        function sendSlotToAir(slot) {
+            // IMÁGENES
+            if (slot.type === 'image') {
+                if (slot.isOverlayMode) {
+                    // Si está configurado como Logo/Overlay, se activa o desactiva la capa superior de inmediato
+                    overlayActiveSlotId = (overlayActiveSlotId === slot.id) ? null : slot.id;
                     drawGridHTML();
                 } else {
-                    // Se manda al fondo completo
-                    programWithTransition(slot.id);
+                    // Modo pantalla completa
+                    executeTransition(slot.id);
                 }
+                return;
+            }
+
+            // VIDEOS / CÁMARAS
+            if (slot.type === 'video' && slot.id === activeStingerSlotId) {
+                // Prevenir enviar al aire de fondo el video que se usa como transición stinger activa
+                return;
+            }
+
+            executeTransition(slot.id);
+
+            // Escuchador de término automático si es un video de fondo
+            if (slot.type === 'video') {
+                slot.element.currentTime = 0;
+                slot.element.play();
+                
+                slot.element.onended = () => {
+                    if (slot.autoReturnToCam && slotsData[0].type !== 'empty') {
+                        // Regresa de forma automática al Canal 1 (Cámara Principal)
+                        executeTransition(0);
+                    }
+                };
             }
         }
 
-        // LÓGICA DE CONMUTACIÓN CON ENLACE STINGER
-        function programWithTransition(slotId) {
-            if (stingerSrcUrl) {
+        // GESTIÓN DE TRANSICIÓN GLOBAL (STINGER)
+        function toggleStingerMode(slotId) {
+            if (activeStingerSlotId === slotId) {
+                activeStingerSlotId = null;
+                stingerVideo.src = "";
+            } else {
+                activeStingerSlotId = slotId;
+                stingerVideo.src = slotsData[slotId].objectUrl;
+            }
+            drawGridHTML();
+        }
+
+        function executeTransition(slotId) {
+            if (activeStingerSlotId !== null && slotsData[activeStingerSlotId].objectUrl) {
                 pendingAirSlotId = slotId;
                 stingerVideo.style.display = "block";
                 stingerVideo.currentTime = 0;
                 stingerVideo.play();
             } else {
-                executeAirSwitch(slotId);
+                onAirSlotId = slotId;
+                drawGridHTML();
             }
-        }
-
-        function executeAirSwitch(slotId) {
-            onAirSlotId = slotId;
-            drawGridHTML();
         }
 
         stingerVideo.ontimeupdate = () => {
             if (pendingAirSlotId && stingerVideo.currentTime >= (stingerVideo.duration / 2)) {
-                executeAirSwitch(pendingAirSlotId);
+                onAirSlotId = pendingAirSlotId;
                 pendingAirSlotId = null;
+                drawGridHTML();
             }
         };
         stingerVideo.onended = () => { stingerVideo.style.display = "none"; };
 
-        // ASIGNACIÓN DE RECURSOS DESDE EL PANEL LATERAL O CLIC VACÍO
-        btnLoadMedia.onclick = () => {
-            if (targetSlotToConfigure === null) targetSlotToConfigure = 0;
+        // CARGA DIRECTA DE ARCHIVOS (MECÁNICA)
+        btnUploadGeneric.onclick = () => {
+            // Busca la primera ranura vacía si no se seleccionó una directamente
+            const firstEmpty = slotsData.find(s => s.type === 'empty');
+            slotTargetToLoad = firstEmpty ? firstEmpty.id : 0;
             universalFileInput.click();
         };
 
         universalFileInput.onchange = (e) => {
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file || slotTargetToLoad === null) return;
 
             const fileUrl = URL.createObjectURL(file);
             const isVideo = file.type.startsWith('video/');
-            const slot = slotsData[targetSlotToConfigure];
+            const slot = slotsData[slotTargetToLoad];
 
             clearSlotData(slot);
 
@@ -513,7 +611,7 @@
                 const videoEl = document.createElement('video');
                 videoEl.src = fileUrl;
                 videoEl.autoplay = true;
-                videoEl.loop = false; // Desactivamos bucle infinito para que funcione el evento .onended
+                videoEl.loop = false;
                 videoEl.muted = true;
                 videoEl.playsInline = true;
 
@@ -536,28 +634,29 @@
 
             drawGridHTML();
             universalFileInput.value = '';
-            targetSlotToConfigure = null; // reset
+            slotTargetToLoad = null;
         };
 
-        // Asignar Cámara de Hardware de forma manual
-        btnLoadCamera.onclick = () => {
-            let slotNum = prompt("Escribe el número de recuadro (1 al 8) donde deseas asignar la cámara:");
-            slotNum = parseInt(slotNum) - 1;
-            if (slotNum >= 0 && slotNum < TOTAL_SLOTS) {
-                targetSlotToConfigure = slotNum;
-                
-                if (systemCameras.length === 0) return alert("No hay cámaras de hardware detectadas.");
-                let msg = "Elige la cámara física:\n";
+        // ENLAZAR CÁMARAS DE HARDWARE
+        btnConnectCamGeneric.onclick = async () => {
+            if (systemCameras.length === 0) return alert("No se encontraron cámaras físicas de hardware.");
+            
+            const targetStr = prompt("Introduce el número de recuadro (1 al 8) para esta cámara:");
+            const targetIdx = parseInt(targetStr) - 1;
+            
+            if (targetIdx >= 0 && targetIdx < TOTAL_SLOTS) {
+                let msg = "Selecciona la cámara física:\n";
                 systemCameras.forEach((c, idx) => msg += `${idx + 1}: ${c.label || `Cámara ${idx + 1}`}\n`);
                 const sel = parseInt(prompt(msg)) - 1;
+                
                 if (sel >= 0 && sel < systemCameras.length) {
-                    connectCameraToSlot(systemCameras[sel]);
+                    await connectCamera(targetIdx, systemCameras[sel]);
                 }
             }
         };
 
-        async function connectCameraToSlot(deviceInfo) {
-            const slot = slotsData[targetSlotToConfigure];
+        async function connectCamera(slotId, deviceInfo) {
+            const slot = slotsData[slotId];
             clearSlotData(slot);
 
             const videoEl = document.createElement('video');
@@ -572,71 +671,60 @@
                 videoEl.srcObject = stream;
                 
                 slot.type = 'camera';
-                slot.name = deviceInfo.label || `Cámara ${slot.id + 1}`;
+                slot.name = deviceInfo.label || `Cámara In Vivo ${slotId + 1}`;
                 slot.element = videoEl;
                 slot.streamObject = stream;
 
                 if (onAirSlotId === null) onAirSlotId = slot.id;
                 drawGridHTML();
             } catch (err) {
-                showError("Error de hardware: " + err.message);
+                showError("No se pudo conectar la cámara: " + err.message);
             }
-            targetSlotToConfigure = null;
         }
 
-        // Limpiar Recuadro manual
-        btnClearSelected.onclick = () => {
-            let num = prompt("Escribe el número de recuadro (1 al 8) que deseas vaciar:");
-            num = parseInt(num) - 1;
-            if (num >= 0 && num < TOTAL_SLOTS) {
-                clearSlotData(slotsData[num]);
-                drawGridHTML();
-            }
-        };
-
         function clearSlotData(slot) {
-            if (slot.streamObject) {
-                slot.streamObject.getTracks().forEach(t => t.stop());
-            }
-            if (slot.objectUrl) {
-                URL.revokeObjectURL(slot.objectUrl);
-            }
+            if (slot.streamObject) slot.streamObject.getTracks().forEach(t => t.stop());
+            if (slot.objectUrl) URL.revokeObjectURL(slot.objectUrl);
+            
             if (onAirSlotId === slot.id) onAirSlotId = null;
             if (overlayActiveSlotId === slot.id) overlayActiveSlotId = null;
+            if (activeStingerSlotId === slot.id) {
+                activeStingerSlotId = null;
+                stingerVideo.src = "";
+            }
 
             slot.type = 'empty';
-            slot.name = `Ranura ${slot.id + 1}`;
+            slot.name = `Canal ${slot.id + 1}`;
             slot.element = null;
             slot.streamObject = null;
             slot.objectUrl = null;
         }
 
-        // INICIALIZACIÓN
+        // INICIALIZACIÓN DE ENTORNO
         async function init() {
             if (window.location.protocol === 'file:') {
-                showError("<strong>¡Bloqueo de Seguridad!</strong> Para automatizar eventos multimedia cruzados necesitas correr este archivo usando un servidor local (Live Server en VS Code).");
+                showError("<strong>¡Bloqueo de Seguridad!</strong> Este mezclador requiere cargarse mediante un servidor local (ej. Live Server en VS Code) para gestionar los flujos de video y cámara.");
                 return;
             }
 
-            initSlotsStructure();
+            initSlots();
 
             try {
                 const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                initialStream.getTracks().forEach(track => track.stop());
+                initialStream.getTracks().forEach(t => t.stop());
 
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 systemCameras = devices.filter(d => d.kind === 'videoinput');
 
-                // Auto-cargar la cámara principal por defecto en el Recuadro 1
+                // Asignar por defecto la primera cámara real detectada al Canal 1
                 if (systemCameras.length > 0) {
-                    targetSlotToConfigure = 0;
-                    await connectCameraToSlot(systemCameras[0]);
+                    await connectCamera(0, systemCameras[0]);
                 }
 
                 drawGridHTML();
                 masterRenderLoop();
             } catch (error) {
-                showError("Modo sin cámaras: Permiso denegado al hardware.");
+                showError("Modo limitado: Acceso a cámaras bloqueado o ausente.");
                 drawGridHTML();
                 masterRenderLoop();
             }
