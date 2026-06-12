@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Cámaras Múltiples</title>
+    <title>Panel de Cámaras Fijo 4x2</title>
     
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,7 +49,7 @@
             margin-bottom: 10px;
             letter-spacing: 0.5px;
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             text-align: left;
         }
 
@@ -57,7 +57,7 @@
         .main-preview-container {
             position: relative;
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             aspect-ratio: 16 / 9;
             background-color: #111111;
             border: 4px solid #FFFFFF;
@@ -75,20 +75,22 @@
             object-fit: cover;
         }
 
-        /* Cuadrícula de Cámaras Conectadas (Previews) */
+        /* Tabla / Cuadrícula Fija de 4 Columnas x 2 Filas (4x2) */
         .grid-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            grid-template-columns: repeat(4, 1fr); /* 4 Columnas exactas */
+            grid-template-rows: repeat(2, 1fr);    /* 2 Filas exactas */
             gap: 15px;
             margin-bottom: 20px;
         }
 
+        /* Estilo para los recuadros de cámara */
         .thumb-box {
             position: relative;
             background-color: #111111;
-            border: 3px solid #555550;
+            border: 3px solid #444444;
             border-radius: 6px;
             aspect-ratio: 4 / 3;
             overflow: hidden;
@@ -97,20 +99,20 @@
         }
 
         .thumb-box:hover {
-            transform: scale(1.02);
+            transform: scale(1.03);
         }
 
-        /* Estado Activo: Resalta cuál está en la pantalla grande */
+        /* Resalte de la cámara activa en la pantalla grande */
         .thumb-box.active {
             border-color: #FFFFFF;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
         }
 
         .thumb-box video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            pointer-events: none; /* Evita interferencias con el clic */
+            pointer-events: none;
         }
 
         .thumb-label {
@@ -118,9 +120,9 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: rgba(0, 0, 0, 0.75);
+            background-color: rgba(0, 0, 0, 0.8);
             color: #FFFFFF;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             padding: 6px;
             text-align: center;
@@ -130,7 +132,24 @@
             text-transform: uppercase;
         }
 
-        /* Mensajes de Error */
+        /* Estilo para los espacios vacíos (Sin Señal) */
+        .empty-box {
+            background-color: #0c0c0c;
+            border: 3px dashed #222222;
+            border-radius: 6px;
+            aspect-ratio: 4 / 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444444;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            pointer-events: none; /* No se puede clickear */
+        }
+
+        /* Mensajes de Alerta/Error */
         .error-message {
             color: #FF3333;
             font-size: 16px;
@@ -140,17 +159,25 @@
             border: 2px dashed #FF3333;
             border-radius: 8px;
             background-color: #110000;
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
             margin-bottom: 20px;
             display: none;
+        }
+
+        /* Adaptabilidad para pantallas muy pequeñas (Móviles en vertical) */
+        @media (max-width: 600px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr); /* Pasa a 2x4 en pantallas mini para que no se aplaste tanto */
+                grid-template-rows: auto;
+            }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Panel de Control</h1>
+        <h1>Panel de Control 4x2</h1>
     </header>
 
     <div id="errorLog" class="error-message"></div>
@@ -160,7 +187,7 @@
         <video id="mainVideo" autoplay playsinline muted></video>
     </div>
 
-    <h2>Cámaras Disponibles (Selecciona una)</h2>
+    <h2>Mosaico de Cámaras (4 x 2)</h2>
     <div id="cameraGrid" class="grid-container">
         </div>
 
@@ -171,29 +198,25 @@
         
         let videoDevices = [];
         let activeStreamForMain = null;
-        let activeDeviceId = null;
-        
-        // Almacena los flujos de las miniaturas para poder apagarlos si es necesario
         let thumbnailStreams = []; 
+        const TOTAL_SLOTS = 8; // Estructura fija de 4 columnas x 2 filas = 8 espacios
 
         function showError(message) {
             errorLog.innerHTML = message;
             errorLog.style.display = "block";
         }
 
-        // Apagar la transmisión del cuadro principal
         function stopMainStream() {
             if (activeStreamForMain) {
                 activeStreamForMain.getTracks().forEach(track => track.stop());
             }
         }
 
-        // Cambiar la cámara del cuadro principal
+        // Cambiar flujo del cuadro principal
         async function selectMainCamera(deviceId) {
             stopMainStream();
-            activeDeviceId = deviceId;
 
-            // Actualizar la interfaz visual de las miniaturas
+            // Actualizar marco activo en la tabla
             document.querySelectorAll('.thumb-box').forEach(box => {
                 if (box.dataset.id === deviceId) {
                     box.classList.add('active');
@@ -214,104 +237,111 @@
                 activeStreamForMain = await navigator.mediaDevices.getUserMedia(constraints);
                 mainVideo.srcObject = activeStreamForMain;
             } catch (error) {
-                showError("No se pudo reflejar en la pantalla principal: " + error.message);
+                showError("Error al cargar la cámara principal: " + error.message);
             }
         }
 
-        // Crear la cuadrícula y encender TODAS las cámaras en miniatura simultáneamente
+        // Construir la tabla fija de 4x2
         async function buildCameraGrid() {
             cameraGrid.innerHTML = '';
             thumbnailStreams = [];
 
-            for (let i = 0; i < videoDevices.length; i++) {
-                const device = videoDevices[i];
-                const labelText = device.label || `Cámara ${i + 1}`;
+            // Iteramos exactamente 8 veces para cumplir con el diseño 4x2
+            for (let i = 0; i < TOTAL_SLOTS; i++) {
+                
+                // Si hay una cámara disponible para este espacio
+                if (i < videoDevices.length) {
+                    const device = videoDevices[i];
+                    const labelText = device.label || `Cámara ${i + 1}`;
 
-                // Crear los elementos de la interfaz para la miniatura
-                const thumbBox = document.createElement('div');
-                thumbBox.className = 'thumb-box';
-                thumbBox.dataset.id = device.deviceId;
+                    const thumbBox = document.createElement('div');
+                    thumbBox.className = 'thumb-box';
+                    thumbBox.dataset.id = device.deviceId;
 
-                const thumbVideo = document.createElement('video');
-                thumbVideo.autoplay = true;
-                thumbVideo.playsInline = true;
-                thumbVideo.muted = true;
+                    const thumbVideo = document.createElement('video');
+                    thumbVideo.autoplay = true;
+                    thumbVideo.playsInline = true;
+                    thumbVideo.muted = true;
 
-                const thumbLabel = document.createElement('div');
-                thumbLabel.className = 'thumb-label';
-                thumbLabel.textContent = labelText;
+                    const thumbLabel = document.createElement('div');
+                    thumbLabel.className = 'thumb-label';
+                    thumbLabel.textContent = labelText;
 
-                thumbBox.appendChild(thumbVideo);
-                thumbBox.appendChild(thumbLabel);
-                cameraGrid.appendChild(thumbBox);
+                    thumbBox.appendChild(thumbVideo);
+                    thumbBox.appendChild(thumbLabel);
+                    cameraGrid.appendChild(thumbBox);
 
-                // Asignar el evento clic para cambiar la principal
-                thumbBox.onclick = () => {
-                    selectMainCamera(device.deviceId);
-                };
+                    // Evento al dar clic
+                    thumbBox.onclick = () => {
+                        selectMainCamera(device.deviceId);
+                    };
 
-                // Inicializar el flujo individual para esta miniatura
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            deviceId: { exact: device.deviceId },
-                            width: { ideal: 320 }, // Resolución baja para optimizar rendimiento de la cuadrícula
-                            height: { ideal: 240 }
-                        }
-                    });
-                    
-                    thumbVideo.srcObject = stream;
-                    thumbnailStreams.push(stream);
-                } catch (err) {
-                    console.warn(`No se pudo inicializar la miniatura para ${labelText}:`, err);
-                    thumbBox.style.opacity = "0.5";
-                    thumbLabel.textContent += " (Ocupada/Error)";
+                    // Encender miniatura en segundo plano (resolución baja)
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                deviceId: { exact: device.deviceId },
+                                width: { ideal: 320 },
+                                height: { ideal: 240 }
+                            }
+                        });
+                        thumbVideo.srcObject = stream;
+                        thumbnailStreams.push(stream);
+                    } catch (err) {
+                        console.warn(`Error en miniatura ${i + 1}:`, err);
+                        thumbBox.style.opacity = "0.4";
+                        thumbLabel.textContent += " (Bloqueada)";
+                    }
+
+                } else {
+                    // Si no hay más cámaras físicas, rellenamos el espacio para mantener el formato 4x2
+                    const emptyBox = document.createElement('div');
+                    emptyBox.className = 'empty-box';
+                    emptyBox.textContent = "Sin señal";
+                    cameraGrid.appendChild(emptyBox);
                 }
             }
 
-            // Seleccionar automáticamente la primera cámara por defecto en el cuadro principal
+            // Seleccionar por defecto la primera del mosaico
             if (videoDevices.length > 0) {
                 selectMainCamera(videoDevices[0].deviceId);
             }
         }
 
-        // Obtener la lista de dispositivos de video
         async function getDevices() {
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 videoDevices = devices.filter(device => device.kind === 'videoinput');
                 
                 if (videoDevices.length === 0) {
-                    showError("No se detectaron cámaras físicas en este dispositivo.");
+                    showError("No se detectaron cámaras físicas conectadas.");
                     return;
                 }
 
                 await buildCameraGrid();
             } catch (error) {
-                showError("Error al enumerar los dispositivos de video: " + error.message);
+                showError("Error al escanear hardware de video: " + error.message);
             }
         }
 
-        // Inicializador de la aplicación
         async function init() {
-            // Validación de entorno seguro obligatorio
             if (window.location.protocol === 'file:') {
                 showError("<strong>¡Bloqueo de Seguridad!</strong> Las cámaras no funcionan abriendo el archivo directamente.<br><br>Debes ejecutarlo desde un servidor local (como Live Server en VS Code) o bajo un dominio HTTPS.");
                 return;
             }
 
             try {
-                // Solicitar permiso inicial para desbloquear las etiquetas de hardware
+                // Solicitar permisos iniciales
                 const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
                 initialStream.getTracks().forEach(track => track.stop());
                 
                 await getDevices();
             } catch (error) {
-                showError("Permiso de cámara denegado. Por favor, cambia los permisos desde la barra de direcciones (icono de candado).");
+                showError("Permiso denegado. Habilita el acceso a la cámara usando el icono de candado en la barra de navegación.");
             }
         }
 
-        // Service Worker In-Line para cumplimiento de la PWA
+        // Registro Service Worker PWA In-Line
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 const swCode = `
