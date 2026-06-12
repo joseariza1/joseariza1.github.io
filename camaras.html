@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Production Switcher Pro - Direct Facebook RTMP</title>
+    <title>Studio Switcher Pro - Ultimate Hybrid Edition</title>
     
     <style>
         * {
@@ -103,6 +103,24 @@
             object-fit: cover;
         }
 
+        /* Contenedor dinámico para capas interactivas de internet (IFRAMES) */
+        #internetLayerContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            display: none;
+        }
+        #internetLayerContainer iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            pointer-events: auto;
+        }
+
         #stingerTransition {
             position: absolute;
             top: 0;
@@ -189,7 +207,7 @@
             margin-top: 2px;
         }
 
-        /* NUEVO: Bloque Ajustes de Stream Inyectado */
+        /* Bloque Ajustes de Stream */
         .stream-config-box {
             background-color: #16161a;
             border: 1px solid #222227;
@@ -298,7 +316,7 @@
         .channel-box.selected-next { border-color: #00FF00; box-shadow: 0 0 12px rgba(0, 255, 0, 0.4); }
 
         .channel-trigger { width: 100%; height: 100%; cursor: pointer; position: relative; overflow: hidden; }
-        .channel-trigger video, .channel-trigger img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .channel-trigger video, .channel-trigger img, .channel-trigger iframe { width: 100%; height: 100%; object-fit: cover; pointer-events: none; border: none; }
 
         .channel-toolbar { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 5; }
         .mini-btn { background-color: rgba(0, 0, 0, 0.85); color: #888; border: 1px solid #444; font-size: 8px; font-weight: 900; padding: 3px 5px; border-radius: 3px; cursor: pointer; text-transform: uppercase; }
@@ -317,7 +335,7 @@
 <body>
 
     <header>
-        <h1>Studio Switcher - Direct Facebook Stream</h1>
+        <h1>Studio Switcher - Multi-Cam Hybrid Engine</h1>
         <div class="live-status-block">
             <div class="live-indicator" id="liveIndicator">OFFLINE</div>
         </div>
@@ -326,10 +344,13 @@
     <div id="errorLog" class="error-message"></div>
 
     <div class="main-layout">
+        <!-- MONITOR CENTRAL DE PROGRAMA -->
         <div>
             <h2>Salida Principal de Video (Program)</h2>
             <div class="monitor-container" id="monitorContainer">
                 <canvas id="programCanvas"></canvas>
+                <!-- Contenedor para inyectar la cámara de internet en vivo al monitor de programa -->
+                <div id="internetLayerContainer"></div>
                 <video id="stingerTransition" muted playsinline></video>
             </div>
             
@@ -341,6 +362,7 @@
             </div>
         </div>
 
+        <!-- PANEL DE CONTROL -->
         <div class="side-panel">
             <div class="panel-section">
                 <h2>Configuración de Facebook Live</h2>
@@ -375,13 +397,14 @@
                     <button class="btn-aspect" id="btnAspectVertical">↕ Vertical 9:16</button>
                 </div>
 
-                <h2>Acciones Globales</h2>
+                <h2>Entradas de Video</h2>
                 <button class="btn-tool" id="btnUploadGeneric">Cargar Archivo al Mosaico</button>
-                <button class="btn-tool btn-tool-secondary" id="btnConnectCamGeneric">Conectar Cámara Física</button>
+                <button class="btn-tool btn-tool-secondary" id="btnConnectCamGeneric">Conectar Cámara (USB / Internet)</button>
             </div>
         </div>
     </div>
 
+    <!-- MOSAICO -->
     <h2>Mosaico de Fuentes</h2>
     <div id="channelsGrid" class="grid-channels"></div>
 
@@ -395,6 +418,7 @@
         const monitorContainer = document.getElementById('monitorContainer');
         const audioMeterFill = document.getElementById('audioMeterFill');
         const liveIndicator = document.getElementById('liveIndicator');
+        const internetLayerContainer = document.getElementById('internetLayerContainer');
         
         const streamBox = document.getElementById('streamBox');
         const streamUrlInput = document.getElementById('streamUrl');
@@ -447,19 +471,16 @@
             }
         }
 
-        // DISPARO E INTEGRACIÓN DEL STREAM RTMP DIRECTO
         btnToggleStream.onclick = () => {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 startMasterVumeter();
             }
-
-            errorLog.style.display = "none"; // Limpiar errores previos
+            errorLog.style.display = "none";
 
             if (!isStreaming) {
-                // Validación de seguridad para asegurar que el usuario ingresó sus datos
                 if (!streamUrlInput.value.trim() || !streamKeyInput.value.trim()) {
-                    showError("<strong>¡Faltan datos de transmisión!</strong> Por favor ingresa la URL RTMP y tu Clave de Transmisión de Facebook antes de conectar.");
+                    showError("<strong>¡Faltan datos de transmisión!</strong> Por favor ingresa la URL RTMP y tu Clave de Transmisión de Facebook.");
                     return;
                 }
                 startRealTimeStream();
@@ -477,11 +498,9 @@
                 videoStream.getVideoTracks().forEach(track => outputStream.addTrack(track));
                 audioStreamDestination.stream.getAudioTracks().forEach(track => outputStream.addTrack(track));
 
-                // Envía las configuraciones de Facebook hacia el backend intermediario node local
                 const serverUrl = streamUrlInput.value.trim();
                 const streamKey = streamKeyInput.value.trim();
 
-                // Establecemos la conexión por WebSocket
                 webSocket = new WebSocket('ws://localhost:8088');
 
                 webSocket.onopen = () => {
@@ -493,7 +512,6 @@
                     liveIndicator.classList.add('streaming');
                     monitorContainer.classList.add('streaming-active');
 
-                    // Enviar un primer paquete de configuración con el Link y la Key de Facebook
                     webSocket.send(JSON.stringify({
                         action: "init",
                         rtmpUrl: serverUrl,
@@ -510,12 +528,11 @@
                             webSocket.send(e.data); 
                         }
                     };
-
                     mediaRecorder.start(100); 
                 };
 
                 webSocket.onerror = (err) => {
-                    showError("<strong>Servidor Intermediario Desconectado:</strong> No se detectó el script local de Node.js en ejecución. Recuerda iniciarlo en tu terminal o puedes usar <strong>OBS Studio</strong> capturando esta ventana.");
+                    showError("<strong>Conexión RTMP Alternativa lista:</strong> Puedes capturar esta ventana directamente usando <strong>OBS Studio</strong> para transmitir de inmediato, o encender tu script retransmisor de Node local.");
                     stopRealTimeStream();
                 };
 
@@ -573,7 +590,17 @@
             ctx.fillStyle = "#000000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const bgSlot = slotsData.find(s => s.id === onAirSlotId);
-            if (bgSlot && bgSlot.element) drawElementCentered(bgSlot.element);
+            
+            // Administrador del contenedor de internet
+            if (bgSlot && bgSlot.type === 'internet') {
+                internetLayerContainer.style.display = "block";
+            } else {
+                internetLayerContainer.style.display = "none";
+            }
+
+            if (bgSlot && bgSlot.element && bgSlot.type !== 'internet') {
+                drawElementCentered(bgSlot.element);
+            }
 
             const ovSlot = slotsData.find(s => s.id === overlayActiveSlotId);
             if (ovSlot && ovSlot.type === 'image' && ovSlot.element) drawElementCentered(ovSlot.element);
@@ -611,12 +638,22 @@
                     const trigger = document.createElement('div');
                     trigger.className = 'channel-trigger';
                     
-                    const visualClone = slot.element.cloneNode(true);
-                    if (slot.type === 'camera' || slot.type === 'video') {
-                        visualClone.muted = true; visualClone.autoplay = true; visualClone.playsInline = true;
-                        if (slot.streamObject) visualClone.srcObject = slot.streamObject;
+                    if (slot.type === 'internet') {
+                        // El preview del mosaico para internet muestra un texto identificador elegante
+                        const ipPreview = document.createElement('div');
+                        ipPreview.style.width = "100%"; ipPreview.style.height = "100%";
+                        ipPreview.style.display = "flex"; ipPreview.style.alignItems = "center";
+                        ipPreview.style.justifyContent = "center"; ipPreview.style.fontSize = "11px";
+                        ipPreview.style.background = "#222227"; ipPreview.textContent = "🌐 CAM EN RED ACTIVA";
+                        trigger.appendChild(ipPreview);
+                    } else {
+                        const visualClone = slot.element.cloneNode(true);
+                        if (slot.type === 'camera' || slot.type === 'video') {
+                            visualClone.muted = true; visualClone.autoplay = true; visualClone.playsInline = true;
+                            if (slot.streamObject) visualClone.srcObject = slot.streamObject;
+                        }
+                        trigger.appendChild(visualClone);
                     }
-                    trigger.appendChild(visualClone);
 
                     const badge = document.createElement('div');
                     badge.className = 'badge-type'; badge.textContent = slot.type;
@@ -715,13 +752,35 @@
                 pendingAirSlotId = slotId;
                 stingerVideo.style.display = "block"; stingerVideo.currentTime = 0; stingerVideo.play();
             } else {
-                onAirSlotId = slotId; updateAudioRouting(); drawGridHTML();
+                onAirSlotId = slotId; 
+                
+                // Si la fuente que entra al aire es de Internet, inyectamos su iframe al monitor máster
+                const targetSlot = slotsData[slotId];
+                internetLayerContainer.innerHTML = "";
+                if(targetSlot && targetSlot.type === 'internet') {
+                    const masterIframe = targetSlot.element.cloneNode(true);
+                    internetLayerContainer.appendChild(masterIframe);
+                }
+
+                updateAudioRouting(); 
+                drawGridHTML();
             }
         }
 
         stingerVideo.ontimeupdate = () => {
             if (pendingAirSlotId && stingerVideo.currentTime >= (stingerVideo.duration / 2)) {
-                onAirSlotId = pendingAirSlotId; pendingAirSlotId = null; updateAudioRouting(); drawGridHTML();
+                onAirSlotId = pendingAirSlotId; 
+                
+                const targetSlot = slotsData[onAirSlotId];
+                internetLayerContainer.innerHTML = "";
+                if(targetSlot && targetSlot.type === 'internet') {
+                    const masterIframe = targetSlot.element.cloneNode(true);
+                    internetLayerContainer.appendChild(masterIframe);
+                }
+
+                pendingAirSlotId = null; 
+                updateAudioRouting(); 
+                drawGridHTML();
             }
         };
         stingerVideo.onended = () => { stingerVideo.style.display = "none"; };
@@ -774,15 +833,27 @@
             universalFileInput.value = ''; slotTargetToLoad = null;
         };
 
+        // NUEVO MODAL DE SELECCIÓN PARA ENTRADAS AV (USB VS INTERNET)
         btnConnectCamGeneric.onclick = async () => {
-            if (systemCameras.length === 0) return alert("Falta hardware de captura.");
-            const targetStr = prompt("Mosaico destino (1 al 8):");
+            const targetStr = prompt("¿A qué número de ranura del Mosaico (1 al 8) deseas asignar este dispositivo?");
             const targetIdx = parseInt(targetStr) - 1;
+            
             if (targetIdx >= 0 && targetIdx < TOTAL_SLOTS) {
-                let msg = "Dispositivo:\n";
-                systemCameras.forEach((c, idx) => msg += `${idx + 1}: ${c.label || `Dispositivo ${idx + 1}`}\n`);
-                const sel = parseInt(prompt(msg)) - 1;
-                if (sel >= 0 && sel < systemCameras.length) await connectCamera(targetIdx, systemCameras[sel]);
+                const option = prompt("Selecciona el tipo de Cámara:\nescribe '1' para Cámara USB / Capturadora física\nescribe '2' para Cámara por Internet (VDO.ninja / Link Web)");
+                
+                if (option === "1") {
+                    if (systemCameras.length === 0) return alert("No se detectó hardware de captura USB.");
+                    let msg = "Dispositivos USB disponibles:\n";
+                    systemCameras.forEach((c, idx) => msg += `${idx + 1}: ${c.label || `Cámara USB ${idx + 1}`}\n`);
+                    const sel = parseInt(prompt(msg)) - 1;
+                    if (sel >= 0 && sel < systemCameras.length) await connectCamera(targetIdx, systemCameras[sel]);
+                } 
+                else if (option === "2") {
+                    const urlInternet = prompt("Inserta el link de VDO.ninja o la URL de tu cámara de internet:");
+                    if (urlInternet && urlInternet.trim() !== "") {
+                        connectInternetCamera(targetIdx, urlInternet.trim());
+                    }
+                }
             }
         };
 
@@ -795,17 +866,44 @@
                     video: { deviceId: { exact: deviceInfo.deviceId }, width: 1280, height: 720 }, audio: true
                 });
                 videoEl.srcObject = stream;
-                slot.type = 'camera'; slot.name = deviceInfo.label || `Cam ${slotId + 1}`;
+                slot.type = 'camera'; slot.name = deviceInfo.label || `Cam USB ${slotId + 1}`;
                 slot.element = videoEl; slot.streamObject = stream; slot.hasAudioTrack = true;
                 if (onAirSlotId === null) { onAirSlotId = slot.id; updateAudioRouting(); }
                 drawGridHTML();
             } catch (err) { showError("Fallo de hardware AV: " + err.message); }
         }
 
+        function connectInternetCamera(slotId, targetUrl) {
+            const slot = slotsData[slotId]; 
+            clearSlotData(slot);
+
+            const iframe = document.createElement('iframe');
+            iframe.src = targetUrl;
+            iframe.allow = "autoplay; camera; microphone";
+
+            slot.type = 'internet';
+            slot.name = `Cámara Web Link (Ranura ${slotId + 1})`;
+            slot.element = iframe;
+            slot.hasAudioTrack = true;
+
+            if (onAirSlotId === null) { 
+                onAirSlotId = slot.id; 
+                internetLayerContainer.innerHTML = "";
+                const masterIframe = iframe.cloneNode(true);
+                internetLayerContainer.appendChild(masterIframe);
+                updateAudioRouting(); 
+            }
+            drawGridHTML();
+        }
+
         function clearSlotData(slot) {
             if (slot.streamObject) slot.streamObject.getTracks().forEach(t => t.stop());
             if (slot.objectUrl) URL.revokeObjectURL(slot.objectUrl);
-            if (onAirSlotId === slot.id) onAirSlotId = null;
+            if (onAirSlotId === slot.id) {
+                onAirSlotId = null;
+                internetLayerContainer.innerHTML = "";
+                internetLayerContainer.style.display = "none";
+            }
             if (nextSelectedSlotId === slot.id) nextSelectedSlotId = null;
             if (overlayActiveSlotId === slot.id) overlayActiveSlotId = null;
             if (activeStingerSlotId === slot.id) { activeStingerSlotId = null; stingerVideo.src = ""; }
@@ -814,7 +912,7 @@
 
         async function init() {
             if (window.location.protocol === 'file:') {
-                showError("Abre el archivo mediante un servidor local (Live Server) para habilitar el motor.");
+                showError("Abre el archivo mediante un servidor de desarrollo local (como la extensión Live Server de VS Code) para habilitar el motor multicanal.");
                 return;
             }
             initSlots();
