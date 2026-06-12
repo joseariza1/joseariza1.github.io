@@ -1,37 +1,583 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Switcher Studio</title>
+    
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: #0a0a0c;
+            color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #FFFFFF;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .live-indicator {
+            background-color: #FF0000;
+            color: #FFFFFF;
+            padding: 5px 12px;
+            font-weight: 900;
+            font-size: 12px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.3; }
+        }
+
+        h2 {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 15px 0 8px 0;
+            letter-spacing: 0.5px;
+            width: 100%;
+            max-width: 1100px;
+            color: #888888;
+        }
+
+        /* Layout Principal */
+        .studio-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* Monitor de Programa (Canvas) */
+        .program-monitor {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000000;
+            border: 4px solid #FF0000; /* Borde rojo de en el aire (PGM) */
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #stingerTransition {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 10;
+            display: none;
+            pointer-events: none;
+        }
+
+        /* Panel Lateral de Controles Globales */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: #121214;
+            border: 2px solid #222225;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .control-group {
+            border-bottom: 1px solid #222225;
+            padding-bottom: 12px;
+        }
+
+        .control-group:last-child { border: none; }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            color: #AAAAAA;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 12px;
+            font-size: 13px;
+            font-weight: 900;
+            background-color: #FFFFFF;
+            color: #000000;
+            border: none;
+            border-radius: 4px;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .btn-main:active { background-color: #CCCCCC; }
+
+        .file-hidden { display: none; }
+
+        /* Mosaico Dinámico de Canales */
+        .grid-channels {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+            margin-bottom: 30px;
+        }
+
+        .channel-box {
+            position: relative;
+            background-color: #121214;
+            border: 3px solid #333338;
+            border-radius: 6px;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .channel-box.active {
+            border-color: #FF0000; /* Rojo si está en el aire */
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+        }
+
+        .channel-box video, .channel-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        /* Botón de borrar canal */
+        .btn-delete-channel {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 24px;
+            height: 24px;
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 1px solid #444448;
+            color: #FF3333;
+            border-radius: 4px;
+            font-weight: 900;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-delete-channel:hover { background-color: #FF3333; color: #FFFFFF; }
+
+        .channel-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 5px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+        }
+
+        .error-message {
+            color: #FF3333;
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            padding: 12px;
+            border: 2px dashed #FF3333;
+            border-radius: 6px;
+            background-color: #110000;
+            max-width: 1100px;
+            width: 100%;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        @media (max-width: 800px) {
+            .studio-layout { grid-template-columns: 1fr; }
+            .grid-channels { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
 </head>
 <body>
-     <img style="border-radius: 30px 30px 0 0;" src="https://dabuttonfactory.com/button.jpg?t=Redes+Sociales&f=Open+Sans-Bold&ts=26&tc=fff&hp=50&vp=27&c=0&bgt=unicolored&bgc=1593d6">
- 
- <hr>
- 
- <TABLE align="center" CELLPADDING=20 CELLSPACING=0>
-  <tr>
-   <td>
-   <a href=" https://m.facebook.com/home.php  " >
-   <img style="border-radius: 40px;" src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcTH0ndKkUXu5xyo3Bc2KjTlDkfEXYaebU9lnQ&usqp=CAU " width="200" height="200">
-   </a>
-   <td>
-   <a href=" https://www.instagram.com/  " >
-   <img style="border-radius: 40px;" src="https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQ9pzWIDdkOShiBjKIOEFHe4nqpY4rNcwedFg&usqp=CAU  " width="200" height="200">
-   </a>
-   <td>
-   <a href=" https://www.twitter.com/home?lang=es  " >
-   <img style="border-radius: 40px;" src=" https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcRV1M6EKxobP8ix1HTX_3rlT1KNsfKitcBK3Q&usqp=CAU " width="200" height="200">
-   </a>
-   <td>
-   <a href=" https://www.tiktok.com/trending/?lang=es  " >
-   <img style="border-radius: 40px;" src="  https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQOgWMoZRio30IBrnRK1_4RkFaZPga8KYGtwg&usqp=CAU" width="200" height="200">
-   </a>
-   </tr>
-</table>
 
-<font align="center"><h1>© Anova Media Center</h1></font>
-<p>Versión de desarrollo: v_2.1     &nbsp    (Nov/2020)
- 
+    <header>
+        <h1>Master Switcher Studio</h1>
+        <div class="live-indicator">● EN AIRE</div>
+    </header>
+
+    <div id="errorLog" class="error-message"></div>
+
+    <div class="studio-layout">
+        <div>
+            <h2>Monitor de Programa (PGM OUT)</h2>
+            <div class="program-monitor">
+                <canvas id="programCanvas"></canvas>
+                <video id="stingerTransition" muted playsinline></video>
+            </div>
+        </div>
+
+        <div>
+            <h2>Configuración del Sistema</h2>
+            <div class="side-panel">
+                <div class="control-group">
+                    <label>Cortinilla Stinger (Transición MP4)</label>
+                    <input type="file" id="stingerInput" accept="video/mp4">
+                </div>
+                <div class="control-group">
+                    <label>Logo / Overlay Global (PNG Transparente)</label>
+                    <input type="file" id="overlayInput" accept="image/png, image/jpeg">
+                </div>
+                <div class="control-group">
+                    <button class="btn-main" id="addChannelBtn">+ Añadir Nueva Fuente</button>
+                    <input type="file" id="universalMediaInput" class="file-hidden" accept="video/mp4, image/png, image/jpeg, image/gif">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2>Mosaico de Canales Dinámicos</h2>
+    <div id="channelsGrid" class="grid-channels">
+        </div>
+
+    <script>
+        const canvas = document.getElementById('programCanvas');
+        const ctx = canvas.getContext('2d');
+        const stingerVideo = document.getElementById('stingerTransition');
+        const channelsGrid = document.getElementById('channelsGrid');
+        const addChannelBtn = document.getElementById('addChannelBtn');
+        const universalMediaInput = document.getElementById('universalMediaInput');
+        const overlayInput = document.getElementById('overlayInput');
+        const stingerInput = document.getElementById('stingerInput');
+        const errorLog = document.getElementById('errorLog');
+
+        let channels = [];          // Base de datos de canales activos
+        let systemCameras = [];     // Cámaras físicas detectadas
+        let activeChannelId = null; // ID del canal actualmente al aire
+        let channelCounter = 0;
+        
+        let globalOverlayImg = null;
+        let stingerSrcUrl = null;
+        let pendingChannelId = null; 
+
+        function showError(message) {
+            errorLog.innerHTML = message;
+            errorLog.style.display = "block";
+        }
+
+        // BUCLE DE RENDERIZADO DEL MASTER CANVAS (60 FPS)
+        function masterRenderLoop() {
+            const activeChannel = channels.find(c => c.id === activeChannelId);
+            
+            // Limpiar lienzo con negro puro
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (activeChannel) {
+                let sourceElement = null;
+
+                if (activeChannel.type === 'camera' && activeChannel.streamElement) {
+                    sourceElement = activeChannel.streamElement;
+                } else if ((activeChannel.type === 'video' || activeChannel.type === 'gif') && activeChannel.mediaElement) {
+                    sourceElement = activeChannel.mediaElement;
+                } else if (activeChannel.type === 'image' && activeChannel.mediaElement) {
+                    sourceElement = activeChannel.mediaElement;
+                }
+
+                if (sourceElement) {
+                    // Adaptar tamaño dinámico del Canvas del Máster
+                    let srcWidth = sourceElement.videoWidth || sourceElement.naturalWidth || 1280;
+                    let srcHeight = sourceElement.videoHeight || sourceElement.naturalHeight || 720;
+                    if (canvas.width !== srcWidth) {
+                        canvas.width = srcWidth;
+                        canvas.height = srcHeight;
+                    }
+                    // Dibujar la fuente actual
+                    ctx.drawImage(sourceElement, 0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            // Dibujar capa superior del logotipo si existe
+            if (globalOverlayImg) {
+                ctx.drawImage(globalOverlayImg, 0, 0, canvas.width, canvas.height);
+            }
+
+            requestAnimationFrame(masterRenderLoop);
+        }
+
+        // CONTROL DE SELECCIÓN CON TRANSICIÓN
+        function programChannel(channelId) {
+            if (stingerSrcUrl) {
+                pendingChannelId = channelId;
+                stingerVideo.style.display = "block";
+                stingerVideo.currentTime = 0;
+                stingerVideo.play();
+            } else {
+                executeSwitch(channelId);
+            }
+        }
+
+        function executeSwitch(channelId) {
+            activeChannelId = channelId;
+            document.querySelectorAll('.channel-box').forEach(box => {
+                box.classList.toggle('active', parseInt(box.dataset.id) === channelId);
+            });
+        }
+
+        stingerVideo.ontimeupdate = () => {
+            if (pendingChannelId && stingerVideo.currentTime >= (stingerVideo.duration / 2)) {
+                executeSwitch(pendingChannelId);
+                pendingChannelId = null;
+            }
+        };
+        stingerVideo.onended = () => { stingerVideo.style.display = "none"; };
+
+        // AGREGAR FUENTES DINÁMICAS
+        addChannelBtn.onclick = () => {
+            const type = prompt("¿Qué tipo de fuente deseas añadir?\nEscribe: 'camara' o 'archivo' (videos, imágenes, gifs)").toLowerCase().trim();
+            
+            if (type === 'camara') {
+                if (systemCameras.length === 0) {
+                    alert("No hay cámaras disponibles.");
+                    return;
+                }
+                // Construir menú de selección de cámara
+                let optionsMsg = "Selecciona el número de cámara:\n";
+                systemCameras.forEach((cam, idx) => {
+                    optionsMsg += `${idx + 1}: ${cam.label || `Cámara ${idx + 1}`}\n`;
+                });
+                const selection = parseInt(prompt(optionsMsg)) - 1;
+                if (selection >= 0 && selection < systemCameras.length) {
+                    createCameraChannel(systemCameras[selection]);
+                }
+            } else if (type === 'archivo') {
+                // Disparar cargador de archivos universal
+                universalMediaInput.click();
+            } else {
+                alert("Opción no válida. Escribe 'camara' o 'archivo'.");
+            }
+        };
+
+        // Crear Canal de Cámara
+        async function createCameraChannel(deviceInfo) {
+            channelCounter++;
+            const id = channelCounter;
+            
+            const box = document.createElement('div');
+            box.className = 'channel-box';
+            box.dataset.id = id;
+
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.playsInline = true;
+            video.muted = true;
+
+            const label = document.createElement('div');
+            label.className = 'channel-label';
+            label.textContent = deviceInfo.label || `Cámara ${id}`;
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-delete-channel';
+            delBtn.textContent = 'X';
+            delBtn.onclick = (e) => { e.stopPropagation(); removeChannel(id, box); };
+
+            box.appendChild(video);
+            box.appendChild(label);
+            box.appendChild(delBtn);
+            channelsGrid.appendChild(box);
+
+            box.onclick = () => programChannel(id);
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: deviceInfo.deviceId }, width: 640, height: 480 }
+                });
+                video.srcObject = stream;
+                
+                channels.push({
+                    id: id,
+                    type: 'camera',
+                    streamElement: video,
+                    streamTrack: stream
+                });
+
+                if (!activeChannelId) executeSwitch(id);
+            } catch (err) {
+                showError("Error al abrir cámara en mosaico: " + err.message);
+            }
+        }
+
+        // Crear Canal de Multimedia (Video / Imagen / GIF)
+        universalMediaInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            channelCounter++;
+            const id = channelCounter;
+            const fileUrl = URL.createObjectURL(file);
+            const isVideo = file.type.startsWith('video/');
+
+            const box = document.createElement('div');
+            box.className = 'channel-box';
+            box.dataset.id = id;
+
+            let mediaElement;
+            if (isVideo) {
+                mediaElement = document.createElement('video');
+                mediaElement.src = fileUrl;
+                mediaElement.autoplay = true;
+                mediaElement.loop = true;
+                mediaElement.muted = true;
+                mediaElement.playsInline = true;
+            } else {
+                mediaElement = document.createElement('img');
+                mediaElement.src = fileUrl;
+            }
+
+            const label = document.createElement('div');
+            label.className = 'channel-label';
+            label.textContent = file.name;
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'btn-delete-channel';
+            delBtn.textContent = 'X';
+            delBtn.onclick = (e) => { e.stopPropagation(); removeChannel(id, box); };
+
+            box.appendChild(mediaElement);
+            box.appendChild(label);
+            box.appendChild(delBtn);
+            channelsGrid.appendChild(box);
+
+            box.onclick = () => programChannel(id);
+
+            channels.push({
+                id: id,
+                type: isVideo ? 'video' : 'image',
+                mediaElement: mediaElement,
+                objectUrl: fileUrl
+            });
+
+            if (!activeChannelId) executeSwitch(id);
+            universalMediaInput.value = ''; // Reset
+        };
+
+        // Eliminar Canal Dinámicamente
+        function removeChannel(id, htmlElement) {
+            const index = channels.findIndex(c => c.id === id);
+            if (index !== -1) {
+                const channel = channels[index];
+                // Liberar memoria de hardware o URLs creadas
+                if (channel.type === 'camera' && channel.streamTrack) {
+                    channel.streamTrack.getTracks().forEach(t => t.stop());
+                } else if (channel.objectUrl) {
+                    URL.revokeObjectURL(channel.objectUrl);
+                }
+                channels.splice(index, 1);
+            }
+
+            htmlElement.remove();
+
+            // Si eliminamos el canal que estaba al aire, pasamos al primero que quede
+            if (activeChannelId === id) {
+                if (channels.length > 0) {
+                    executeSwitch(channels[0].id);
+                } else {
+                    activeChannelId = null;
+                }
+            }
+        }
+
+        // Carga de Assets Globales (Overlay y Stinger)
+        overlayInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const img = new Image();
+                img.onload = () => { globalOverlayImg = img; };
+                img.src = URL.createObjectURL(file);
+            }
+        };
+
+        stingerInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (stingerSrcUrl) URL.revokeObjectURL(stingerSrcUrl);
+                stingerSrcUrl = URL.createObjectURL(file);
+                stingerVideo.src = stingerSrcUrl;
+            }
+        };
+
+        // INICIALIZACIÓN DE DISPOSITIVOS
+        async function init() {
+            if (window.location.protocol === 'file:') {
+                showError("<strong>¡Bloqueo de Seguridad!</strong> Para mezclar múltiples tipos de archivos y cámaras necesitas correr este archivo en un servidor local (Live Server en VS Code).");
+                return;
+            }
+
+            try {
+                const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                initialStream.getTracks().forEach(track => track.stop());
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                systemCameras = devices.filter(d => d.kind === 'videoinput');
+
+                // Crear por defecto un primer canal con la cámara 1 automáticamente
+                if (systemCameras.length > 0) {
+                    createCameraChannel(systemCameras[0]);
+                }
+
+                masterRenderLoop();
+            } catch (error) {
+                showError("Permiso de cámara denegado. No se pueden inicializar señales de video.");
+            }
+        }
+
+        init();
+    </script>
 </body>
 </html>
