@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Switcher Studio</title>
+    <title>Estudio de Transmisión Profesional</title>
     
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,7 +18,7 @@
         }
 
         body {
-            background-color: #0a0a0c;
+            background-color: #050508;
             color: #FFFFFF;
             display: flex;
             flex-direction: column;
@@ -30,7 +30,7 @@
 
         header {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1000px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -57,39 +57,37 @@
             animation: blink 1.5s infinite;
         }
 
-        @keyframes blink {
-            50% { opacity: 0.3; }
-        }
+        @keyframes blink { 50% { opacity: 0.3; } }
 
         h2 {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 900;
             text-transform: uppercase;
-            margin: 15px 0 8px 0;
+            margin: 20px 0 10px 0;
             letter-spacing: 0.5px;
             width: 100%;
-            max-width: 1100px;
-            color: #888888;
+            max-width: 1000px;
+            color: #AAAAAA;
         }
 
-        /* Layout Principal */
-        .studio-layout {
+        /* Layout de la Pantalla Principal */
+        .main-studio-layout {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 3fr 1fr;
             gap: 20px;
             width: 100%;
-            max-width: 1100px;
+            max-width: 1000px;
         }
 
-        /* Monitor de Programa (Canvas) */
         .program-monitor {
             position: relative;
             width: 100%;
             aspect-ratio: 16 / 9;
             background-color: #000000;
-            border: 4px solid #FF0000; /* Borde rojo de en el aire (PGM) */
+            border: 4px solid #FF0000;
             border-radius: 6px;
             overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
         canvas {
@@ -110,64 +108,51 @@
             pointer-events: none;
         }
 
-        /* Panel Lateral de Controles Globales */
+        /* Panel de Configuración Lateral */
         .side-panel {
+            background-color: #111113;
+            border: 2px solid #222226;
+            padding: 15px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background-color: #121214;
-            border: 2px solid #222225;
-            padding: 15px;
-            border-radius: 6px;
         }
 
-        .control-group {
-            border-bottom: 1px solid #222225;
-            padding-bottom: 12px;
-        }
-
-        .control-group:last-child { border: none; }
-
-        label {
+        .control-group label {
             display: block;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
             margin-bottom: 6px;
-            color: #AAAAAA;
+            color: #888888;
         }
 
-        .btn-main {
+        .btn-action {
             width: 100%;
-            padding: 12px;
-            font-size: 13px;
+            padding: 10px;
+            font-size: 12px;
             font-weight: 900;
-            background-color: #FFFFFF;
-            color: #000000;
-            border: none;
-            border-radius: 4px;
             text-transform: uppercase;
+            border-radius: 4px;
             cursor: pointer;
+            border: none;
         }
+        .btn-add { background-color: #FFFFFF; color: #000000; }
+        .btn-add:active { background-color: #CCCCCC; }
 
-        .btn-main:active { background-color: #CCCCCC; }
-
-        .file-hidden { display: none; }
-
-        /* Mosaico Dinámico de Canales */
-        .grid-channels {
+        /* Mosaico Fijo 4x2 para Video/Cámaras (BACKGROUNDS) */
+        .grid-video-channels {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1000px;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-top: 10px;
-            margin-bottom: 30px;
+            gap: 12px;
         }
 
         .channel-box {
             position: relative;
-            background-color: #121214;
+            background-color: #111113;
             border: 3px solid #333338;
             border-radius: 6px;
             aspect-ratio: 4 / 3;
@@ -175,10 +160,7 @@
             cursor: pointer;
         }
 
-        .channel-box.active {
-            border-color: #FF0000; /* Rojo si está en el aire */
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
-        }
+        .channel-box.active { border-color: #FF0000; }
 
         .channel-box video, .channel-box img {
             width: 100%;
@@ -187,42 +169,104 @@
             pointer-events: none;
         }
 
-        /* Botón de borrar canal */
-        .btn-delete-channel {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 24px;
-            height: 24px;
-            background-color: rgba(0, 0, 0, 0.8);
-            border: 1px solid #444448;
-            color: #FF3333;
-            border-radius: 4px;
-            font-weight: 900;
-            font-size: 12px;
-            cursor: pointer;
-            z-index: 5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn-delete-channel:hover { background-color: #FF3333; color: #FFFFFF; }
-
         .channel-label {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
             background-color: rgba(0, 0, 0, 0.85);
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
-            padding: 5px;
+            padding: 4px;
             text-align: center;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             text-transform: uppercase;
         }
+
+        .empty-slot {
+            background-color: #08080a;
+            border: 3px dashed #1c1c22;
+            border-radius: 6px;
+            aspect-ratio: 4 / 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333338;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        /* Banco de Imágenes Dinámico (BOTTOM ROW) */
+        .image-bank-container {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .image-card {
+            background-color: #111113;
+            border: 2px solid #222226;
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .image-preview-box {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000000;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .image-preview-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .image-card-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .btn-card {
+            padding: 8px 4px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            border: 2px solid #FFFFFF;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: transparent;
+            color: #FFFFFF;
+            text-align: center;
+        }
+
+        .btn-card.active-overlay {
+            background-color: #00FF00;
+            color: #000000;
+            border-color: #00FF00;
+        }
+
+        .btn-card:active { opacity: 0.7; }
+
+        .btn-delete-asset {
+            background-color: #221111;
+            color: #FF3333;
+            border-color: #FF3333;
+            grid-column: span 2;
+        }
+        .btn-delete-asset:hover { background-color: #FF3333; color: #FFFFFF; }
 
         .error-message {
             color: #FF3333;
@@ -233,16 +277,13 @@
             border: 2px dashed #FF3333;
             border-radius: 6px;
             background-color: #110000;
-            max-width: 1100px;
+            max-width: 1000px;
             width: 100%;
             margin-bottom: 15px;
             display: none;
         }
 
-        @media (max-width: 800px) {
-            .studio-layout { grid-template-columns: 1fr; }
-            .grid-channels { grid-template-columns: repeat(2, 1fr); }
-        }
+        .file-hidden { display: none; }
     </style>
 </head>
 <body>
@@ -254,57 +295,65 @@
 
     <div id="errorLog" class="error-message"></div>
 
-    <div class="studio-layout">
+    <div class="main-studio-layout">
         <div>
-            <h2>Monitor de Programa (PGM OUT)</h2>
+            <h2>Monitor de Programa (Salida Combinada)</h2>
             <div class="program-monitor">
                 <canvas id="programCanvas"></canvas>
                 <video id="stingerTransition" muted playsinline></video>
             </div>
         </div>
 
-        <div>
-            <h2>Configuración del Sistema</h2>
-            <div class="side-panel">
-                <div class="control-group">
-                    <label>Cortinilla Stinger (Transición MP4)</label>
-                    <input type="file" id="stingerInput" accept="video/mp4">
-                </div>
-                <div class="control-group">
-                    <label>Logo / Overlay Global (PNG Transparente)</label>
-                    <input type="file" id="overlayInput" accept="image/png, image/jpeg">
-                </div>
-                <div class="control-group">
-                    <button class="btn-main" id="addChannelBtn">+ Añadir Nueva Fuente</button>
-                    <input type="file" id="universalMediaInput" class="file-hidden" accept="video/mp4, image/png, image/jpeg, image/gif">
-                </div>
+        <div class="side-panel">
+            <h2>Efectos de Entrada</h2>
+            <div class="control-group">
+                <label>Transición Stinger (MP4)</label>
+                <input type="file" id="stingerInput" accept="video/mp4">
+            </div>
+            <div class="control-group" style="margin-top: auto;">
+                <label>Importar Recursos</label>
+                <button class="btn-action btn-add" id="importVideoBtn">+ Cargar Video/Cámara</button>
+                <button class="btn-action btn-add" id="importImageBtn" style="margin-top: 8px; background-color: #222226; color: #FFFFFF; border: 2px solid #44444c;">+ Cargar Imagen</button>
             </div>
         </div>
     </div>
 
-    <h2>Mosaico de Canales Dinámicos</h2>
-    <div id="channelsGrid" class="grid-channels">
+    <h2>Mosaico de Fondo / Transmisión de Video (Fijo 4x2)</h2>
+    <div id="videoGrid" class="grid-video-channels">
         </div>
+
+    <h2>Banco de Imágenes & Capas Superpuestas (Overlays)</h2>
+    <div id="imageBank" class="image-bank-container">
+        </div>
+
+    <input type="file" id="videoFileInput" class="file-hidden" accept="video/mp4, image/gif">
+    <input type="file" id="imageFileInput" class="file-hidden" accept="image/png, image/jpeg, image/gif">
 
     <script>
         const canvas = document.getElementById('programCanvas');
         const ctx = canvas.getContext('2d');
         const stingerVideo = document.getElementById('stingerTransition');
-        const channelsGrid = document.getElementById('channelsGrid');
-        const addChannelBtn = document.getElementById('addChannelBtn');
-        const universalMediaInput = document.getElementById('universalMediaInput');
-        const overlayInput = document.getElementById('overlayInput');
+        const videoGrid = document.getElementById('videoGrid');
+        const imageBank = document.getElementById('imageBank');
+        
+        const importVideoBtn = document.getElementById('importVideoBtn');
+        const importImageBtn = document.getElementById('importImageBtn');
+        const videoFileInput = document.getElementById('videoFileInput');
+        const imageFileInput = document.getElementById('imageFileInput');
         const stingerInput = document.getElementById('stingerInput');
         const errorLog = document.getElementById('errorLog');
 
-        let channels = [];          // Base de datos de canales activos
-        let systemCameras = [];     // Cámaras físicas detectadas
-        let activeChannelId = null; // ID del canal actualmente al aire
-        let channelCounter = 0;
+        const MAX_VIDEO_SLOTS = 8; // Matriz 4x2 estricta
+        let videoChannels = [];    // Capacidad para 8 fondos de video/cámara
+        let imageAssets = [];      // Banco libre de imágenes
         
-        let globalOverlayImg = null;
+        let systemCameras = [];
+        let activeVideoChannelId = null;
+        let assetCounter = 0;
+
         let stingerSrcUrl = null;
-        let pendingChannelId = null; 
+        let pendingChannelId = null;
+        let activeOverlayAssetId = null; // ID de la imagen activa en superposición
 
         function showError(message) {
             errorLog.innerHTML = message;
@@ -313,236 +362,286 @@
 
         // BUCLE DE RENDERIZADO DEL MASTER CANVAS (60 FPS)
         function masterRenderLoop() {
-            const activeChannel = channels.find(c => c.id === activeChannelId);
-            
-            // Limpiar lienzo con negro puro
             ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if (activeChannel) {
-                let sourceElement = null;
-
-                if (activeChannel.type === 'camera' && activeChannel.streamElement) {
-                    sourceElement = activeChannel.streamElement;
-                } else if ((activeChannel.type === 'video' || activeChannel.type === 'gif') && activeChannel.mediaElement) {
-                    sourceElement = activeChannel.mediaElement;
-                } else if (activeChannel.type === 'image' && activeChannel.mediaElement) {
-                    sourceElement = activeChannel.mediaElement;
+            // 1. Dibujar la fuente de video de fondo activa (Cámara, Video o GIF)
+            const activeChannel = videoChannels.find(c => c.id === activeVideoChannelId);
+            if (activeChannel && activeChannel.element) {
+                let srcWidth = activeChannel.element.videoWidth || activeChannel.element.naturalWidth || 1280;
+                let srcHeight = activeChannel.element.videoHeight || activeChannel.element.naturalHeight || 720;
+                
+                if (canvas.width !== srcWidth) {
+                    canvas.width = srcWidth;
+                    canvas.height = srcHeight;
                 }
-
-                if (sourceElement) {
-                    // Adaptar tamaño dinámico del Canvas del Máster
-                    let srcWidth = sourceElement.videoWidth || sourceElement.naturalWidth || 1280;
-                    let srcHeight = sourceElement.videoHeight || sourceElement.naturalHeight || 720;
-                    if (canvas.width !== srcWidth) {
-                        canvas.width = srcWidth;
-                        canvas.height = srcHeight;
-                    }
-                    // Dibujar la fuente actual
-                    ctx.drawImage(sourceElement, 0, 0, canvas.width, canvas.height);
-                }
+                ctx.drawImage(activeChannel.element, 0, 0, canvas.width, canvas.height);
             }
 
-            // Dibujar capa superior del logotipo si existe
-            if (globalOverlayImg) {
-                ctx.drawImage(globalOverlayImg, 0, 0, canvas.width, canvas.height);
+            // 2. Dibujar la Capa Superior / Overlay (Imagen Conmutada)
+            const activeOverlay = imageAssets.find(img => img.id === activeOverlayAssetId);
+            if (activeOverlay && activeOverlay.element) {
+                ctx.drawImage(activeOverlay.element, 0, 0, canvas.width, canvas.height);
             }
 
             requestAnimationFrame(masterRenderLoop);
         }
 
-        // CONTROL DE SELECCIÓN CON TRANSICIÓN
-        function programChannel(channelId) {
+        // CONTROL DE SELECCIÓN CON TRANSICIÓN (STINGER)
+        function programVideoChannel(channelId) {
             if (stingerSrcUrl) {
                 pendingChannelId = channelId;
                 stingerVideo.style.display = "block";
                 stingerVideo.currentTime = 0;
                 stingerVideo.play();
             } else {
-                executeSwitch(channelId);
+                executeVideoSwitch(channelId);
             }
         }
 
-        function executeSwitch(channelId) {
-            activeChannelId = channelId;
+        function executeVideoSwitch(channelId) {
+            activeVideoChannelId = channelId;
             document.querySelectorAll('.channel-box').forEach(box => {
-                box.classList.toggle('active', parseInt(box.dataset.id) === channelId);
+                box.classList.toggle('active', box.dataset.id === channelId);
             });
         }
 
         stingerVideo.ontimeupdate = () => {
             if (pendingChannelId && stingerVideo.currentTime >= (stingerVideo.duration / 2)) {
-                executeSwitch(pendingChannelId);
+                executeVideoSwitch(pendingChannelId);
                 pendingChannelId = null;
             }
         };
         stingerVideo.onended = () => { stingerVideo.style.display = "none"; };
 
-        // AGREGAR FUENTES DINÁMICAS
-        addChannelBtn.onclick = () => {
-            const type = prompt("¿Qué tipo de fuente deseas añadir?\nEscribe: 'camara' o 'archivo' (videos, imágenes, gifs)").toLowerCase().trim();
-            
-            if (type === 'camara') {
-                if (systemCameras.length === 0) {
-                    alert("No hay cámaras disponibles.");
-                    return;
+        // REDIBUJAR LA TABLA FIJA DE VIDEO 4x2
+        function renderVideoGridHtml() {
+            videoGrid.innerHTML = '';
+            for (let i = 0; i < MAX_VIDEO_SLOTS; i++) {
+                if (i < videoChannels.length) {
+                    const channel = videoChannels[i];
+                    
+                    const box = document.createElement('div');
+                    box.className = `channel-box ${channel.id === activeVideoChannelId ? 'active' : ''}`;
+                    box.dataset.id = channel.id;
+
+                    // Clonar o referenciar el elemento visual para mostrarlo en miniatura
+                    const visualClone = channel.element.cloneNode(true);
+                    if (channel.type === 'camera' || channel.type === 'video') {
+                        visualClone.muted = true;
+                        visualClone.autoplay = true;
+                        visualClone.playsInline = true;
+                        // Volver a enlazar el stream físico si es cámara
+                        if (channel.streamObject) visualClone.srcObject = channel.streamObject;
+                    }
+
+                    const label = document.createElement('div');
+                    label.className = 'channel-label';
+                    label.textContent = channel.name;
+
+                    box.appendChild(visualClone);
+                    box.appendChild(label);
+                    videoGrid.appendChild(box);
+
+                    box.onclick = () => programVideoChannel(channel.id);
+                } else {
+                    const emptySlot = document.createElement('div');
+                    emptySlot.className = 'empty-slot';
+                    emptySlot.textContent = "Línea Vacía";
+                    videoGrid.appendChild(emptySlot);
                 }
-                // Construir menú de selección de cámara
-                let optionsMsg = "Selecciona el número de cámara:\n";
-                systemCameras.forEach((cam, idx) => {
-                    optionsMsg += `${idx + 1}: ${cam.label || `Cámara ${idx + 1}`}\n`;
-                });
-                const selection = parseInt(prompt(optionsMsg)) - 1;
-                if (selection >= 0 && selection < systemCameras.length) {
-                    createCameraChannel(systemCameras[selection]);
-                }
-            } else if (type === 'archivo') {
-                // Disparar cargador de archivos universal
-                universalMediaInput.click();
-            } else {
-                alert("Opción no válida. Escribe 'camara' o 'archivo'.");
+            }
+        }
+
+        // REDIBUJAR EL BANCO DE IMÁGENES ABAJO
+        function renderImageBankHtml() {
+            imageBank.innerHTML = '';
+            imageAssets.forEach(asset => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+
+                const previewBox = document.createElement('div');
+                previewBox.className = 'image-preview-box';
+                const imgClone = asset.element.cloneNode();
+                previewBox.appendChild(imgClone);
+
+                const actions = document.createElement('div');
+                actions.className = 'image-card-actions';
+
+                // Botón 1: Enviar como Fondo de Programa directo
+                const btnBackground = document.createElement('button');
+                btnBackground.className = 'btn-card';
+                btnBackground.textContent = "Fondo PGM";
+                btnBackground.onclick = () => {
+                    // Agregamos de manera temporal o permanente esta imagen al Switcher principal si hay espacio
+                    pushAsVideoChannel(asset.name, asset.element, 'image', asset.objectUrl);
+                };
+
+                // Botón 2: Superponer / Quitar Overlay
+                const btnOverlay = document.createElement('button');
+                btnOverlay.className = `btn-card ${asset.id === activeOverlayAssetId ? 'active-overlay' : ''}`;
+                btnOverlay.textContent = asset.id === activeOverlayAssetId ? "Quit Overlay" : "Superponer";
+                btnOverlay.onclick = () => {
+                    if (activeOverlayAssetId === asset.id) {
+                        activeOverlayAssetId = null; // Apagar capa
+                    } else {
+                        activeOverlayAssetId = asset.id; // Encender capa
+                    }
+                    renderImageBankHtml();
+                };
+
+                // Botón 3: Eliminar del banco de recursos
+                const btnDelete = document.createElement('button');
+                btnDelete.className = 'btn-card btn-delete-asset';
+                btnDelete.textContent = "Eliminar Recurso";
+                btnDelete.onclick = () => removeImageAsset(asset.id);
+
+                actions.appendChild(btnBackground);
+                actions.appendChild(btnOverlay);
+                actions.appendChild(btnDelete);
+
+                card.appendChild(previewBox);
+                card.appendChild(actions);
+                imageBank.appendChild(card);
+            });
+        }
+
+        // FUNCIONES DE CONTROL DE ARCHIVOS Y RECURSOS
+        importVideoBtn.onclick = () => {
+            if (videoChannels.length >= MAX_VIDEO_SLOTS) {
+                alert("La matriz de video 4x2 está llena. Elimina un video del mosaico si deseas agregar otro.");
+                return;
+            }
+            const mode = prompt("Escribe 'camara' para añadir hardware en vivo o 'archivo' para cargar un clip MP4/GIF:").toLowerCase().trim();
+            if (mode === 'camara') {
+                if (systemCameras.length === 0) return alert("Sin cámaras.");
+                let msg = "Elige la cámara:\n";
+                systemCameras.forEach((c, i) => msg += `${i+1}: ${c.label || `Cámara ${i+1}`}\n`);
+                const sel = parseInt(prompt(msg)) - 1;
+                if (sel >= 0 && sel < systemCameras.length) createCameraSource(systemCameras[sel]);
+            } else if (mode === 'archivo') {
+                videoFileInput.click();
             }
         };
 
-        // Crear Canal de Cámara
-        async function createCameraChannel(deviceInfo) {
-            channelCounter++;
-            const id = channelCounter;
-            
-            const box = document.createElement('div');
-            box.className = 'channel-box';
-            box.dataset.id = id;
+        importImageBtn.onclick = () => imageFileInput.click();
 
-            const video = document.createElement('video');
-            video.autoplay = true;
-            video.playsInline = true;
-            video.muted = true;
-
-            const label = document.createElement('div');
-            label.className = 'channel-label';
-            label.textContent = deviceInfo.label || `Cámara ${id}`;
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'btn-delete-channel';
-            delBtn.textContent = 'X';
-            delBtn.onclick = (e) => { e.stopPropagation(); removeChannel(id, box); };
-
-            box.appendChild(video);
-            box.appendChild(label);
-            box.appendChild(delBtn);
-            channelsGrid.appendChild(box);
-
-            box.onclick = () => programChannel(id);
+        // Registrar Cámara Físicamente en la Tabla de Canales
+        async function createCameraSource(deviceInfo) {
+            assetCounter++;
+            const id = "cam_" + assetCounter;
+            const videoEl = document.createElement('video');
+            videoEl.autoplay = true;
+            videoEl.playsInline = true;
+            videoEl.muted = true;
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: { exact: deviceInfo.deviceId }, width: 640, height: 480 }
+                    video: { deviceId: { exact: deviceInfo.deviceId }, width: 1280, height: 720 }
                 });
-                video.srcObject = stream;
+                videoEl.srcObject = stream;
                 
-                channels.push({
+                videoChannels.push({
                     id: id,
                     type: 'camera',
-                    streamElement: video,
-                    streamTrack: stream
+                    name: deviceInfo.label || `Cámara ${videoChannels.length + 1}`,
+                    element: videoEl,
+                    streamObject: stream
                 });
 
-                if (!activeChannelId) executeSwitch(id);
+                if (!activeVideoChannelId) activeVideoChannelId = id;
+                renderVideoGridHtml();
             } catch (err) {
-                showError("Error al abrir cámara en mosaico: " + err.message);
+                showError("Hardware bloqueado: " + err.message);
             }
         }
 
-        // Crear Canal de Multimedia (Video / Imagen / GIF)
-        universalMediaInput.onchange = (e) => {
+        // Registrar Archivo MP4 de Video en la Tabla de Canales
+        videoFileInput.onchange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
 
-            channelCounter++;
-            const id = channelCounter;
+            assetCounter++;
+            const id = "vid_" + assetCounter;
             const fileUrl = URL.createObjectURL(file);
-            const isVideo = file.type.startsWith('video/');
 
-            const box = document.createElement('div');
-            box.className = 'channel-box';
-            box.dataset.id = id;
+            const videoEl = document.createElement('video');
+            videoEl.src = fileUrl;
+            videoEl.autoplay = true;
+            videoEl.loop = true;
+            videoEl.muted = true;
+            videoEl.playsInline = true;
 
-            let mediaElement;
-            if (isVideo) {
-                mediaElement = document.createElement('video');
-                mediaElement.src = fileUrl;
-                mediaElement.autoplay = true;
-                mediaElement.loop = true;
-                mediaElement.muted = true;
-                mediaElement.playsInline = true;
-            } else {
-                mediaElement = document.createElement('img');
-                mediaElement.src = fileUrl;
-            }
-
-            const label = document.createElement('div');
-            label.className = 'channel-label';
-            label.textContent = file.name;
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'btn-delete-channel';
-            delBtn.textContent = 'X';
-            delBtn.onclick = (e) => { e.stopPropagation(); removeChannel(id, box); };
-
-            box.appendChild(mediaElement);
-            box.appendChild(label);
-            box.appendChild(delBtn);
-            channelsGrid.appendChild(box);
-
-            box.onclick = () => programChannel(id);
-
-            channels.push({
+            videoChannels.push({
                 id: id,
-                type: isVideo ? 'video' : 'image',
-                mediaElement: mediaElement,
+                type: 'video',
+                name: file.name,
+                element: videoEl,
                 objectUrl: fileUrl
             });
 
-            if (!activeChannelId) executeSwitch(id);
-            universalMediaInput.value = ''; // Reset
+            if (!activeVideoChannelId) activeVideoChannelId = id;
+            renderVideoGridHtml();
+            videoFileInput.value = '';
         };
 
-        // Eliminar Canal Dinámicamente
-        function removeChannel(id, htmlElement) {
-            const index = channels.findIndex(c => c.id === id);
-            if (index !== -1) {
-                const channel = channels[index];
-                // Liberar memoria de hardware o URLs creadas
-                if (channel.type === 'camera' && channel.streamTrack) {
-                    channel.streamTrack.getTracks().forEach(t => t.stop());
-                } else if (channel.objectUrl) {
-                    URL.revokeObjectURL(channel.objectUrl);
-                }
-                channels.splice(index, 1);
+        // Inyectar una imagen estática al Switcher de video si se presiona "Fondo PGM"
+        function pushAsVideoChannel(name, imgElement, type, url) {
+            if (videoChannels.length >= MAX_VIDEO_SLOTS) {
+                // Sacamos la última si se excede para dar espacio
+                const discarded = videoChannels.pop();
+                if (discarded.streamObject) discarded.streamObject.getTracks().forEach(t => t.stop());
             }
+            assetCounter++;
+            const id = "img_bg_" + assetCounter;
 
-            htmlElement.remove();
+            videoChannels.push({
+                id: id,
+                type: 'image',
+                name: "[Fondo] " + name,
+                element: imgElement,
+                objectUrl: url
+            });
 
-            // Si eliminamos el canal que estaba al aire, pasamos al primero que quede
-            if (activeChannelId === id) {
-                if (channels.length > 0) {
-                    executeSwitch(channels[0].id);
-                } else {
-                    activeChannelId = null;
-                }
-            }
+            programVideoChannel(id);
+            renderVideoGridHtml();
         }
 
-        // Carga de Assets Globales (Overlay y Stinger)
-        overlayInput.onchange = (e) => {
+        // Cargar imágenes al Banco Multimedia Inferior
+        imageFileInput.onchange = (e) => {
             const file = e.target.files[0];
-            if (file) {
-                const img = new Image();
-                img.onload = () => { globalOverlayImg = img; };
-                img.src = URL.createObjectURL(file);
-            }
+            if (!file) return;
+
+            assetCounter++;
+            const id = "asset_img_" + assetCounter;
+            const fileUrl = URL.createObjectURL(file);
+
+            const imgEl = document.createElement('img');
+            imgEl.src = fileUrl;
+
+            imgEl.onload = () => {
+                imageAssets.push({
+                    id: id,
+                    name: file.name,
+                    element: imgEl,
+                    objectUrl: fileUrl
+                });
+                renderImageBankHtml();
+            };
+            imageFileInput.value = '';
         };
 
+        function removeImageAsset(id) {
+            const idx = imageAssets.findIndex(a => a.id === id);
+            if (idx !== -1) {
+                URL.revokeObjectURL(imageAssets[idx].objectUrl);
+                imageAssets.splice(idx, 1);
+            }
+            if (activeOverlayAssetId === id) activeOverlayAssetId = null;
+            renderImageBankHtml();
+        }
+
+        // Carga de Stinger
         stingerInput.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -552,10 +651,10 @@
             }
         };
 
-        // INICIALIZACIÓN DE DISPOSITIVOS
+        // INICIALIZACIÓN
         async function init() {
             if (window.location.protocol === 'file:') {
-                showError("<strong>¡Bloqueo de Seguridad!</strong> Para mezclar múltiples tipos de archivos y cámaras necesitas correr este archivo en un servidor local (Live Server en VS Code).");
+                showError("<strong>¡Bloqueo de Seguridad!</strong> Para mezclar capas gráficas complejas necesitas un servidor local como Live Server en VS Code.");
                 return;
             }
 
@@ -566,14 +665,17 @@
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 systemCameras = devices.filter(d => d.kind === 'videoinput');
 
-                // Crear por defecto un primer canal con la cámara 1 automáticamente
+                // Auto-cargar la primera cámara por defecto en el Slot 1
                 if (systemCameras.length > 0) {
-                    createCameraChannel(systemCameras[0]);
+                    await createCameraSource(systemCameras[0]);
+                } else {
+                    renderVideoGridHtml();
                 }
 
                 masterRenderLoop();
             } catch (error) {
-                showError("Permiso de cámara denegado. No se pueden inicializar señales de video.");
+                showError("Sin acceso al hardware de captura de video.");
+                renderVideoGridHtml();
             }
         }
 
