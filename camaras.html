@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Cámaras Múltiples</title>
+    
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
+    <style>
+        /* Estilos de Alto Contraste y UI Optimizada */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #FFFFFF;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        header {
+            width: 100%;
+            text-align: center;
+            padding: 10px 0 20px 0;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            width: 100%;
+            max-width: 800px;
+            text-align: left;
+        }
+
+        /* Contenedor de la Cámara Principal */
+        .main-preview-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16 / 9;
+            background-color: #111111;
+            border: 4px solid #FFFFFF;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        #mainVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Cuadrícula de Cámaras Conectadas (Previews) */
+        .grid-container {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .thumb-box {
+            position: relative;
+            background-color: #111111;
+            border: 3px solid #555550;
+            border-radius: 6px;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .thumb-box:hover {
+            transform: scale(1.02);
+        }
+
+        /* Estado Activo: Resalta cuál está en la pantalla grande */
+        .thumb-box.active {
+            border-color: #FFFFFF;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .thumb-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none; /* Evita interferencias con el clic */
+        }
+
+        .thumb-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            color: #FFFFFF;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+        }
+
+        /* Mensajes de Error */
+        .error-message {
+            color: #FF3333;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            padding: 15px;
+            border: 2px dashed #FF3333;
+            border-radius: 8px;
+            background-color: #110000;
+            max-width: 800px;
+            width: 100%;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Panel de Control</h1>
+    </header>
+
+    <div id="errorLog" class="error-message"></div>
+
+    <h2>Cámara Principal</h2>
+    <div class="main-preview-container">
+        <video id="mainVideo" autoplay playsinline muted></video>
+    </div>
+
+    <h2>Cámaras Disponibles (Selecciona una)</h2>
+    <div id="cameraGrid" class="grid-container">
+        </div>
+
+    <script>
+        const mainVideo = document.getElementById('mainVideo');
+        const cameraGrid = document.getElementById('cameraGrid');
+        const errorLog = document.getElementById('errorLog');
+        
+        let videoDevices = [];
+        let activeStreamForMain = null;
+        let activeDeviceId = null;
+        
+        // Almacena los flujos de las miniaturas para poder apagarlos si es necesario
+        let thumbnailStreams = []; 
+
+        function showError(message) {
+            errorLog.innerHTML = message;
+            errorLog.style.display = "block";
+        }
+
+        // Apagar la transmisión del cuadro principal
+        function stopMainStream() {
+            if (activeStreamForMain) {
+                activeStreamForMain.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        // Cambiar la cámara del cuadro principal
+        async function selectMainCamera(deviceId) {
+            stopMainStream();
+            activeDeviceId = deviceId;
+
+            // Actualizar la interfaz visual de las miniaturas
+            document.querySelectorAll('.thumb-box').forEach(box => {
+                if (box.dataset.id === deviceId) {
+                    box.classList.add('active');
+                } else {
+                    box.classList.remove('active');
+                }
+            });
+
+            const constraints = {
+                video: {
+                    deviceId: { exact: deviceId },
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            };
+
+            try {
+                activeStreamForMain = await navigator.mediaDevices.getUserMedia(constraints);
+                mainVideo.srcObject = activeStreamForMain;
+            } catch (error) {
+                showError("No se pudo reflejar en la pantalla principal: " + error.message);
+            }
+        }
+
+        // Crear la cuadrícula y encender TODAS las cámaras en miniatura simultáneamente
+        async function buildCameraGrid() {
+            cameraGrid.innerHTML = '';
+            thumbnailStreams = [];
+
+            for (let i = 0; i < videoDevices.length; i++) {
+                const device = videoDevices[i];
+                const labelText = device.label || `Cámara ${i + 1}`;
+
+                // Crear los elementos de la interfaz para la miniatura
+                const thumbBox = document.createElement('div');
+                thumbBox.className = 'thumb-box';
+                thumbBox.dataset.id = device.deviceId;
+
+                const thumbVideo = document.createElement('video');
+                thumbVideo.autoplay = true;
+                thumbVideo.playsInline = true;
+                thumbVideo.muted = true;
+
+                const thumbLabel = document.createElement('div');
+                thumbLabel.className = 'thumb-label';
+                thumbLabel.textContent = labelText;
+
+                thumbBox.appendChild(thumbVideo);
+                thumbBox.appendChild(thumbLabel);
+                cameraGrid.appendChild(thumbBox);
+
+                // Asignar el evento clic para cambiar la principal
+                thumbBox.onclick = () => {
+                    selectMainCamera(device.deviceId);
+                };
+
+                // Inicializar el flujo individual para esta miniatura
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            deviceId: { exact: device.deviceId },
+                            width: { ideal: 320 }, // Resolución baja para optimizar rendimiento de la cuadrícula
+                            height: { ideal: 240 }
+                        }
+                    });
+                    
+                    thumbVideo.srcObject = stream;
+                    thumbnailStreams.push(stream);
+                } catch (err) {
+                    console.warn(`No se pudo inicializar la miniatura para ${labelText}:`, err);
+                    thumbBox.style.opacity = "0.5";
+                    thumbLabel.textContent += " (Ocupada/Error)";
+                }
+            }
+
+            // Seleccionar automáticamente la primera cámara por defecto en el cuadro principal
+            if (videoDevices.length > 0) {
+                selectMainCamera(videoDevices[0].deviceId);
+            }
+        }
+
+        // Obtener la lista de dispositivos de video
+        async function getDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length === 0) {
+                    showError("No se detectaron cámaras físicas en este dispositivo.");
+                    return;
+                }
+
+                await buildCameraGrid();
+            } catch (error) {
+                showError("Error al enumerar los dispositivos de video: " + error.message);
+            }
+        }
+
+        // Inicializador de la aplicación
+        async function init() {
+            // Validación de entorno seguro obligatorio
+            if (window.location.protocol === 'file:') {
+                showError("<strong>¡Bloqueo de Seguridad!</strong> Las cámaras no funcionan abriendo el archivo directamente.<br><br>Debes ejecutarlo desde un servidor local (como Live Server en VS Code) o bajo un dominio HTTPS.");
+                return;
+            }
+
+            try {
+                // Solicitar permiso inicial para desbloquear las etiquetas de hardware
+                const initialStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                initialStream.getTracks().forEach(track => track.stop());
+                
+                await getDevices();
+            } catch (error) {
+                showError("Permiso de cámara denegado. Por favor, cambia los permisos desde la barra de direcciones (icono de candado).");
+            }
+        }
+
+        // Service Worker In-Line para cumplimiento de la PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl).catch(err => console.log("SW error:", err));
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
