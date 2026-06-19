@@ -12,7 +12,8 @@
             --accent-blue: #1565c0;
             --accent-orange: #ef6c00;
             --surface: #ffffff;
-            --border: #cccccc;
+            --border: #e0e0e0;
+            --bg-light: #f8f9fa;
         }
 
         body {
@@ -21,142 +22,180 @@
             background-color: #f4f6f9; overflow: hidden; color: #333;
         }
 
+        /* --- NAVBAR ADAPTABLE --- */
         .navbar-roles {
-            background-color: var(--primary-dark); color: white; padding: 12px 20px;
+            background-color: var(--primary-dark); color: white; padding: 10px 16px;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3); z-index: 1100;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2); z-index: 1100; flex-shrink: 0;
+            flex-wrap: wrap; gap: 8px;
         }
-        .nav-title { font-weight: 800; font-size: 1.2rem; }
-        .tabs-roles { display: flex; gap: 12px; }
+        .nav-title { font-weight: 800; font-size: 1.1rem; letter-spacing: 0.5px; }
+        .tabs-roles { display: flex; gap: 8px; }
         .tab-btn {
             background-color: rgba(255,255,255,0.15); color: white; border: 2px solid transparent;
-            padding: 8px 18px; border-radius: 6px; cursor: pointer; font-weight: bold;
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;
+            transition: all 0.2s ease;
         }
         .tab-btn.active { background-color: white; color: var(--primary-dark); }
 
-        .app-container { display: flex; flex-grow: 1; height: calc(100vh - 56px); position: relative; }
+        /* --- CONTENEDOR PRINCIPAL LÍQUIDO --- */
+        .app-container { 
+            display: flex; flex-grow: 1; height: calc(100vh - 52px); 
+            position: relative; overflow: hidden; flex-direction: row; 
+        }
 
+        /* --- PANEL MONITORISTA TOTALMENTE ADAPTABLE --- */
         .panel-lateral {
-            width: 380px; background: var(--surface); box-shadow: 3px 0 15px rgba(0,0,0,0.15);
+            width: 400px; background: var(--surface); box-shadow: 3px 0 15px rgba(0,0,0,0.1);
             display: none; flex-direction: column; z-index: 1000; overflow-y: auto;
-            border-right: 1px solid var(--border);
+            border-right: 1px solid var(--border); flex-shrink: 0;
         }
         .panel-lateral.active { display: flex; }
 
-        /* NUEVO DISEÑO: Panel de usuario flotante abajo a la derecha */
+        /* --- SECCIONES MODULARES DEL MONITORISTA --- */
+        .seccion { padding: 16px; border-bottom: 1px solid var(--border); }
+        .seccion-header { 
+            background-color: var(--bg-light); border-bottom: 1px solid var(--border);
+            padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+        }
+        
+        h3 { margin: 0; color: var(--primary-dark); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.75rem; font-weight: 700; color: #555; margin-bottom: 4px; text-transform: uppercase;}
+        input, select { 
+            width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; 
+            box-sizing: border-box; font-weight: 600; font-size: 0.9rem; transition: border-color 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        /* Rejilla compacta de dos columnas para inputs del monitorista */
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* --- BOTONES DEL SISTEMA --- */
+        .btn { 
+            width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; 
+            cursor: pointer; color: white; margin-top: 4px; text-align: center; display: block; 
+            box-sizing: border-box; text-transform: uppercase; font-size: 0.8rem; transition: background 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-success { background-color: var(--primary); }
+        .btn-success:hover { background-color: var(--primary-dark); }
+        .btn-primary { background-color: var(--accent-blue); }
+        .btn-danger { background-color: #d32f2f; }
+        .btn-orange { background-color: var(--accent-orange); }
+        .btn-secondary { background-color: #616161; }
+        
+        /* Botonera de herramientas */
+        .grid-herramientas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+        .btn-toggle-dibujo { 
+            background-color: #fff; color: #444; border: 1px solid #bbb; 
+            padding: 8px; font-size: 0.75rem; margin: 0; font-weight: 600;
+        }
+        .btn-toggle-dibujo:hover { background-color: var(--bg-light); }
+        .btn-toggle-dibujo.activo { background-color: var(--primary); color: white; border-color: var(--primary); }
+        .btn-toggle-dibujo.activo-orange { background-color: var(--accent-orange); color: white; border-color: var(--accent-orange); }
+
+        /* --- CONTENEDORES CON SCROLL INTERNO --- */
+        .scroll-interno { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; background: var(--bg-light); }
+
+        /* --- ELEMENTOS DE LISTAS --- */
+        .item-ruta-lista, .item-bus-activo {
+            padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; 
+            background: #ffffff; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+        }
+        .item-ruta-lista:hover, .item-bus-activo:hover { background-color: var(--bg-light); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .item-ruta-lista.seleccionada { border-color: var(--primary); background-color: #e8f5e9; font-weight: 500; }
+        .item-bus-activo.enfocado { border-color: var(--accent-orange); background-color: #fffde7; }
+
+        /* --- PANEL DE PASAJERO FLOTANTE SMART (FAB MENU) --- */
         .panel-user-flotante {
             position: absolute; bottom: 85px; right: 20px; width: 340px; 
             max-height: 70vh; background: var(--surface); z-index: 1050;
-            border-radius: 12px; box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+            border-radius: 12px; box-shadow: 0 6px 30px rgba(0,0,0,0.25);
             display: none; flex-direction: column; overflow-y: auto;
-            border: 1px solid var(--border);
-            transition: transform 0.2s ease, opacity 0.2s ease;
+            border: 1px solid var(--border); transition: all 0.2s ease;
             opacity: 0; transform: translateY(10px);
         }
         .panel-user-flotante.mostrar { display: flex; opacity: 1; transform: translateY(0); }
 
-        /* NUEVO DISEÑO: Botón de menú flotante inferior derecho (FAB) */
         .btn-trigger-usuario {
             position: absolute; bottom: 20px; right: 20px; z-index: 1040;
-            background-color: var(--primary); color: white; padding: 14px 24px;
+            background-color: var(--primary); color: white; padding: 12px 22px;
             border: none; border-radius: 50px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3); display: none;
-            font-size: 0.95rem; display: flex; align-items: center; gap: 8px;
-            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25); display: none;
+            font-size: 0.9rem; align-items: center; gap: 8px;
         }
-        .btn-trigger-usuario:active { transform: scale(0.96); }
-
-        .seccion { padding: 16px; border-bottom: 1px solid #e0e0e0; }
-        .seccion-header-menu { display: flex; justify-content: space-between; align-items: center; background: #edf7ed; border-top-left-radius: 11px; border-top-right-radius: 11px; }
-        
-        h3 { margin-top: 0; margin-bottom: 10px; color: var(--primary-dark); font-weight: 700; font-size: 0.95rem; text-transform: uppercase;}
-        
-        .input-group { margin-bottom: 12px; }
-        label { display: block; font-size: 0.8rem; font-weight: 700; color: #444; margin-bottom: 5px; text-transform: uppercase;}
-        input, select { width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 6px; box-sizing: border-box; font-weight: 600;}
-
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 6px; text-align: center; display: block; box-sizing: border-box; text-transform: uppercase; font-size: 0.85rem;}
-        .btn-success { background-color: var(--primary); }
-        .btn-primary { background-color: var(--accent-blue); }
-        .btn-danger { background-color: #c62828; }
-        .btn-orange { background-color: var(--accent-orange); }
-        .btn-secondary { background-color: #555555; }
-        .btn-mini { padding: 6px 10px; font-size: 0.75rem; width: auto; display: inline-block; margin-right: 4px;}
-        
-        .btn-toggle-dibujo { background-color: #fff; color: #333; border: 2px solid #555; margin-bottom: 6px;}
-        .btn-toggle-dibujo.activo { background-color: var(--accent-orange); color: white; border-color: var(--accent-orange); }
 
         .viaje-status-box {
-            background-color: #e8f5e9; border: 2px solid #2e7d32; border-radius: 6px;
-            padding: 8px 12px; margin-top: 10px; display: none; font-size: 0.8rem; color: #1b5e20; font-weight: bold;
-            text-align: center;
+            background-color: #e8f5e9; border: 1px solid #2e7d32; border-radius: 6px;
+            padding: 10px; margin-top: 10px; display: none; font-size: 0.8rem; color: #1b5e20; 
+            font-weight: bold; text-align: center;
         }
 
-        .mapa-contenedor { flex-grow: 1; position: relative; height: 100%; }
+        /* --- ENTORNO DEL MAPA --- */
+        .mapa-contenedor { flex-grow: 1; position: relative; height: 100%; width: 100%; }
         #map { width: 100%; height: 100%; }
         
         .status-float {
-            position: absolute; top: 15px; right: 15px; background: rgba(255, 255, 255, 0.95);
-            padding: 12px 18px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1000; font-size: 0.85rem; border: 1px solid var(--border); font-weight: bold;
+            position: absolute; top: 12px; right: 12px; background: rgba(255, 255, 255, 0.9);
+            padding: 6px 12px; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            z-index: 1000; font-size: 0.75rem; border: 1px solid var(--border); font-weight: bold;
         }
 
-        .item-ruta-lista, .item-bus-activo {
-            padding: 10px; border: 2px solid var(--border); border-radius: 6px; margin-bottom: 8px; background: #fafafa; font-size: 0.85rem; cursor: pointer;
-        }
-        .item-ruta-lista.seleccionada {
-            border-color: var(--primary);
-            background-color: #e8f5e9;
-        }
-        .item-bus-activo.enfocado {
-            border-color: var(--accent-orange);
-            background-color: #fffde7;
-        }
-
+        /* --- ANIMACIONES Y ESTILOS DINÁMICOS DEL MAPA --- */
         .marker-emoji-bus { transition: all 1s linear !important; }
-        
         @keyframes resaltarFoco {
             0% { transform: scale(1); filter: drop-shadow(0 0px 0px #ffeb3b); }
-            50% { transform: scale(1.4); filter: drop-shadow(0 0 15px #d32f2f); }
+            50% { transform: scale(1.3); filter: drop-shadow(0 0 12px #d32f2f); }
             100% { transform: scale(1); filter: drop-shadow(0 0px #ffeb3b); }
         }
-        .bus-resaltado {
-            animation: resaltarFoco 0.6s ease infinite;
-            z-index: 2000 !important;
-        }
-
-        .bus-emoji-container { font-size: 28px; text-align: center; position: relative; width: 40px; height: 40px;}
-        
+        .bus-resaltado { animation: resaltarFoco 0.6s ease infinite; z-index: 2000 !important; }
+        .bus-emoji-container { font-size: 26px; text-align: center; position: relative; width: 40px; height: 40px;}
         .bus-derecha { transform: scaleX(1); }
         .bus-izquierda { transform: scaleX(-1); }
         .bus-emoji-container span { transform: scaleX(1); display: inline-block; }
         .bus-izquierda span { transform: scaleX(-1); }
-
-        .parada-emoji-container { font-size: 22px; text-align: center; line-height: 24px; cursor: pointer; }
-
-        .btn-cerrar-menu { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #333; font-weight: bold; }
+        .parada-emoji-container { font-size: 20px; text-align: center; cursor: pointer; }
+        .btn-cerrar-menu { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #666; font-weight: bold; }
 
         @keyframes parpadeoTrafico {
-            0% { opacity: 0.4; stroke-width: 8; }
-            50% { opacity: 1; stroke-width: 12; }
-            100% { opacity: 0.4; stroke-width: 8; }
+            0% { opacity: 0.5; stroke-width: 6; }
+            50% { opacity: 1; stroke-width: 10; }
+            100% { opacity: 0.5; stroke-width: 6; }
         }
-        .tramo-trafico-pesado {
-            animation: parpadeoTrafico 1.5s infinite;
-            stroke-dasharray: 8, 8;
+        .tramo-trafico-pesado { animation: parpadeoTrafico 1.5s infinite; stroke-dasharray: 6, 6; }
+
+        /* --- 📱 RESPONSIVE MEDIA QUERIES (ADAPTABILIDAD TOTAL) --- */
+        @media (max-width: 992px) {
+            .panel-lateral { width: 340px; }
         }
 
         @media (max-width: 768px) {
-            .app-container { flex-direction: column; }
-            .panel-lateral { width: 100%; height: 50vh; }
-            .panel-user-flotante { width: calc(100% - 40px); right: 20px; left: 20px; bottom: 80px; max-height: 60vh; }
+            .app-container { flex-direction: column-reverse; }
+            .panel-lateral { 
+                width: 100%; height: 50vh; border-right: none; 
+                border-top: 1px solid var(--border); box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+            }
+            .panel-user-flotante { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 75px; max-height: 55vh; }
+            .btn-trigger-usuario { right: 16px; bottom: 16px; padding: 10px 20px; font-size: 0.85rem; }
+            .scroll-interno { max-height: 140px; }
+            .nav-title { font-size: 0.95rem; }
+        }
+
+        @media (max-width: 480px) {
+            .navbar-roles { padding: 8px 12px; justify-content: center; flex-direction: column; }
+            .nav-title { text-align: center; font-size: 0.9rem; }
+            .tabs-roles { width: 100%; justify-content: center; }
+            .tab-btn { flex-grow: 1; text-align: center; padding: 6px 10px; font-size: 0.8rem; }
+            .grid-inputs { grid-template-columns: 1fr; gap: 0; }
         }
     </style>
 </head>
 <body>
 
     <div class="navbar-roles">
-        <div class="nav-title">🚍 RTP CONTROL - SISTEMA DE FLOTA HÍBRIDO</div>
+        <div class="nav-title">🚍 RTP CONTROL - ENTORNO HÍBRIDO ADAPTABLE</div>
         <div class="tabs-roles">
             <button class="tab-btn active" id="btn-tab-admin" onclick="alternarPagina('admin')">💻 Monitorista</button>
             <button class="tab-btn" id="btn-tab-user" onclick="alternarPagina('user')">📱 Pasajeros</button>
@@ -165,98 +204,102 @@
 
     <div class="app-container">
         
+        <!-- ENTORNO DEL MONITORISTA OPTIMIZADO -->
         <div class="panel-lateral active" id="panel-admin">
-            <div class="seccion" style="background-color: #f5f5f5;">
-                <h3>🛠️ Consola de Estructura de Rutas</h3>
+            <div class="seccion-header">
+                <h3>🛠️ Consola de Infraestructura</h3>
+                <button class="btn btn-secondary" id="admin-btn-cancelar" onclick="cancelarEdicionAdmin()" style="display:none; margin:0; padding:4px 10px; font-size:0.7rem;">Limpiar</button>
             </div>
             
-            <div class="seccion">
-                <h3 id="form-admin-titulo">🗺️ Crear / Editar Ruta</h3>
+            <div class="seccion" style="background-color: #fafafa;">
                 <input type="hidden" id="admin-id-edicion" value="">
                 
                 <div class="input-group">
-                    <label>Nombre Troncal de la Ruta</label>
-                    <input type="text" id="admin-nombre" placeholder="Ej. Ruta 149">
+                    <label>Nombre de la Ruta / Corredor</label>
+                    <input type="text" id="admin-nombre" placeholder="Ej. Ruta 149 - Troncal Sur">
                 </div>
-                <div class="input-group">
-                    <label>📍 Terminal Origen (Inicio Ida)</label>
-                    <input type="text" id="admin-origen" placeholder="Ej. Metro Tasqueña">
-                </div>
-                <div class="input-group">
-                    <label>📍 Terminal Destino (Fin Ida)</label>
-                    <input type="text" id="admin-destino" placeholder="Ej. Santa Catarina">
+
+                <div class="grid-inputs">
+                    <div class="input-group">
+                        <label>📍 Terminal Origen</label>
+                        <input type="text" id="admin-origen" placeholder="Ej. M. Tasqueña">
+                    </div>
+                    <div class="input-group">
+                        <label>📍 Terminal Destino</label>
+                        <input type="text" id="admin-destino" placeholder="Ej. S. Catarina">
+                    </div>
                 </div>
                 
-                <div style="border: 2px solid var(--border); padding: 10px; border-radius: 6px; margin-bottom: 12px; background: #fafafa;">
-                    <label style="margin-bottom:6px;">Trazar Calles e Infraestructura:</label>
-                    <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-ida" onclick="cambiarModoHerramienta('ruta_ida')">🔄 Trazar IDA (Verde)</button>
-                    <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-regreso" onclick="cambiarModoHerramienta('ruta_regreso')">🔄 Trazar REGRESO (Azul)</button>
-                    <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')" style="margin-top: 4px;">🚏 Agregar Paradas</button>
-                </div>
-
-                <div style="border: 2px solid var(--accent-orange); padding: 10px; border-radius: 6px; margin-bottom: 12px; background: #fff3e0;">
-                    <label style="color: var(--accent-orange); margin-bottom:6px;">⚠️ Control de Tráfico Vial:</label>
-                    <button class="btn btn-toggle-dibujo btn-mini" id="btn-modo-trafico" onclick="cambiarModoHerramienta('reportar_trafico')">🛑 Activar Modo Tráfico</button>
+                <div style="border: 1px solid var(--border); padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #fff;">
+                    <label style="margin-bottom:6px; color: var(--primary-dark);">Herramientas de Trazo y Mapa:</label>
+                    <div class="grid-herramientas">
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-ida" onclick="cambiarModoHerramienta('ruta_ida')">🟢 Trazo IDA (Verde)</button>
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-regreso" onclick="cambiarModoHerramienta('ruta_regreso')">🔵 Trazo REGRESO (Azul)</button>
+                    </div>
+                    <div class="grid-herramientas">
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')">🚏 Poner Paradas</button>
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-trafico" onclick="cambiarModoHerramienta('reportar_trafico')">🛑 Alertar Tráfico</button>
+                    </div>
                 </div>
 
                 <div class="input-group">
-                    <label>🕒 Duración Proyectada del Viaje (Minutos)</label>
+                    <label>🕒 Duración Proyectada (Minutos)</label>
                     <input type="number" id="admin-duracion" value="30" min="1">
                 </div>
                 
-                <button class="btn btn-success" onclick="finalizarGuardadoAdmin()">💾 Guardar Infraestructura</button>
-                <button class="btn btn-secondary btn-mini" id="admin-btn-cancelar" onclick="cancelarEdicionAdmin()" style="display:none; margin-top:5px;">Cancelar</button>
+                <button class="btn btn-success" onclick="finalizarGuardadoAdmin()">💾 Guardar Cambios e Infraestructura</button>
             </div>
 
-            <div class="seccion" style="background-color: #e8f5e9;">
+            <div class="seccion">
                 <h3>🎛️ Monitoreo de Unidades Activas</h3>
-                <div id="lista-buses-monitoreo" style="max-height:280px; overflow-y:auto; margin-top:6px;"></div>
+                <div class="scroll-interno" id="lista-buses-monitoreo" style="margin-top:6px;"></div>
             </div>
             
             <div class="seccion">
-                <h3>📋 Catálogo de Rutas</h3>
-                <div id="lista-rutas-admin"></div>
+                <h3>📋 Catálogo de Rutas en Red</h3>
+                <div class="scroll-interno" id="lista-rutas-admin" style="margin-top:6px;"></div>
             </div>
         </div>
 
+        <!-- PANEL DE CONTROL USUARIO FLOTANTE (ESTILO FAB) -->
         <button class="btn-trigger-usuario" id="btn-menu-pasajero-abrir" onclick="conmutarMenuUsuario(true)">⚙️ Ver Rutas y Viajar</button>
 
         <div class="panel-user-flotante" id="panel-user-contenedor">
             <div class="seccion seccion-header-menu">
-                <span style="font-weight:800; color:var(--primary-dark);">📱 RTP - PASAJERO</span>
+                <span style="font-weight:800; color:var(--primary-dark); font-size:0.9rem;">📱 RTP - MOVILIDAD PASAJERO</span>
                 <button class="btn-cerrar-menu" onclick="conmutarMenuUsuario(false)">✕</button>
             </div>
             <div class="seccion" id="wrapper-selector-pasajero">
-                <h3>📱 Seleccionar mi Corredor</h3>
+                <h3>📱 Seleccionar Corredor</h3>
                 <select id="user-selector-rutas" onchange="seleccionarRutaDesdeUsuario(this.value)"></select>
             </div>
             
             <div class="seccion" style="background: #fff;">
                 <h3>📡 Validación a Bordo</h3>
-                
                 <div id="formulario-rastreo-inputs">
                     <div class="input-group">
-                        <label>🎯 Mi Dirección de Viaje</label>
+                        <label>🎯 Sentido de Viaje</label>
                         <select id="user-direccion-viaje">
-                            <option value="auto">🌐 Detección Automática por GPS</option>
+                            <option value="auto">🌐 Detección Inteligente GPS</option>
                             <option value="1" id="opt-viaje-ida">🟢 IDA</option>
                             <option value="-1" id="opt-viaje-regreso">🔵 REGRESO</option>
                         </select>
                     </div>
-                    <button class="btn btn-success" id="btn-abordar-gps" onclick="activarRastreoAbordoPasajero()">🚍 ¡Voy a bordo de esta ruta!</button>
+                    <button class="btn btn-success" id="btn-abordar-gps" onclick="activarRastreoAbordoPasajero()">🚍 Iniciar Rastreo a Bordo</button>
                 </div>
                 
                 <div class="viaje-status-box" id="viaje-status-container">
-                    <span id="viaje-status-texto">Validando...</span>
-                    <button class="btn btn-danger btn-mini" style="width:100%; margin-top:6px; padding:6px;" onclick="detenerRastreoAbordoPasajero()">Bajarme</button>
+                    <span id="viaje-status-texto">Sincronizando...</span>
+                    <button class="btn btn-danger" style="margin-top:8px; padding:6px; font-size:0.75rem;" onclick="detenerRastreoAbordoPasajero()">Terminar Viaje</button>
                 </div>
             </div>
         </div>
 
+        <!-- MAPA RESPONSIVE -->
         <div class="mapa-contenedor">
             <div id="map"></div>
             <div class="status-float">
-                Red: <span id="txt-notificaciones" style="color: green;">Sincronizada</span>
+                Red: <span id="txt-notificaciones" style="color: green;">Conectada</span>
             </div>
         </div>
 
@@ -319,10 +362,10 @@
             document.getElementById('btn-tab-admin').classList.toggle('active', esAdminLogueado);
             document.getElementById('btn-tab-user').classList.toggle('active', !esAdminLogueado);
             cancelarEdicionAdmin();
-            
-            // Inicialmente limpio en modo pasajero, el menú no se abre por defecto
             conmutarMenuUsuario(false);
             
+            setTimeout(() => { map.invalidateSize(); }, 300);
+
             if (esAdminLogueado) {
                 if (!rutaActivaId && Object.keys(datasetRutas).length > 0) {
                     rutaActivaId = Object.keys(datasetRutas)[0];
@@ -349,8 +392,8 @@
             }
             document.getElementById('btn-modo-ida').classList.toggle('activo', tipoHerramientaActiva === 'ruta_ida');
             document.getElementById('btn-modo-regreso').classList.toggle('activo', tipoHerramientaActiva === 'ruta_regreso');
-            document.getElementById('btn-modo-trafico').classList.toggle('activo', tipoHerramientaActiva === 'reportar_trafico');
             document.getElementById('btn-modo-paradas').classList.toggle('activo', tipoHerramientaActiva === 'agregar_paradas');
+            document.getElementById('btn-modo-trafico').classList.toggle('activo-orange', tipoHerramientaActiva === 'reportar_trafico');
         }
 
         // --- 2. INTERACCIÓN DIRECTA EN EL MAPA ---
@@ -394,8 +437,8 @@
                     .setContent(`
                         <div style="font-family:sans-serif; padding:5px; min-width:180px;">
                             <b style="color:var(--primary-dark);">🚏 Nueva Parada / Estación</b><br>
-                            <input type="text" id="pop-nom-parada" placeholder="Ej. Av. Jalisco" style="padding:5px; width:100%; box-sizing:border-box; margin-bottom:6px; margin-top:5px;">
-                            <button class="btn btn-success btn-mini" style="width:100%;" onclick="guardarParadaNube(${lat}, ${lng}, document.getElementById('pop-nom-parada').value)">💾 Fijar Parada 🚏</button>
+                            <input type="text" id="pop-nom-parada" placeholder="Ej. Av. Jalisco" style="padding:6px; width:100%; box-sizing:border-box; margin-bottom:6px; margin-top:5px;">
+                            <button class="btn btn-success" style="width:100%; font-size:0.75rem; padding:6px;" onclick="guardarParadaNube(${lat}, ${lng}, document.getElementById('pop-nom-parada').value)">💾 Fijar Parada</button>
                         </div>
                     `)
                     .openOn(map);
@@ -422,8 +465,8 @@
                             <div style="font-family:sans-serif; padding:5px; min-width:160px;">
                                 <b style="color:var(--accent-orange);">Sección de Ruta</b><br>
                                 Estado: <b>${traficoActual ? '🛑 Tráfico' : '🟢 Libre'}</b><br>
-                                <button class="btn btn-danger btn-mini" style="width:100%; margin-top:8px;" onclick="guardarEstadoTraficoNube(${sentidoCapa}, ${indiceTramo}, true)">🛑 Hay Tráfico</button>
-                                <button class="btn btn-success btn-mini" style="width:100%; margin-top:4px;" onclick="guardarEstadoTraficoNube(${sentidoCapa}, ${indiceTramo}, false)">🟢 Sin Tráfico</button>
+                                <button class="btn btn-danger" style="width:100%; margin-top:8px; padding:6px; font-size:0.75rem;" onclick="guardarEstadoTraficoNube(${sentidoCapa}, ${indiceTramo}, true)">🛑 Hay Tráfico</button>
+                                <button class="btn btn-success" style="width:100%; margin-top:4px; padding:6px; font-size:0.75rem;" onclick="guardarEstadoTraficoNube(${sentidoCapa}, ${indiceTramo}, false)">🟢 Sin Tráfico</button>
                             </div>
                         `)
                         .openOn(map);
@@ -438,7 +481,7 @@
                             <div style="font-family:sans-serif; padding:5px; min-width:160px;">
                                 <b style="color:var(--primary-dark);">Despacho Directo</b><br>
                                 Progreso: <b>${progresoEstimado}%</b><br>
-                                <button class="btn btn-success btn-mini" style="width:100%; margin-top:8px;" onclick="inyectarAutobusMapaClick(${sentidoCapa}, ${evalResultado.progreso})">🚀 Lanzar Unidad Aquí</button>
+                                <button class="btn btn-success" style="width:100%; margin-top:8px; padding:6px; font-size:0.75rem;" onclick="inyectarAutobusMapaClick(${sentidoCapa}, ${evalResultado.progreso})">🚀 Lanzar Unidad Aquí</button>
                             </div>
                         `)
                         .openOn(map);
@@ -465,7 +508,7 @@
             }
         }
 
-        // --- 4. GESTIÓN DE TRÁFICO RED MULTI-CORREDOR (INTER-CONECTADO < 50 METROS) ---
+        // --- 4. GESTIÓN DE TRÁFICO RED MULTI-CORREDOR ---
         async function guardarEstadoTraficoNube(sentido, indiceTramo, tieneTrafico) {
             if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
             map.closePopup();
@@ -523,7 +566,7 @@
             const duracion = parseInt(document.getElementById('admin-duracion').value) || 30;
             const idDoc = document.getElementById('admin-id-edicion').value || "Ruta_" + Date.now();
             
-            if (!nombre || puntosIda.length < 2) { alert("El trazo de IDA es obligatorio."); return; }
+            if (!nombre || puntosIda.length < 2) { alert("El trazo de Realizar trazo de IDA es obligatorio."); return; }
             
             const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${idDoc}.json`);
 
@@ -638,7 +681,7 @@
                 let distMinimaRuta = Math.min(evalIda.distancia, evalReg.distancia);
 
                 if(distMinimaRuta > 30) {
-                    document.getElementById('viaje-status-texto').innerText = "⚠️ Fuera del eje vial de la ruta. Desconectando...";
+                    document.getElementById('viaje-status-texto').innerText = "⚠️ Fuera de la ruta. Cancelando...";
                     setTimeout(() => { detenerRastreoAbordoPasajero(); }, 3500);
                     return;
                 }
@@ -669,7 +712,7 @@
                     })
                 });
 
-                document.getElementById('viaje-status-texto').innerText = `📡 Transmitiendo a bordo (+/- 30m)`;
+                document.getElementById('viaje-status-texto').innerText = `📡 Transmitiendo GPS en Vivo`;
             }, (err) => console.error(err), { enableHighAccuracy: true });
         }
 
@@ -685,7 +728,7 @@
             document.getElementById('wrapper-selector-pasajero').style.display = 'block';
         }
 
-        // --- 8. RENDERIZADO Y DINÁMICA CINEMÁTICA ---
+        // --- 8. RENDERIZADO Y DINÁMICA ---
         function limpiarTrazosInfraestructura() {
             if(capaLineaIda) map.removeLayer(capaLineaIda);
             if(capaLineaRegreso) map.removeLayer(capaLineaRegreso);
@@ -714,7 +757,7 @@
                     mPunto.on('dragend', function(e) {
                         let nuevaPos = e.target.getLatLng(); puntosIda[idx] = [nuevaPos.lat, nuevaPos.lng]; finalizarGuardadoAdmin();
                     });
-                    mPunto.bindPopup(`<b>Punto Ida #${idx + 1}</b><br><button class="btn btn-danger btn-mini" style="width:100%; margin-top:6px;" onclick="eliminarPuntoRutaIndividual(1, ${idx})">🗑️ Eliminar</button>`);
+                    mPunto.bindPopup(`<b>Punto Ida #${idx + 1}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="eliminarPuntoRutaIndividual(1, ${idx})">🗑️ Eliminar</button>`);
                     marcadoresPuntosEdicionMemoria.push(mPunto);
                 });
 
@@ -723,7 +766,7 @@
                     mPunto.on('dragend', function(e) {
                         let nuevaPos = e.target.getLatLng(); puntosRegreso[idx] = [nuevaPos.lat, nuevaPos.lng]; finalizarGuardadoAdmin();
                     });
-                    mPunto.bindPopup(`<b>Punto Regreso #${idx + 1}</b><br><button class="btn btn-danger btn-mini" style="width:100%; margin-top:6px;" onclick="eliminarPuntoRutaIndividual(-1, ${idx})">🗑️ Eliminar</button>`);
+                    mPunto.bindPopup(`<b>Punto Regreso #${idx + 1}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="eliminarPuntoRutaIndividual(-1, ${idx})">🗑️ Eliminar</button>`);
                     marcadoresPuntosEdicionMemoria.push(mPunto);
                 });
             }
@@ -751,7 +794,7 @@
                     let htmlParada = L.divIcon({ html: `<div class="parada-emoji-container">🚏</div>`, className: '', iconSize: [24, 24] });
                     let mParada = L.marker([p.lat, p.lng], {icon: htmlParada}).addTo(map);
                     if (esAdminLogueado) {
-                        mParada.bindPopup(`<b>🚏 Parada:</b> ${p.nombre}<br><button class="btn btn-danger btn-mini" style="margin-top:6px; width:100%;" onclick="eliminarParadaNube('${pId}')">🗑️ Quitar</button>`);
+                        mParada.bindPopup(`<b>🚏 Parada:</b> ${p.nombre}<br><button class="btn btn-danger" style="margin-top:6px; width:100%; font-size:0.7rem; padding:4px;" onclick="eliminarParadaNube('${pId}')">🗑️ Quitar</button>`);
                     } else mParada.bindPopup(`<b>🚏 Estación:</b> ${p.nombre}`);
                     marcadoresParadasMemoria.push(mParada);
                 }
@@ -807,7 +850,7 @@
                 if (esAdminLogueado && listaContenedorDOM) {
                     let tarjetaExistente = document.getElementById(`card-bus-${id}`);
                     let claseEnfocado = (busSeleccionadoId === id) ? "enfocado" : "";
-                    let htmlTarjetaEstructura = `<b>Unidad:</b> ${id.substring(0,6)}... ⇄ ${nombreTerminalDestino}<br><b>Estado:</b> ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Predictivo"}<br><div style="margin-top: 4px; display:flex; gap:6px; align-items:center;"><input type="number" value="${pctUI}" data-bus-id="${id}" style="width: 60px; padding: 2px;" onkeydown="if(event.key === 'Enter') { modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value); this.blur(); }"> %</div>`;
+                    let htmlTarjetaEstructura = `<b>Unidad:</b> ${id.substring(0,6)}... ⇄ ${nombreTerminalDestino}<br><b>Telemetría:</b> ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Predictivo"}<br><div style="margin-top: 4px; display:flex; gap:6px; align-items:center;">Progreso: <input type="number" value="${pctUI}" data-bus-id="${id}" style="width: 55px; padding: 2px; font-size:0.75rem;" onkeydown="if(event.key === 'Enter') { modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value); this.blur(); }"> %</div>`;
 
                     if (!tarjetaExistente) {
                         let nuevaCard = document.createElement('div'); nuevaCard.id = `card-bus-${id}`; nuevaCard.className = `item-bus-activo ${claseEnfocado}`;
@@ -829,7 +872,7 @@
                 else marcadoresBusesMemoria[id] = L.marker(coords, { icon: htmlIcono }).addTo(map);
 
                 if(esAdminLogueado) {
-                    marcadoresBusesMemoria[id].bindPopup(`<b>RTP: ${id.substring(0,5)}</b><br><button class="btn btn-danger btn-mini" style="width:100%; margin-top:4px;" onclick="removerBusManual('${id}')">🗑️ Eliminar Unidad</button>`);
+                    marcadoresBusesMemoria[id].bindPopup(`<b>RTP: ${id.substring(0,5)}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="removerBusManual('${id}')">🗑️ Quitar Unidad</button>`);
                 }
             }
 
@@ -897,7 +940,7 @@
                         marcadoresBusesMemoria[bId] = L.marker(coords, { icon: htmlIcono }).addTo(map);
                         marcadoresBusesMemoria[bId].on('click', function() { selectorRutaEInfraestructuraDesdeBus(rId); });
                     }
-                    marcadoresBusesMemoria[bId].bindPopup(`<b>Corredor:</b> ${r.nombre}<br><b>Destino:</b> ${nombreTerminalDestino}<br><b>Estado:</b> ${bus.telemetriaReal ? "📡 Vivo" : (transitandoPorTrafico ? "🛑 Tráfico" : "⚙️ Normal")}`);
+                    marcadoresBusesMemoria[bId].bindPopup(`<b>Corredor:</b> ${r.nombre}<br><b>Destino:</b> ${nombreTerminalDestino}`);
                 }
             }
 
@@ -956,7 +999,7 @@
                 let item = document.createElement('div'); item.id = `card-catalog-${id}`;
                 item.className = "item-ruta-lista" + (rutaActivaId === id ? " seleccionada" : "");
                 item.setAttribute('onclick', `seleccionarYDestacarDesdeCatalogo('${id}')`);
-                item.innerHTML = `<div><strong>${r.nombre}</strong></div><div style="font-size:0.75rem; color:#555;">🏁 ${r.origen} ⇄ ${r.destino}</div><div style="margin-top:6px;"><button class="btn btn-primary btn-mini" onclick="event.stopPropagation(); cargarRutaParaEditar('${id}')">✏️ Editar</button><button class="btn btn-danger btn-mini" onclick="event.stopPropagation(); eliminarRutaCompleta('${id}')">🗑️ Borrar</button></div>`;
+                item.innerHTML = `<div><strong>${r.nombre}</strong></div><div style="font-size:0.7rem; color:#666; margin-top:2px;">🏁 ${r.origen} ⇄ ${r.destino}</div><div style="margin-top:6px; display:flex; gap:4px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); cargarRutaParaEditar('${id}')">✏️ Editar</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); eliminarRutaCompleta('${id}')">🗑️ Borrar</button></div>`;
                 document.getElementById('lista-rutas-admin').appendChild(item);
             }
             if(datasetRutas[valGuardado]) selectorUser.value = valGuardado;
@@ -981,9 +1024,9 @@
             if (r && r.geometriaIda && r.geometriaIda.length > 0) map.fitBounds(r.geometriaIda, { padding: [50, 50] });
         }
         
-        window.cancelarEdicionAdmin = function() { puntosIda = []; puntosRegreso = []; limpiarTrazosInfraestructura(); document.getElementById('admin-id-edicion').value = ""; document.getElementById('admin-nombre').value = ""; document.getElementById('admin-origen').value = ""; document.getElementById('admin-destino').value = ""; tipoHerramientaActiva = null; document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada')); };
+        window.cancelarEdicionAdmin = function() { puntosIda = []; puntosRegreso = []; limpiarTrazosInfraestructura(); document.getElementById('admin-id-edicion').value = ""; document.getElementById('admin-nombre').value = ""; document.getElementById('admin-origen').value = ""; document.getElementById('admin-destino').value = ""; tipoHerramientaActiva = null; document.getElementById('admin-btn-cancelar').style.display='none'; document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada')); };
         window.eliminarRutaCompleta = async function(id) { if(confirm("¿Eliminar ruta?")) { await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${id}.json`), {method:'DELETE'}); if(rutaActivaId === id) { rutaActivaId = ""; busSeleccionadoId = null; } await descargarDatosServidor(); } };
-        window.cargarRutaParaEditar = function(id) { const r = datasetRutas[id]; document.getElementById('admin-id-edicion').value = id; document.getElementById('admin-nombre').value = r.nombre; document.getElementById('admin-origen').value = r.origen; document.getElementById('admin-destino').value = r.destino; document.getElementById('admin-duracion').value = r.duracionMinutos; puntosIda = r.geometriaIda || []; puntosRegreso = r.geometriaRegreso || []; rutaActivaId = id; busSeleccionadoId = null; seleccionarYDestacarDesdeCatalogo(id); };
+        window.cargarRutaParaEditar = function(id) { const r = datasetRutas[id]; document.getElementById('admin-id-edicion').value = id; document.getElementById('admin-nombre').value = r.nombre; document.getElementById('admin-origen').value = r.origen; document.getElementById('admin-destino').value = r.destino; document.getElementById('admin-duracion').value = r.duracionMinutos; document.getElementById('admin-btn-cancelar').style.display='inline-block'; puntosIda = r.geometriaIda || []; puntosRegreso = r.geometriaRegreso || []; rutaActivaId = id; busSeleccionadoId = null; seleccionarYDestacarDesdeCatalogo(id); };
 
         descargarDatosServidor();
     </script>
