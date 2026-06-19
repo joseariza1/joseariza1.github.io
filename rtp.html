@@ -228,7 +228,7 @@
                 let prog = (sent === 1) ? evI.progreso : evR.progreso;
 
                 if (!busAsignadoAlPasajeroId) {
-                    let bCerca = null; let minDiff = 0.03;
+                    let bCerca = null; let minDiff = 0.04;
                     for (let id in r.busesActivos || {}) { if (r.busesActivos[id].direccion === sent && Math.abs(r.busesActivos[id].progreso - prog) < minDiff) { bCerca = id; break; } }
                     busAsignadoAlPasajeroId = bCerca || "Bus_Pasajero_" + Date.now();
                 }
