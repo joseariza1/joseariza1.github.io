@@ -35,6 +35,9 @@
         
         .bus-emoji-container { font-size: 26px; text-align: center; position: relative; width: 40px; height: 40px; cursor: pointer;}
         .bus-derecha { transform: scaleX(1); } .bus-izquierda { transform: scaleX(-1); }
+        /* CORRECCIÓN PARA TEXTO AL REVÉS */
+        .texto-normal { display: inline-block; transform: scaleX(-1); }
+        
         .parada-emoji-container { font-size: 20px; text-align: center; cursor: pointer; }
 
         @keyframes parpadeoTrafico { 0% { opacity: 0.5; stroke-width: 6; } 50% { opacity: 1; stroke-width: 10; } 100% { opacity: 0.5; stroke-width: 6; } }
@@ -160,7 +163,20 @@
 
                     let trafActual = (r.reportesTrafico && r.reportesTrafico[b.direccion] && r.reportesTrafico[b.direccion][Math.floor(p * (trazo.length - 1))]);
                     let color = trafActual && !b.telemetriaReal ? "var(--accent-orange)" : ((b.direccion === 1) ? "#1b5e20" : "#1565c0");
-                    let icn = L.divIcon({ html: `<div class="bus-emoji-container ${(b.direccion === 1) ? "bus-derecha" : "bus-izquierda"}">🚍<span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${color}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${dest}</span></div>`, className: 'marker-emoji-bus', iconSize: [36, 36], iconAnchor: [18, 18] });
+                    
+                    // CORRECCIÓN APLICADA AQUÍ: Se añade clase .texto-normal si la dirección es -1
+                    let icn = L.divIcon({ 
+                        html: `<div class="bus-emoji-container ${(b.direccion === 1) ? "bus-derecha" : "bus-izquierda"}">
+                                 🚍
+                                 <span class="${(b.direccion === -1) ? "texto-normal" : ""}" 
+                                       style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${color}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">
+                                     ➡️ ${dest}
+                                 </span>
+                               </div>`, 
+                        className: 'marker-emoji-bus', 
+                        iconSize: [36, 36], 
+                        iconAnchor: [18, 18] 
+                    });
 
                     if (marcadoresBusesMemoria[bId]) { marcadoresBusesMemoria[bId].setLatLng(c); marcadoresBusesMemoria[bId].setIcon(icn); }
                     else marcadoresBusesMemoria[bId] = L.marker(c, { icon: icn }).addTo(map).on('click', () => { if(!rutaActivaId) seleccionarRuta(rId); conmutarMenuUsuario(true); });
