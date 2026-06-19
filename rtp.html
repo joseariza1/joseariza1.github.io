@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RTP Control - Despacho Híbrido Avanzado</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary: #1b5e20;
+            --primary-dark: #0f3813;
+            --accent-blue: #1565c0;
+            --accent-orange: #ef6c00;
+            --surface: #ffffff;
+            --border: #e0e0e0;
+            --bg-light: #f8f9fa;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0; 
+            display: flex; flex-direction: column; 
+            height: 100vh; height: 100dvh; 
+            background-color: #f4f6f9; overflow: hidden; color: #333;
+            box-sizing: border-box;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* --- NAVBAR --- */
+        .navbar-roles {
+            background-color: var(--primary-dark); color: white; padding: 10px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2); z-index: 1100; flex-shrink: 0;
+            flex-wrap: wrap; gap: 8px;
+            padding-top: env(safe-area-inset-top, 10px);
+        }
+        .nav-title { font-weight: 800; font-size: 1.1rem; letter-spacing: 0.5px; }
+        .tabs-roles { display: flex; gap: 8px; }
+        .tab-btn {
+            background-color: rgba(255,255,255,0.15); color: white; border: 2px solid transparent;
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        .tab-btn.active { background-color: white; color: var(--primary-dark); }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .app-container { 
+            display: flex; flex-grow: 1; 
+            height: calc(100vh - 52px); height: calc(100dvh - 52px); 
+            position: relative; overflow: hidden; flex-direction: row; 
+        }
+
+        /* --- PANEL LATERAL --- */
+        .panel-lateral {
+            width: 400px; background: var(--surface); box-shadow: 3px 0 15px rgba(0,0,0,0.1);
+            display: none; flex-direction: column; z-index: 1000; overflow-y: auto;
+            border-right: 1px solid var(--border); flex-shrink: 0;
+        }
+        .panel-lateral.active { display: flex; }
+
+        .seccion { padding: 16px; border-bottom: 1px solid var(--border); }
+        .seccion-header { 
+            background-color: var(--bg-light); border-bottom: 1px solid var(--border);
+            padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+        }
+        
+        h3 { margin: 0; color: var(--primary-dark); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
+        
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-size: 0.75rem; font-weight: 700; color: #555; margin-bottom: 4px; text-transform: uppercase;}
+        input, select { 
+            width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; 
+            box-sizing: border-box; font-weight: 600; font-size: 0.9rem; transition: border-color 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); outline: none; }
+
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* --- BOTONES --- */
+        .btn { 
+            width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; 
+            cursor: pointer; color: white; margin-top: 4px; text-align: center; display: block; 
+            box-sizing: border-box; text-transform: uppercase; font-size: 0.8rem; transition: background 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-success { background-color: var(--primary); }
+        .btn-success:hover { background-color: var(--primary-dark); }
+        .btn-primary { background-color: var(--accent-blue); }
+        .btn-danger { background-color: #d32f2f; }
+        .btn-orange { background-color: var(--accent-orange); }
+        .btn-secondary { background-color: #616161; }
+        
+        .grid-herramientas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+        .btn-toggle-dibujo { 
+            background-color: #fff; color: #444; border: 1px solid #bbb; 
+            padding: 8px; font-size: 0.75rem; margin: 0; font-weight: 600; border-radius: 6px;
+        }
+        .btn-toggle-dibujo:hover { background-color: var(--bg-light); }
+        .btn-toggle-dibujo.activo { background-color: var(--primary); color: white; border-color: var(--primary); }
+        .btn-toggle-dibujo.activo-blue { background-color: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+        
+        /* Botón exclusivo Tráfico Alerta */
+        .btn-alerta-trafico {
+            background-color: #ffebee; color: #c62828; border: 2px solid #ef9a9a;
+            padding: 10px; font-weight: bold; border-radius: 6px; font-size: 0.8rem; width: 100%;
+            cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: all 0.2s;
+        }
+        .btn-alerta-trafico.activo {
+            background-color: #d32f2f; color: white; border-color: #b71c1c;
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.4);
+        }
+
+        .scroll-interno { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; background: var(--bg-light); }
+
+        /* --- TARJETAS --- */
+        .item-ruta-lista, .item-bus-activo {
+            padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; 
+            background: #ffffff; font-size: 0.8rem; transition: all 0.2s;
+        }
+        .item-bus-activo { cursor: default; }
+        .item-ruta-lista { cursor: pointer; }
+        .item-ruta-lista:hover { background-color: var(--bg-light); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .item-ruta-lista.seleccionada { border-color: var(--primary); background-color: #e8f5e9; font-weight: 500; }
+        .item-bus-activo.enfocado { border-color: var(--accent-orange); background-color: #fffde7; }
+
+        /* --- PASAJERO FLOTANTE --- */
+        .panel-user-flotante {
+            position: absolute; bottom: 85px; right: 20px; width: 340px; 
+            max-height: 60vh; background: var(--surface); z-index: 1050;
+            border-radius: 12px; box-shadow: 0 6px 30px rgba(0,0,0,0.25);
+            display: none; flex-direction: column; overflow-y: auto;
+            border: 1px solid var(--border); transition: all 0.2s ease;
+            opacity: 0; transform: translateY(10px);
+        }
+        .panel-user-flotante.mostrar { display: flex; opacity: 1; transform: translateY(0); }
+
+        .btn-trigger-usuario {
+            position: absolute; bottom: 25px; right: 20px; z-index: 1040;
+            background-color: var(--primary); color: white; padding: 12px 22px;
+            border: none; border-radius: 50px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25); display: none;
+            font-size: 0.9rem; align-items: center; gap: 8px;
+        }
+
+        .viaje-status-box {
+            background-color: #e8f5e9; border: 1px solid #2e7d32; border-radius: 6px;
+            padding: 10px; margin-top: 10px; display: none; font-size: 0.8rem; color: #1b5e20; 
+            font-weight: bold; text-align: center;
+        }
+
+        /* --- ENTORNO MAPA --- */
+        .mapa-contenedor { flex-grow: 1; position: relative; height: 100%; width: 100%; }
+        #map { width: 100%; height: 100%; }
+        
+        .status-float {
+            position: absolute; top: 12px; right: 12px; background: rgba(255, 255, 255, 0.9);
+            padding: 6px 12px; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            z-index: 1000; font-size: 0.75rem; border: 1px solid var(--border); font-weight: bold;
+        }
+
+        .marker-emoji-bus { transition: all 1s linear !important; }
+        @keyframes resaltarFoco {
+            0% { transform: scale(1); filter: drop-shadow(0 0px 0px #ffeb3b); }
+            50% { transform: scale(1.2); filter: drop-shadow(0 0 10px #d32f2f); }
+            100% { transform: scale(1); filter: drop-shadow(0 0px #ffeb3b); }
+        }
+        .bus-resaltado { animation: resaltarFoco 0.6s ease infinite; z-index: 2000 !important; }
+        .bus-emoji-container { font-size: 26px; text-align: center; position: relative; width: 40px; height: 40px; cursor: pointer;}
+        .bus-derecha { transform: scaleX(1); }
+        .bus-izquierda { transform: scaleX(-1); }
+        .bus-emoji-container span { transform: scaleX(1); display: inline-block; }
+        .bus-izquierda span { transform: scaleX(-1); }
+        .parada-emoji-container { font-size: 20px; text-align: center; cursor: pointer; }
+        .btn-cerrar-menu { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #666; font-weight: bold; }
+
+        @keyframes parpadeoTrafico {
+            0% { opacity: 0.5; stroke-width: 6; }
+            50% { opacity: 1; stroke-width: 10; }
+            100% { opacity: 0.5; stroke-width: 6; }
+        }
+        .tramo-trafico-pesado { animation: parpadeoTrafico 1.5s infinite; stroke-dasharray: 6, 6; }
+
+        /* --- MOBILE COCHERA --- */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column-reverse; }
+            .panel-lateral { 
+                width: 100%; height: 45dvh;
+                border-right: none; border-top: 1px solid var(--border); 
+                box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+                padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+            }
+            .panel-user-flotante { 
+                width: calc(100% - 32px); right: 16px; left: 16px; 
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 75px); max-height: 50dvh; 
+            }
+            .btn-trigger-usuario { right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+            .scroll-interno { max-height: 130px; }
+        }
+        @media (max-width: 480px) {
+            .navbar-roles { padding: 8px 12px; justify-content: center; flex-direction: column; }
+            .tabs-roles { width: 100%; justify-content: center; }
+            .tab-btn { flex-grow: 1; text-align: center; font-size: 0.8rem; }
+            .grid-inputs { grid-template-columns: 1fr; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar-roles">
+        <div class="nav-title">🚍 RTP CONTROL - ENTORNO HÍBRIDO</div>
+        <div class="tabs-roles">
+            <button class="tab-btn active" id="btn-tab-admin" onclick="alternarPagina('admin')">💻 Monitorista</button>
+            <button class="tab-btn" id="btn-tab-user" onclick="alternarPagina('user')">📱 Pasajeros</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        
+        <!-- ENTORNO MONITORISTA -->
+        <div class="panel-lateral active" id="panel-admin">
+            <div class="seccion-header">
+                <h3>🛠️ Consola de Infraestructura</h3>
+                <button class="btn btn-secondary" id="admin-btn-cancelar" onclick="cancelarEdicionAdmin()" style="display:none; margin:0; padding:4px 10px; font-size:0.7rem;">Limpiar</button>
+            </div>
+            
+            <div class="seccion" style="background-color: #fafafa;">
+                <input type="hidden" id="admin-id-edicion" value="">
+                
+                <div class="input-group">
+                    <label>Nombre de la Ruta / Corredor</label>
+                    <input type="text" id="admin-nombre" placeholder="Ej. Ruta 149 - Troncal Sur">
+                </div>
+
+                <div class="grid-inputs">
+                    <div class="input-group">
+                        <label>📍 Terminal Origen</label>
+                        <input type="text" id="admin-origen" placeholder="Ej. M. Tasqueña">
+                    </div>
+                    <div class="input-group">
+                        <label>📍 Terminal Destino</label>
+                        <input type="text" id="admin-destino" placeholder="Ej. S. Catarina">
+                    </div>
+                </div>
+                
+                <div style="border: 1px solid var(--border); padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #fff;">
+                    <label style="margin-bottom:6px; color: var(--primary-dark);">Trazado de Geometría y Paradas:</label>
+                    <div class="grid-herramientas">
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-ida" onclick="cambiarModoHerramienta('ruta_ida')">🟢 Trazo IDA</button>
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-regreso" onclick="cambiarModoHerramienta('ruta_regreso')">🔵 Trazo REGRESO</button>
+                    </div>
+                    <button class="btn btn-toggle-dibujo" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')" style="width:100%; margin-top:8px;">🚏 Agregar Estación / Parada</button>
+                </div>
+
+                <!-- SECCIÓN DE TRÁFICO INDEPENDIENTE CON SEMÁFORO DE ADVERTENCIA -->
+                <div style="border: 1px solid #ef9a9a; padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #fff5f5;">
+                    <label style="color: #c62828;">Tránsito y Alertas de Vialidad:</label>
+                    <button class="btn-alerta-trafico" id="btn-modulo-trafico" onclick="conmutarModoTraficoExclusivo()">🛑 Reportar Tráfico Incidente</button>
+                </div>
+
+                <div class="input-group">
+                    <label>🕒 Duración Proyectada (Minutos)</label>
+                    <input type="number" id="admin-duracion" value="30" min="1">
+                </div>
+                
+                <button class="btn btn-success" onclick="finalizarGuardadoAdmin()">💾 Guardar Cambios</button>
+            </div>
+
+            <div class="seccion">
+                <h3>🎛️ Monitoreo de Unidades Activas</h3>
+                <div class="scroll-interno" id="lista-buses-monitoreo" style="margin-top:6px;"></div>
+            </div>
+            
+            <div class="seccion">
+                <h3>📋 Catálogo de Rutas en Red</h3>
+                <div class="scroll-interno" id="lista-rutas-admin" style="margin-top:6px;"></div>
+            </div>
+        </div>
+
+        <!-- PANEL PASAJERO FLOTANTE -->
+        <button class="btn-trigger-usuario" id="btn-menu-pasajero-abrir" onclick="conmutarMenuUsuario(true)">⚙️ Ver Rutas y Viajar</button>
+
+        <div class="panel-user-flotante" id="panel-user-contenedor">
+            <div class="seccion seccion-header-menu">
+                <span style="font-weight:800; color:var(--primary-dark); font-size:0.9rem;">📱 RTP - MOVILIDAD PASAJERO</span>
+                <button class="btn-cerrar-menu" onclick="conmutarMenuUsuario(false)">✕</button>
+            </div>
+            <div class="seccion" id="wrapper-selector-pasajero">
+                <h3>📱 Seleccionar Corredor</h3>
+                <select id="user-selector-rutas" onchange="seleccionarRutaDesdeUsuario(this.value)">
+                    <option value="">-- Selecciona una ruta para ver su mapa --</option>
+                </select>
+            </div>
+            
+            <div class="seccion" style="background: #fff;">
+                <h3>📡 Validación a Bordo</h3>
+                <div id="formulario-rastreo-inputs">
+                    <div class="input-group">
+                        <label>🎯 Sentido de Viaje</label>
+                        <select id="user-direccion-viaje">
+                            <option value="auto">🌐 Detección Inteligente GPS</option>
+                            <option value="1" id="opt-viaje-ida">🟢 IDA</option>
+                            <option value="-1" id="opt-viaje-regreso">🔵 REGRESO</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" id="btn-abordar-gps" onclick="activarRastreoAbordoPasajero()">🚍 Iniciar Rastreo a Bordo</button>
+                </div>
+                
+                <div class="viaje-status-box" id="viaje-status-container">
+                    <span id="viaje-status-texto">Sincronizando...</span>
+                    <button class="btn btn-danger" style="margin-top:8px; padding:6px; font-size:0.75rem;" onclick="detenerRastreoAbordoPasajero()">Terminar Viaje</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAPA -->
+        <div class="mapa-contenedor">
+            <div id="map"></div>
+            <div class="status-float">
+                Red: <span id="txt-notificaciones" style="color: green;">Conectada</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com/rutas_v3.json";
+
+        const map = L.map('map', {zoomControl: false}).setView([19.285, -99.010], 13);
+        L.control.zoom({position: 'topleft'}).addTo(map);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+        let datasetRutas = {}; 
+        let rutaActivaId = ""; 
+        let esAdminLogueado = true;
+        let tipoHerramientaActiva = null;
+        let traficoHerramientaActiva = false; 
+        let busSeleccionadoId = null; 
+
+        let puntosIda = []; let puntosRegreso = [];
+        let capaLineaIda = null; let capaLineaRegreso = null;
+        let marcadoresBorradorGrafico = [];
+        let marcadoresBusesMemoria = {};
+        let capasTramosTrafico = [];
+        let marcadoresParadasMemoria = []; 
+        let marcadoresPuntosEdicionMemoria = [];
+
+        let idWatcherGpsPasajero = null;
+        let busAsignadoAlPasajeroId = null;
+
+        // --- SINCRO ---
+        async function descargarDatosServidor() {
+            try {
+                const r = await fetch(FIREBASE_LINK);
+                datasetRutas = await r.json() || {};
+                actualizarComponentesUI();
+
+                if (rutaActivaId && datasetRutas[rutaActivaId]) {
+                    renderizarGeometriasRuta(rutaActivaId);
+                } else if (Object.keys(datasetRutas).length > 0 && !rutaActivaId) {
+                    if (esAdminLogueado) {
+                        rutaActivaId = Object.keys(datasetRutas)[0];
+                        renderizarGeometriasRuta(rutaActivaId);
+                    } else {
+                        actualizarFlotaGlobalPasajeros();
+                    }
+                } else if (!esAdminLogueado) {
+                    actualizarFlotaGlobalPasajeros();
+                }
+            } catch (e) { console.error("Error al sincronizar con la nube", e); }
+        }
+
+        function alternarPagina(rol) {
+            esAdminLogueado = (rol === 'admin');
+            document.getElementById('panel-admin').style.display = esAdminLogueado ? 'flex' : 'none';
+            document.getElementById('btn-menu-pasajero-abrir').style.display = esAdminLogueado ? 'none' : 'flex';
+            document.getElementById('btn-tab-admin').classList.toggle('active', esAdminLogueado);
+            document.getElementById('btn-tab-user').classList.toggle('active', !esAdminLogueado);
+            cancelarEdicionAdmin();
+            conmutarMenuUsuario(false);
+            
+            setTimeout(() => { map.invalidateSize(); }, 300);
+
+            if (esAdminLogueado) {
+                if (!rutaActivaId && Object.keys(datasetRutas).length > 0) {
+                    rutaActivaId = Object.keys(datasetRutas)[0];
+                }
+                if (rutaActivaId && datasetRutas[rutaActivaId]) {
+                    renderizarGeometriasRuta(rutaActivaId);
+                }
+            } else {
+                limpiarTrazosInfraestructura();
+                rutaActivaId = "";
+                actualizarFlotaGlobalPasajeros();
+            }
+        }
+
+        function conmutarMenuUsuario(abrir) {
+            document.getElementById('panel-user-contenedor').classList.toggle('mostrar', abrir);
+        }
+
+        function cambiarModoHerramienta(modo) {
+            desactivarTraficoModo(); 
+            
+            if (tipoHerramientaActiva === modo) {
+                tipoHerramientaActiva = null;
+            } else {
+                tipoHerramientaActiva = modo;
+            }
+            document.getElementById('btn-modo-ida').classList.toggle('activo', tipoHerramientaActiva === 'ruta_ida');
+            document.getElementById('btn-modo-regreso').classList.toggle('activo-blue', tipoHerramientaActiva === 'ruta_regreso');
+            document.getElementById('btn-modo-paradas').classList.toggle('activo', tipoHerramientaActiva === 'agregar_paradas');
+        }
+
+        function conmutarModoTraficoExclusivo() {
+            traficoHerramientaActiva = !traficoHerramientaActiva;
+            if(traficoHerramientaActiva) {
+                tipoHerramientaActiva = null;
+                document.getElementById('btn-modo-ida').classList.remove('activo');
+                document.getElementById('btn-modo-regreso').classList.remove('activo-blue');
+                document.getElementById('btn-modo-paradas').classList.remove('activo');
+                document.getElementById('btn-modulo-trafico').classList.add('activo');
+                document.getElementById('btn-modulo-trafico').innerText = "🛑 TRÁFICO: ACTIVADO (Toca la línea)";
+            } else {
+                desactivarTraficoModo();
+            }
+        }
+
+        function desactivarTraficoModo() {
+            traficoHerramientaActiva = false;
+            document.getElementById('btn-modulo-trafico').classList.remove('activo');
+            document.getElementById('btn-modulo-trafico').innerText = "🛑 Reportar Tráfico Incidente";
+        }
+
+        // --- MAP CLICK ---
+        map.on('click', function(e) {
+            if (!tipoHerramientaActiva && !traficoHerramientaActiva) {
+                busSeleccionadoId = null;
+                document.querySelectorAll('.item-bus-activo').forEach(el => el.classList.remove('enfocado'));
+                for (let id in marcadoresBusesMemoria) {
+                    if (marcadoresBusesMemoria[id] && marcadoresBusesMemoria[id]._icon) {
+                        marcadoresBusesMemoria[id]._icon.classList.remove('bus-resaltado');
+                    }
+                }
+            }
+
+            if (tipoHerramientaActiva === 'ruta_ida') {
+                const latlng = [e.latlng.lat, e.latlng.lng];
+                puntosIda.push(latlng);
+                let m = L.circleMarker(latlng, {radius: 4, color: '#2e7d32'}).addTo(map);
+                marcadoresBorradorGrafico.push(m);
+                if (capaLineaIda) map.removeLayer(capaLineaIda);
+                capaLineaIda = L.polyline(puntosIda, {color: '#4caf50', weight: 4}).addTo(map);
+            } 
+            else if (tipoHerramientaActiva === 'ruta_regreso') {
+                const latlng = [e.latlng.lat, e.latlng.lng];
+                puntosRegreso.push(latlng);
+                let m = L.circleMarker(latlng, {radius: 4, color: '#1565c0'}).addTo(map);
+                marcadoresBorradorGrafico.push(m);
+                if (capaLineaRegreso) map.removeLayer(capaLineaRegreso);
+                capaLineaRegreso = L.polyline(puntosRegreso, {color: '#2196f3', weight: 4}).addTo(map);
+            }
+            else if (esAdminLogueado && tipoHerramientaActiva === 'agregar_paradas') {
+                if(!rutaActivaId) { alert("Selecciona o crea una ruta primero."); return; }
+                const lat = e.latlng.lat; const lng = e.latlng.lng;
+
+                L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent(`
+                        <div style="font-family:sans-serif; padding:5px; min-width:180px;">
+                            <b style="color:var(--primary-dark);">🚏 Nueva Parada</b><br>
+                            <input type="text" id="pop-nom-parada" placeholder="Ej. Av. Jalisco" style="padding:6px; width:100%; box-sizing:border-box; margin-bottom:6px; margin-top:5px;">
+                            <button class="btn btn-success" style="width:100%; font-size:0.75rem; padding:6px;" onclick="guardarParadaNube(${lat}, ${lng}, document.getElementById('pop-nom-parada').value)">💾 Fijar Parada</button>
+                        </div>
+                    `)
+                    .openOn(map);
+            }
+        });
+
+        function configurarEventosClickLineas(polylineObj, sentidoCapa) {
+            polylineObj.on('click', function(e) {
+                const ruta = datasetRutas[rutaActivaId];
+                if (!ruta) return;
+                if (tipoHerramientaActiva === 'agregar_paradas') return; 
+
+                const clicCoords = [e.latlng.lat, e.latlng.lng];
+                const trazoPuntos = (sentidoCapa === 1) ? ruta.geometriaIda : rRegresoOInvertido(ruta);
+                const evalResultado = calcularDistanciaMinimaRuta(clicCoords, trazoPuntos);
+                const indiceTramo = evalResultado.indiceFiel;
+
+                if (esAdminLogueado && traficoHerramientaActiva) {
+                    let traficoActual = ruta.reportesTrafico && ruta.reportesTrafico[sentidoCapa] && ruta.reportesTrafico[sentidoCapa][indiceTramo] ? true : false;
+                    
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(`
+                            <div style="font-family:sans-serif; padding:5px; min-width:160px;">
+                                <b style="color:var(--accent-orange);">Sección de Ruta</b><br>
+                                Estado: <b>${traficoActual ? '🛑 Tráfico' : '🟢 Libre'}</b><br>
+                                <button class="btn btn-danger" style="width:100%; margin-top:8px; padding:6px; font-size:0.75rem;" onclick="guardarEstadoTraficoNube(${sentidoCapa}, ${indiceTramo}, true)">🛑 Hay Tráfico</button>
+                                <button class="btn btn-success" style="width:100%; margin-top:4px; padding:6px; font-size:0.75rem;" onclick="guardarEstadoTraficoNube(${sentidoCapa}, ${indiceTramo}, false)">🟢 Sin Tráfico</button>
+                            </div>
+                        `)
+                        .openOn(map);
+                    return;
+                }
+
+                if (esAdminLogueado && !tipoHerramientaActiva && !traficoHerramientaActiva) {
+                    const progresoEstimado = Math.round(evalResultado.progreso * 100);
+                    L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(`
+                            <div style="font-family:sans-serif; padding:5px; min-width:160px;">
+                                <b style="color:var(--primary-dark);">Despacho Directo</b><br>
+                                Progreso: <b>${progresoEstimado}%</b><br>
+                                <button class="btn btn-success" style="width:100%; margin-top:8px; padding:6px; font-size:0.75rem;" onclick="inyectarAutobusMapaClick(${sentidoCapa}, ${evalResultado.progreso})">🚀 Lanzar Unidad Aquí</button>
+                            </div>
+                        `)
+                        .openOn(map);
+                }
+            });
+        }
+
+        // --- PERSISTENCIA ---
+        async function guardarParadaNube(lat, lng, nombreParada) {
+            const nomFiel = nombreParada.trim() || "Parada General";
+            const paradaId = "Parada_" + Date.now();
+            const urlParada = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/paradas/${paradaId}.json`);
+            map.closePopup();
+            await fetch(urlParada, { method: 'PUT', body: JSON.stringify({ id: paradaId, lat: lat, lng: lng, nombre: nomFiel }) });
+            await descargarDatosServidor();
+        }
+
+        window.eliminarParadaNube = async function(paradaId) {
+            if(confirm("¿Remover esta parada?")) {
+                const urlParada = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/paradas/${paradaId}.json`);
+                map.closePopup();
+                await fetch(urlParada, { method: 'DELETE' });
+                await descargarDatosServidor();
+            }
+        }
+
+        async function guardarEstadoTraficoNube(sentido, indiceTramo, tieneTrafico) {
+            if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
+            map.closePopup();
+
+            const rutaOrigen = datasetRutas[rutaActivaId];
+            const trazoOrigen = (sentido === 1) ? rutaOrigen.geometriaIda : rRegresoOInvertido(rutaOrigen);
+            const puntoReferencia = trazoOrigen[indiceTramo];
+            
+            if(!puntoReferencia) return;
+
+            let transaccionesPromesas = [];
+
+            for (let rId in datasetRutas) {
+                const otraRuta = datasetRutas[rId];
+                
+                if(otraRuta.geometriaIda) {
+                    otraRuta.geometriaIda.forEach((coords, idx) => {
+                        let dist = calcularHaversine(puntoReferencia, coords);
+                        if(dist <= 50) { 
+                            const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rId}/reportesTrafico/1/${idx}.json`);
+                            if(tieneTrafico) transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
+                            else transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
+                        }
+                    });
+                }
+
+                const otraGeometriaRegreso = rRegresoOInvertido(otraRuta);
+                if(otraGeometriaRegreso) {
+                    otraGeometriaRegreso.forEach((coords, idx) => {
+                        let dist = calcularHaversine(puntoReferencia, coords);
+                        if(dist <= 50) {
+                            const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rId}/reportesTrafico/-1/${idx}.json`);
+                            if(tieneTrafico) transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
+                            else transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
+                        }
+                    });
+                }
+            }
+
+            await Promise.all(transaccionesPromesas);
+            await descargarDatosServidor();
+        }
+
+        // --- GESTIÓN ESTRUCTURAL ---
+        async function finalizarGuardadoAdmin() {
+            const nombre = document.getElementById('admin-nombre').value.trim();
+            const origen = document.getElementById('admin-origen').value.trim() || "Origen Terminal";
+            const destino = document.getElementById('admin-destino').value.trim() || "Destino Terminal";
+            const duracion = parseInt(document.getElementById('admin-duracion').value) || 30;
+            const idDoc = document.getElementById('admin-id-edicion').value || "Ruta_" + Date.now();
+            
+            if (!nombre || puntosIda.length < 2) { alert("El trazo de Realizar trazo de IDA es obligatorio."); return; }
+            
+            const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${idDoc}.json`);
+
+            const payload = {
+                id: idDoc, nombre: nombre, origen: origen, destino: destino, duracionMinutos: duracion,
+                geometriaIda: puntosIda, 
+                geometriaRegreso: puntosRegreso.length > 0 ? puntosRegreso : [...puntosIda].reverse(),
+                busesActivos: datasetRutas[idDoc] ? (datasetRutas[idDoc].busesActivos || {}) : {},
+                reportesTrafico: datasetRutas[idDoc] ? (datasetRutas[idDoc].reportesTrafico || {}) : {},
+                paradas: datasetRutas[idDoc] ? (datasetRutas[idDoc].paradas || {}) : {}
+            };
+
+            await fetch(url, { method: 'PUT', body: JSON.stringify(payload) });
+            cancelarEdicionAdmin(); 
+            await descargarDatosServidor();
+        }
+
+        window.eliminarPuntoRutaIndividual = async function(sentido, indice) {
+            if (confirm("¿Remover este punto de control?")) {
+                map.closePopup();
+                if (sentido === 1) puntosIda.splice(indice, 1);
+                else puntosRegreso.splice(indice, 1);
+                
+                const idEdicion = document.getElementById('admin-id-edicion').value;
+                if (idEdicion) await finalizarGuardadoAdmin();
+                else {
+                    if (capaLineaIda) map.removeLayer(capaLineaIda);
+                    if (capaLineaRegreso) map.removeLayer(capaLineaRegreso);
+                    capaLineaIda = L.polyline(puntosIda, {color: '#4caf50', weight: 4}).addTo(map);
+                    capaLineaRegreso = L.polyline(puntosRegreso, {color: '#2196f3', weight: 4}).addTo(map);
+                }
+            }
+        }
+
+        // --- LANZAMIENTO DE UNIDADES ---
+        async function inyectarAutobusMapaClick(sentido, progresoInicial) {
+            if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
+            const busId = "Bus_" + Date.now();
+            const urlBus = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busId}.json`);
+            const duracionMs = (datasetRutas[rutaActivaId].duracionMinutos || 30) * 60 * 1000;
+
+            const nuevoBus = {
+                id: busId, progreso: progresoInicial, direccion: sentido,
+                timestampSalida: Date.now() - (progresoInicial * duracionMs), telemetriaReal: false
+            };
+
+            map.closePopup();
+            await fetch(urlBus, { method: 'PUT', body: JSON.stringify(nuevoBus) });
+            await descargarDatosServidor();
+        }
+
+        window.modificarAtributosBusMapa = async function(busId, nuevoSentido, nuevoProgresoPorcentaje) {
+            if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
+            const urlBus = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busId}.json`);
+            const progresoDecimal = parseFloat(nuevoProgresoPorcentaje) / 100;
+            const duracionMs = (datasetRutas[rutaActivaId].duracionMinutos || 30) * 60 * 1000;
+
+            const payloadAjustado = {
+                id: busId, progreso: progresoDecimal, direccion: parseInt(nuevoSentido),
+                timestampSalida: Date.now() - (progresoDecimal * duracionMs), telemetriaReal: false
+            };
+
+            await fetch(urlBus, { method: 'PUT', body: JSON.stringify(payloadAjustado) });
+            await descargarDatosServidor();
+        }
+
+        window.removerBusManual = async function(busId) {
+            if(confirm("¿Retirar esta unidad de circulación?")) {
+                const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busId}.json`);
+                map.closePopup();
+                if(busSeleccionadoId === busId) busSeleccionadoId = null;
+                
+                const elemento = document.getElementById(`card-bus-${busId}`);
+                if (elemento) elemento.remove();
+
+                await fetch(url, { method: 'DELETE' });
+                await descargarDatosServidor();
+            }
+        }
+
+        window.resaltarUnidadEnMapa = function(busId) {
+            for (let id in marcadoresBusesMemoria) {
+                if (marcadoresBusesMemoria[id] && marcadoresBusesMemoria[id]._icon) {
+                    marcadoresBusesMemoria[id]._icon.classList.remove('bus-resaltado');
+                }
+            }
+            busSeleccionadoId = busId; 
+            const marcador = marcadoresBusesMemoria[busId];
+            if (marcador) {
+                map.panTo(marcador.getLatLng());
+                if (marcador._icon) marcador._icon.classList.add('bus-resaltado');
+            }
+            document.querySelectorAll('.item-bus-activo').forEach(el => el.classList.remove('enfocado'));
+            const contenedorLista = document.getElementById(`card-bus-${busId}`);
+            if(contenedorLista) contenedorLista.classList.add('enfocado');
+        }
+
+        // --- TRACKING GPS PASAJEROS ---
+        function activarRastreoAbordoPasajero() {
+            if (!navigator.geolocation) { alert("Tu dispositivo no soporta localización."); return; }
+            const r = datasetRutas[rutaActivaId]; if(!r) { alert("Por favor selecciona primero un Corredor/Ruta."); return; }
+
+            document.getElementById('formulario-rastreo-inputs').style.display = 'none';
+            document.getElementById('wrapper-selector-pasajero').style.display = 'none';
+            document.getElementById('viaje-status-container').style.display = 'block';
+            document.getElementById('viaje-status-texto').innerText = "Validando proximidad...";
+
+            const direccionSeleccionada = document.getElementById('user-direccion-viaje').value;
+
+            idWatcherGpsPasajero = navigator.geolocation.watchPosition(async (pos) => {
+                const uLat = pos.coords.latitude; const uLng = pos.coords.longitude;
+                const userLoc = [uLat, uLng];
+
+                let evalIda = calcularDistanciaMinimaRuta(userLoc, r.geometriaIda);
+                let evalReg = calcularDistanciaMinimaRuta(userLoc, r.geometriaRegreso);
+                let distMinimaRuta = Math.min(evalIda.distancia, evalReg.distancia);
+
+                if(distMinimaRuta > 30) {
+                    document.getElementById('viaje-status-texto').innerText = "⚠️ Fuera de la ruta. Cancelando...";
+                    setTimeout(() => { detenerRastreoAbordoPasajero(); }, 3500);
+                    return;
+                }
+
+                let sentidoAsignado = (direccionSeleccionada === "auto") ? ((evalIda.distancia <= evalReg.distancia) ? 1 : -1) : parseInt(direccionSeleccionada);
+                let progresoCalculado = (sentidoAsignado === 1) ? evalIda.progreso : evalReg.progreso;
+
+                if (!busAsignadoAlPasajeroId) {
+                    let buses = r.busesActivos || {};
+                    let busCercanoId = null; let minDiff = 0.03; 
+
+                    for (let id in buses) {
+                        if (buses[id].direccion === sentidoAsignado && Math.abs(buses[id].progreso - progresoCalculado) < minDiff) {
+                            busCercanoId = id;
+                            break;
+                        }
+                    }
+                    busAsignadoAlPasajeroId = busCercanoId ? busCercanoId : "Bus_Pasajero_" + Date.now();
+                }
+
+                const urlDestinoBus = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`);
+                await fetch(urlDestinoBus, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        id: busAsignadoAlPasajeroId, progreso: progresoCalculado, direccion: sentidoAsignado,
+                        timestampSalida: Date.now() - (progresoCalculado * ((r.duracionMinutos || 30) * 60 * 1000)), 
+                        telemetriaReal: true, latReal: uLat, lngReal: uLng
+                    })
+                });
+
+                document.getElementById('viaje-status-texto').innerText = `📡 Transmitiendo GPS en Vivo`;
+            }, (err) => console.error(err), { enableHighAccuracy: true });
+        }
+
+        function detenerRastreoAbordoPasajero() {
+            if(idWatcherGpsPasajero) { navigator.geolocation.clearWatch(idWatcherGpsPasajero); idWatcherGpsPasajero = null; }
+            if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) {
+                const urlFreno = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}/telemetriaReal.json`);
+                fetch(urlFreno, { method: 'PUT', body: 'false' });
+            }
+            busAsignadoAlPasajeroId = null;
+            document.getElementById('viaje-status-container').style.display = 'none';
+            document.getElementById('formulario-rastreo-inputs').style.display = 'block';
+            document.getElementById('wrapper-selector-pasajero').style.display = 'block';
+        }
+
+        // --- RENDER GEOMETRÍAS ---
+        function limpiarTrazosInfraestructura() {
+            if(capaLineaIda) map.removeLayer(capaLineaIda);
+            if(capaLineaRegreso) map.removeLayer(capaLineaRegreso);
+            capasTramosTrafico.forEach(capa => map.removeLayer(capa)); capasTramosTrafico = [];
+            marcadoresParadasMemoria.forEach(m => map.removeLayer(m)); marcadoresParadasMemoria = [];
+            marcadoresPuntosEdicionMemoria.forEach(m => map.removeLayer(m)); marcadoresPuntosEdicionMemoria = [];
+        }
+
+        function renderizarGeometriasRuta(idRuta) {
+            const r = datasetRutas[idRuta]; if(!r) return;
+            limpiarTrazosInfraestructura();
+
+            if(r.geometriaIda) {
+                capaLineaIda = L.polyline(r.geometriaIda, {color: '#1b5e20', weight: 6, opacity: 0.85}).addTo(map);
+                configurarEventosClickLineas(capaLineaIda, 1);
+            }
+            if(r.geometriaRegreso) {
+                capaLineaRegreso = L.polyline(r.geometriaRegreso, {color: '#1565c0', weight: 6, opacity: 0.75}).addTo(map);
+                configurarEventosClickLineas(capaLineaRegreso, -1);
+            }
+
+            const idEdicionActual = document.getElementById('admin-id-edicion').value;
+            if (esAdminLogueado && idEdicionActual === idRuta) {
+                puntosIda.forEach((coord, idx) => {
+                    let mPunto = L.circleMarker(coord, {radius: 6, color: '#2e7d32', fillColor: '#81c784', fillOpacity: 0.9, draggable: true}).addTo(map);
+                    mPunto.on('dragend', function(e) {
+                        let nuevaPos = e.target.getLatLng(); puntosIda[idx] = [nuevaPos.lat, nuevaPos.lng]; finalizarGuardadoAdmin();
+                    });
+                    mPunto.bindPopup(`<b>Punto Ida #${idx + 1}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="eliminarPuntoRutaIndividual(1, ${idx})">🗑️ Eliminar</button>`);
+                    marcadoresPuntosEdicionMemoria.push(mPunto);
+                });
+
+                puntosRegreso.forEach((coord, idx) => {
+                    let mPunto = L.circleMarker(coord, {radius: 6, color: '#1565c0', fillColor: '#64b5f6', fillOpacity: 0.9, draggable: true}).addTo(map);
+                    mPunto.on('dragend', function(e) {
+                        let nuevaPos = e.target.getLatLng(); puntosRegreso[idx] = [nuevaPos.lat, nuevaPos.lng]; finalizarGuardadoAdmin();
+                    });
+                    mPunto.bindPopup(`<b>Punto Regreso #${idx + 1}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="eliminarPuntoRutaIndividual(-1, ${idx})">🗑️ Eliminar</button>`);
+                    marcadoresPuntosEdicionMemoria.push(mPunto);
+                });
+            }
+
+            [1, -1].forEach(sentido => {
+                if (r.reportesTrafico && r.reportesTrafico[sentido]) {
+                    const trazoCompleto = (sentido === 1) ? r.geometriaIda : rRegresoOInvertido(r);
+                    for (let idx in r.reportesTrafico[sentido]) {
+                        let i = parseInt(idx);
+                        if (r.reportesTrafico[sentido][idx] === true && trazoCompleto[i] && trazoCompleto[i + 1]) {
+                            let capaTrafico = L.polyline([trazoCompleto[i], trazoCompleto[i + 1]], {
+                                color: '#d32f2f', className: 'tramo-trafico-pesado', weight: 8
+                            }).addTo(map);
+                            capaTrafico.bindTooltip("🛑 Tráfico Pesado", {sticky: true});
+                            configurarEventosClickLineas(capaTrafico, sentido);
+                            capasTramosTrafico.push(capaTrafico);
+                        }
+                    }
+                }
+            });
+
+            if (r.paradas) {
+                for(let pId in r.paradas) {
+                    let p = r.paradas[pId];
+                    let htmlParada = L.divIcon({ html: `<div class="parada-emoji-container">🚏</div>`, className: '', iconSize: [24, 24] });
+                    let mParada = L.marker([p.lat, p.lng], {icon: htmlParada}).addTo(map);
+                    if (esAdminLogueado) {
+                        mParada.bindPopup(`<b>🚏 Parada:</b> ${p.nombre}<br><button class="btn btn-danger" style="margin-top:6px; width:100%; font-size:0.7rem; padding:4px;" onclick="eliminarParadaNube('${pId}')">🗑️ Quitar</button>`);
+                    } else mParada.bindPopup(`<b>🚏 Estación:</b> ${p.nombre}`);
+                    marcadoresParadasMemoria.push(mParada);
+                }
+            }
+            if (esAdminLogueado) calcularCinematicaFlotaActiva(r);
+            else actualizarFlotaGlobalPasajeros();
+        }
+
+        // --- CÁLCULO ESTABLE DE LA FLOTA EN MONITOREO ---
+        async function calcularCinematicaFlotaActiva(ruta) {
+            if(!ruta) { limpiarMarcadoresBusesMesa(); return; }
+            const ahora = Date.now(); const duracionMs = (ruta.duracionMinutos || 30) * 60 * 1000;
+            let llavesActivasEsteCiclo = [];
+            const idInputEnFoco = document.activeElement ? document.activeElement.getAttribute('data-bus-id') : null;
+            const listaContenedorDOM = document.getElementById('lista-buses-monitoreo');
+
+            const busesActivosSeguros = ruta.busesActivos || {};
+
+            for(let id in busesActivosSeguros) {
+                let bus = busesActivosSeguros[id]; let progresoFinal = bus.progreso; let coords = null;
+                let trazoDestino = (bus.direccion === 1) ? ruta.geometriaIda : rRegresoOInvertido(ruta);
+                let nombreTerminalDestino = (bus.direccion === 1) ? ruta.destino : ruta.origen;
+
+                if (!trazoDestino || trazoDestino.length < 2) continue;
+
+                if (bus.telemetriaReal && bus.latReal) {
+                    coords = [bus.latReal, bus.lngReal]; llavesActivasEsteCiclo.push(id);
+                } else {
+                    let tiempoTranscurrido = ahora - bus.timestampSalida;
+                    let maxSegmentos = trazoDestino.length - 1;
+                    let tiempoPorSegmentoEstandar = duracionMs / maxSegmentos;
+                    let tiempoAcumuladoMesa = 0; let segmentoActualCalculado = 0;
+                    
+                    while (segmentoActualCalculado < maxSegmentos) {
+                        let esTramoConTrafico = (ruta.reportesTrafico && ruta.reportesTrafico[bus.direccion] && ruta.reportesTrafico[bus.direccion][segmentoActualCalculado] === true);
+                        let costoTiempoTramo = esTramoConTrafico ? (tiempoPorSegmentoEstandar * 2.0) : tiempoPorSegmentoEstandar;
+                        
+                        if (tiempoAcumuladoMesa + costoTiempoTramo > tiempoTranscurrido) {
+                            let tiempoRestanteEnSegmento = tiempoTranscurrido - tiempoAcumuladoMesa;
+                            progresoFinal = (segmentoActualCalculado + (tiempoRestanteEnSegmento / costoTiempoTramo)) / maxSegmentos;
+                            break;
+                        }
+                        tiempoAcumuladoMesa += costoTiempoTramo; segmentoActualCalculado++;
+                        if (segmentoActualCalculado === maxSegmentos) progresoFinal = 1.0;
+                    }
+
+                    if(progresoFinal >= 1.0) {
+                        if (esAdminLogueado && idInputEnFoco !== id) {
+                            fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${ruta.id}/busesActivos/${id}.json`), { method: 'DELETE' });
+                        }
+                        continue;
+                    }
+                    coords = interpolarCoordenadas(progresoFinal, trazoDestino); llavesActivasEsteCiclo.push(id);
+                }
+
+                let idxSegmentoUI = Math.floor(progresoFinal * (trazoDestino.length - 1));
+                let transitandoPorTrafico = (ruta.reportesTrafico && ruta.reportesTrafico[bus.direccion] && ruta.reportesTrafico[bus.direccion][idxSegmentoUI] === true);
+                const pctUI = Math.floor(Math.max(0, Math.min(1, progresoFinal)) * 100);
+
+                if (esAdminLogueado && listaContenedorDOM) {
+                    let tarjetaExistente = document.getElementById(`card-bus-${id}`);
+                    let claseEnfocado = (busSeleccionadoId === id) ? "enfocado" : "";
+                    let htmlTarjetaEstructura = `
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div onclick="resaltarUnidadEnMapa('${id}')" style="cursor:pointer; flex-grow:1;">
+                                <strong>Eco: ${id.substring(4,10)}</strong> ⇄ ${nombreTerminalDestino}<br>
+                                <small style="color:#666;">Modo: ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Estimado"}</small>
+                            </div>
+                            <button class="btn btn-danger" style="margin:0; padding:4px 8px; font-size:0.7rem; width:auto; text-transform:none;" onclick="event.stopPropagation(); removerBusManual('${id}')">🗑️ Retirar</button>
+                        </div>
+                        <div style="margin-top: 6px; display:flex; gap:6px; align-items:center; font-size:0.75rem;">
+                            Progreso: <input type="number" value="${pctUI}" data-bus-id="${id}" style="width: 50px; padding: 2px;" onkeydown="if(event.key === 'Enter') { modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value); this.blur(); }"> %
+                        </div>`;
+
+                    if (!tarjetaExistente) {
+                        let nuevaCard = document.createElement('div'); nuevaCard.id = `card-bus-${id}`; nuevaCard.className = `item-bus-activo ${claseEnfocado}`;
+                        nuevaCard.innerHTML = htmlTarjetaEstructura; listaContenedorDOM.appendChild(nuevaCard);
+                    } else if (idInputEnFoco !== id) { 
+                        tarjetaExistente.className = `item-bus-activo ${claseEnfocado}`; 
+                        tarjetaExistente.innerHTML = htmlTarjetaEstructura; 
+                    }
+                }
+
+                let claseDir = (bus.direccion === 1) ? "bus-derecha" : "bus-izquierda";
+                let colorTag = (bus.direccion === 1) ? "#1b5e20" : "#1565c0";
+                if(transitandoPorTrafico && !bus.telemetriaReal) colorTag = "var(--accent-orange)";
+                let claseResaltadoMarcador = (busSeleccionadoId === id) ? "bus-resaltado" : "";
+
+                let htmlIcono = L.divIcon({
+                    html: `
+                        <div class="bus-emoji-container ${claseDir} ${claseResaltadoMarcador}" onclick="resaltarUnidadEnMapa('${id}')">
+                            🚍
+                            <span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span>
+                        </div>`,
+                    className: 'marker-emoji-bus', 
+                    iconSize: [36, 36], 
+                    iconAnchor: [18, 18]
+                });
+
+                if (marcadoresBusesMemoria[id]) { 
+                    marcadoresBusesMemoria[id].setLatLng(coords); 
+                    marcadoresBusesMemoria[id].setIcon(htmlIcono); 
+                } else {
+                    marcadoresBusesMemoria[id] = L.marker(coords, { icon: htmlIcono }).addTo(map);
+                }
+
+                if(esAdminLogueado) {
+                    marcadoresBusesMemoria[id].bindPopup(`<b>RTP: ${id.substring(4,10)}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="removerBusManual('${id}')">🗑️ Quitar Unidad</button>`);
+                }
+            }
+
+            if (esAdminLogueado && listaContenedorDOM) {
+                listaContenedorDOM.querySelectorAll('.item-bus-activo').forEach(t => {
+                    let idLimpio = t.id.replace('card-bus-', '');
+                    if (!llavesActivasEsteCiclo.includes(idLimpio)) t.remove();
+                });
+            }
+            for (let k in marcadoresBusesMemoria) {
+                if (!llavesActivasEsteCiclo.includes(k)) { map.removeLayer(marcadoresBusesMemoria[k]); delete marcadoresBusesMemoria[k]; }
+            }
+        }
+
+        function actualizarFlotaGlobalPasajeros() {
+            const ahora = Date.now(); let llavesGlobalesActivas = [];
+
+            for (let rId in datasetRutas) {
+                let r = datasetRutas[rId]; if (!r || !r.busesActivos) continue;
+                const duracionMs = (r.duracionMinutos || 30) * 60 * 1000;
+
+                for (let bId in r.busesActivos) {
+                    let bus = r.busesActivos[bId]; let progresoFinal = bus.progreso; let coords = null;
+                    let trazoDestino = (bus.direccion === 1) ? r.geometriaIda : rRegresoOInvertido(r);
+                    let nombreTerminalDestino = (bus.direccion === 1) ? r.destino : r.origen;
+
+                    if (!trazoDestino || trazoDestino.length < 2) continue;
+
+                    if (bus.telemetriaReal && bus.latReal) {
+                        coords = [bus.latReal, bus.lngReal]; llavesGlobalesActivas.push(bId);
+                    } else {
+                        let tiempoTranscurrido = ahora - bus.timestampSalida;
+                        let maxSegmentos = trazoDestino.length - 1; let tiempoPorSegmentoEstandar = duracionMs / maxSegmentos;
+                        let tiempoAcumuladoMesa = 0; let segmentoActualCalculado = 0;
+                        
+                        while (segmentoActualCalculado < maxSegmentos) {
+                            let esTramoConTrafico = (r.reportesTrafico && r.reportesTrafico[bus.direccion] && r.reportesTrafico[bus.direccion][segmentoActualCalculado] === true);
+                            let costoTiempoTramo = esTramoConTrafico ? (tiempoPorSegmentoEstandar * 2.0) : tiempoPorSegmentoEstandar;
+                            
+                            if (tiempoAcumuladoMesa + costoTiempoTramo > tiempoTranscurrido) {
+                                let tiempoRestanteEnSegmento = tiempoTranscurrido - tiempoAcumuladoMesa;
+                                progresoFinal = (segmentoActualCalculado + (tiempoRestanteEnSegmento / costoTiempoTramo)) / maxSegmentos;
+                                break;
+                            }
+                            tiempoAcumuladoMesa += costoTiempoTramo; segmentoActualCalculado++;
+                            if (segmentoActualCalculado === maxSegmentos) progresoFinal = 1.0;
+                        }
+                        if(progresoFinal >= 1.0) continue;
+                        coords = interpolarCoordenadas(progresoFinal, trazoDestino); llavesGlobalesActivas.push(bId);
+                    }
+
+                    let idxSegmentoUI = Math.floor(progresoFinal * (trazoDestino.length - 1));
+                    let transitandoPorTrafico = (r.reportesTrafico && r.reportesTrafico[bus.direccion] && r.reportesTrafico[bus.direccion][idxSegmentoUI] === true);
+
+                    let claseDir = (bus.direccion === 1) ? "bus-derecha" : "bus-izquierda";
+                    let colorTag = (bus.direccion === 1) ? "#1b5e20" : "#1565c0";
+                    if(transitandoPorTrafico && !bus.telemetriaReal) colorTag = "var(--accent-orange)";
+                    
+                    let htmlIcono = L.divIcon({
+                        html: `<div class="bus-emoji-container ${claseDir}">🚍<span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span></div>`,
+                        className: 'marker-emoji-bus', iconSize: [36, 36], iconAnchor: [18, 18]
+                    });
+
+                    if (marcadoresBusesMemoria[bId]) { marcadoresBusesMemoria[bId].setLatLng(coords); marcadoresBusesMemoria[bId].setIcon(htmlIcono); } 
+                    else {
+                        marcadoresBusesMemoria[bId] = L.marker(coords, { icon: htmlIcono }).addTo(map);
+                        marcadoresBusesMemoria[bId].on('click', function() { selectorRutaEInfraestructuraDesdeBus(rId); });
+                    }
+                    marcadoresBusesMemoria[bId].bindPopup(`<b>Corredor:</b> ${r.nombre}<br><b>Destino:</b> ${nombreTerminalDestino}`);
+                }
+            }
+
+            for (let k in marcadoresBusesMemoria) {
+                if (!llavesGlobalesActivas.includes(k)) { map.removeLayer(marcadoresBusesMemoria[k]); delete marcadoresBusesMemoria[k]; }
+            }
+        }
+
+        function rRegresoOInvertido(ruta) { return ruta.geometriaRegreso || [...ruta.geometriaIda].reverse(); }
+        function limpiarMarcadoresBusesMesa() { for (let k in marcadoresBusesMemoria) { map.removeLayer(marcadoresBusesMemoria[k]); } marcadoresBusesMemoria = {}; }
+
+        // --- BUCLES ---
+        setInterval(() => {
+            if (esAdminLogueado && rutaActivaId && datasetRutas[rutaActivaId]) calcularCinematicaFlotaActiva(datasetRutas[rutaActivaId]);
+            else if (!esAdminLogueado) { if (rutaActivaId) renderizarGeometriasRuta(rutaActivaId); else actualizarFlotaGlobalPasajeros(); }
+        }, 1000);
+
+        setInterval(() => { descargarDatosServidor(); }, 5000);
+
+        // --- CÁLCULOS GEOGRÁFICOS ---
+        function calcularDistanciaMinimaRuta(userCoords, listaPuntosRuta) {
+            if(!listaPuntosRuta || listaPuntosRuta.length === 0) return { distancia: Infinity, progreso: 0, indiceFiel: 0 };
+            let distMin = Infinity; let indiceCercano = 0;
+            for(let i=0; i<listaPuntosRuta.length; i++) {
+                let d = calcularHaversine(userCoords, listaPuntosRuta[i]);
+                if(d < distMin) { distMin = d; indiceCercano = i; }
+            }
+            return { distancia: distMin, progreso: indiceCercano / (listaPuntosRuta.length - 1), indiceFiel: indiceCercano };
+        }
+
+        function calcularHaversine(p1, p2) {
+            const R = 6371e3; const phi1 = p1[0] * Math.PI / 180; const phi2 = p2[0] * Math.PI / 180;
+            const deltaPhi = (p2[0] - p1[0]) * Math.PI / 180; const deltaLambda = (p2[1] - p1[1]) * Math.PI / 180;
+            const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); 
+        }
+
+        function interpolarCoordenadas(progreso, listaPuntos) {
+            if (progreso < 0) progreso = 0; if (progreso > 1) progreso = 1;
+            const maxSegmentos = listaPuntos.length - 1; 
+            const posMapeada = progreso * maxSegmentos;
+            const index = Math.floor(posMapeada); const subProgreso = posMapeada - index;
+            if (index >= maxSegmentos) return listaPuntos[maxSegmentos];
+            const pA = listaPuntos[index]; const pB = listaPuntos[index + 1];
+            return [ pA[0] + (pB[0] - pA[0]) * subProgreso, pA[1] + (pB[1] - pA[1]) * subProgreso ];
+        }
+
+        // --- INTERFAZ DINÁMICA ---
+        function actualizarComponentesUI() {
+            const selectorUser = document.getElementById('user-selector-rutas'); const valGuardado = selectorUser.value;
+            
+            selectorUser.innerHTML = '<option value="">-- Selecciona una ruta para ver su mapa --</option>'; 
+            document.getElementById('lista-rutas-admin').innerHTML = "";
+
+            for(let id in datasetRutas) {
+                let r = datasetRutas[id];
+                let op = document.createElement('option'); op.value = id; op.innerText = r.nombre; selectorUser.appendChild(op);
+
+                let item = document.createElement('div'); item.id = `card-catalog-${id}`;
+                item.className = "item-ruta-lista" + (rutaActivaId === id ? " seleccionada" : "");
+                item.setAttribute('onclick', `seleccionarYDestacarDesdeCatalogo('${id}')`);
+                item.innerHTML = `<div><strong>${r.nombre}</strong></div><div style="font-size:0.7rem; color:#666; margin-top:2px;">🏁 ${r.origen} ⇄ ${r.destino}</div><div style="margin-top:6px; display:flex; gap:4px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); cargarRutaParaEditar('${id}')">✏️ Editar</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); eliminarRutaCompleta('${id}')">🗑️ Borrar</button></div>`;
+                document.getElementById('lista-rutas-admin').appendChild(item);
+            }
+            if(datasetRutas[valGuardado]) selectorUser.value = valGuardado;
+            actualizarTextosTerminalesPasajero();
+        }
+
+        function actualizarTextosTerminalesPasajero() {
+            const r = datasetRutas[rutaActivaId];
+            const optIda = document.getElementById('opt-viaje-ida'); const optRegreso = document.getElementById('opt-viaje-regreso');
+            if(r && optIda && optRegreso) { 
+                optIda.innerText = `🟢 IDA (Hacia ${r.destino})`; 
+                optRegreso.innerText = `🔵 REGRESO (Hacia ${r.origen})`; 
+            } else if (optIda && optRegreso) {
+                optIda.innerText = "🟢 IDA";
+                optRegreso.innerText = "🔵 REGRESO";
+            }
+        }
+
+        function seleccionarRutaDesdeUsuario(idRuta) { 
+            rutaActivaId = idRuta; 
+            busSeleccionadoId = null; 
+            limpiarMarcadoresBusesMesa(); 
+            actualizarTextosTerminalesPasajero(); 
+            
+            if (idRuta) {
+                renderizarGeometriasRuta(idRuta); 
+                const r = datasetRutas[idRuta];
+                if (r && r.geometriaIda && r.geometriaIda.length > 0) {
+                    map.fitBounds(r.geometriaIda, { padding: [40, 40] });
+                }
+            } else {
+                limpiarTrazosInfraestructura();
+                actualizarFlotaGlobalPasajeros();
+            }
+        }
+
+        function selectorRutaEInfraestructuraDesdeBus(idRuta) { 
+            rutaActivaId = idRuta; 
+            const s = document.getElementById('user-selector-rutas'); 
+            if(s) s.value = idRuta; 
+            actualizarTextosTerminalesPasajero(); 
+            renderizarGeometriasRuta(idRuta); 
+            conmutarMenuUsuario(true); 
+        }
+
+        function seleccionarYDestacarDesdeCatalogo(idRuta) {
+            rutaActivaId = idRuta; busSeleccionadoId = null; limpiarMarcadoresBusesMesa();
+            document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada'));
+            const card = document.getElementById(`card-catalog-${idRuta}`); if(card) card.classList.add('seleccionada');
+            renderizarGeometriasRuta(idRuta);
+            const r = datasetRutas[idRuta];
+            if (r && r.geometriaIda && r.geometriaIda.length > 0) map.fitBounds(r.geometriaIda, { padding: [50, 50] });
+        }
+        
+        window.cancelarEdicionAdmin = function() { puntosIda = []; puntosRegreso = []; limpiarTrazosInfraestructura(); document.getElementById('admin-id-edicion').value = ""; document.getElementById('admin-nombre').value = ""; document.getElementById('admin-origen').value = ""; document.getElementById('admin-destino').value = ""; tipoHerramientaActiva = null; desactivarTraficoModo(); document.getElementById('admin-btn-cancelar').style.display='none'; document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada')); };
+        window.eliminarRutaCompleta = async function(id) { if(confirm("¿Eliminar ruta completa de la red?")) { await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${id}.json`), {method:'DELETE'}); if(rutaActivaId === id) { rutaActivaId = ""; busSeleccionadoId = null; } await descargarDatosServidor(); } };
+        window.cargarRutaParaEditar = function(id) { const r = datasetRutas[id]; document.getElementById('admin-id-edicion').value = id; document.getElementById('admin-nombre').value = r.nombre; document.getElementById('admin-origen').value = r.origen; document.getElementById('admin-destino').value = r.destino; document.getElementById('admin-duracion').value = r.duracionMinutos; document.getElementById('admin-btn-cancelar').style.display='inline-block'; puntosIda = r.geometriaIda || []; puntosRegreso = r.geometriaRegreso || []; rutaActivaId = id; busSeleccionadoId = null; seleccionarYDestacarDesdeCatalogo(id); };
+
+        descargarDatosServidor();
+    </script>
+</body>
+</html>
