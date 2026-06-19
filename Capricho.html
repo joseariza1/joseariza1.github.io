@@ -16,6 +16,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
+    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <script async defer src="https://accounts.google.com/gsi/client"></script>
+    
     <style>
         .grid-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
         [v-cloak] { display: none; }
@@ -38,6 +41,22 @@
             <button @click="vista = 'stock'" :class="{'underline font-bold': vista === 'stock'}"><i class="bi bi-box-seam"></i> Stock</button>
             <button @click="vista = 'reportes'" :class="{'underline font-bold': vista === 'reportes'}"><i class="bi bi-graph-up"></i> Reportes</button>
         </nav>
+
+        <div class="bg-indigo-50 border-b border-indigo-100 px-4 py-2 text-xs flex justify-between items-center max-w-6xl mx-auto mt-2 rounded-xl shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="bi bi-calendar-event-fill text-indigo-600"></i>
+                <span class="font-medium text-gray-600">Google Calendar:</span>
+                <span v-if="gcalConectado" class="text-green-600 font-bold flex items-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-green-500 inline-block"></span> Conectado
+                </span>
+                <span v-else class="text-amber-600 font-bold flex items-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-amber-500 inline-block"></span> Sin vincular
+                </span>
+            </div>
+            <button @click="vincularGoogleCalendar" class="bg-white hover:bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg border border-indigo-200 font-bold transition-all shadow-sm">
+                {{ gcalConectado ? 'Reautenticar' : 'Vincular Cuenta' }}
+            </button>
+        </div>
 
         <main class="p-4 md:p-8 max-w-6xl mx-auto">
             
@@ -102,7 +121,7 @@
 
             <section v-if="vista === 'agendados'">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div v-for="v in ventasDia.filter(v => v.tipo === 'agendado' && !v.completado)" :key="v.id" 
+                    <div v-for="v in rentals = ventasDia.filter(v => v.tipo === 'agendado' && !v.completado)" :key="v.id" 
                          class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-blue-500 transition-all">
                         <div class="flex justify-between items-start mb-2">
                             <div>
@@ -258,7 +277,6 @@
                                         <span class="font-bold text-gray-700">• {{ p.nombre }}</span> 
                                         <span class="text-indigo-500 font-bold ml-1">x{{ p.cantidad }}</span>
                                     </div>
-                               ' width=100%>
                                 </td>
                                 <td class="p-4 text-center font-black text-lg">${{ v.total }}</td>
                                 <td class="p-4 text-right">
@@ -348,6 +366,12 @@
     </div>
 
     <script type="module">
+        // --- CONSTANTES DE AUTENTICACIÓN GOOGLE ---
+        const CLIENT_ID = "43920104735-636tm98sp9kr4c35t33uvin791tl4cv5.apps.googleusercontent.com";
+        const API_KEY = "AIzaSyBQmj0bPP9UVIJuMa97xORZmROnoHWXBQ8";
+        const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
+        const SCOPES = "https://www.googleapis.com/auth/calendar.events";
+
         const FIREBASE_URL = "https://capricho-8db02-default-rtdb.firebaseio.com/"; 
         const { createApp } = Vue;
 
@@ -369,13 +393,20 @@
                     paqueteNuevo: { nombre: '', precioVenta: null },
                     paqueteSeleccionadosIds: [],
                     cargando: true,
-                    chartInstance: null
+                    chartInstance: null,
+                    
+                    // Estados reactivos internos del módulo de Google Calendar
+                    tokenClient: null,
+                    gcalConectado: false
                 }
             },
             watch: {
                 vista(nueva) { if (nueva === 'reportes') this.$nextTick(() => this.initChart()); }
             },
-            mounted() { this.cargarDatos(); },
+            mounted() { 
+                this.cargarDatos(); 
+                this.inicializarGoogleAPI();
+            },
             computed: {
                 productosOrdenados() { return [...this.productos].sort((a, b) => a.nombre.localeCompare(b.nombre)); },
                 productosFiltrados() { return this.productosOrdenados.filter(p => p.nombre.toLowerCase().includes(this.busqueda.toLowerCase())); },
@@ -394,6 +425,106 @@
                 }
             },
             methods: {
+                // --- PROCESOS E INTEGRACIÓN DE GOOGLE CALENDAR ---
+                inicializarGoogleAPI() {
+                    const checkGapi = setInterval(() => {
+                        if (typeof gapi !== 'undefined' && typeof google !== 'undefined') {
+                            clearInterval(checkGapi);
+                            
+                            gapi.load('client', async () => {
+                                await gapi.client.init({
+                                    apiKey: API_KEY,
+                                    discoveryDocs: [DISCOVERY_DOC],
+                                });
+                                
+                                this.tokenClient = google.accounts.oauth2.initTokenClient({
+                                    client_id: CLIENT_ID,
+                                    scope: SCOPES,
+                                    callback: (resp) => {
+                                        if (resp.error !== undefined) {
+                                            console.error(resp);
+                                            return;
+                                        }
+                                        this.gcalConectado = true;
+                                        localStorage.setItem('gcal_token_cached', JSON.stringify(gapi.client.getToken()));
+                                    },
+                                });
+
+                                const cachedToken = localStorage.getItem('gcal_token_cached');
+                                if (cachedToken) {
+                                    gapi.client.setToken(JSON.parse(cachedToken));
+                                    this.gcalConectado = true;
+                                }
+                            });
+                        }
+                    }, 500);
+                },
+
+                vincularGoogleCalendar() {
+                    if (this.tokenClient) {
+                        this.tokenClient.requestAccessToken({ prompt: 'consent' });
+                    } else {
+                        Swal.fire('Error', 'La API de Google se está inicializando. Inténtalo de nuevo en breve.', 'error');
+                    }
+                },
+
+                async crearEventoEnGoogleCalendar(pedido) {
+                    if (!this.gcalConectado) {
+                        console.log("Sincronización omitida: Google Calendar no está vinculado.");
+                        return;
+                    }
+
+                    try {
+                        const startIso = new Date(pedido.fechaEntrega).toISOString();
+                        const endEvent = new Date(pedido.fechaEntrega);
+                        endEvent.setHours(endEvent.getHours() + 1); // Evento estimado en 1 hora por defecto
+                        const endIso = endEvent.toISOString();
+
+                        const listaProd = pedido.productos.map(p => `• ${p.nombre} (x${p.cantidad})`).join('\n');
+                        const descripcion = `Pedido Agendado\n\nCliente: ${pedido.cliente}\nTotal: $${pedido.total}\n\nProductos:\n${listaProd}`;
+
+                        const event = {
+                            'summary': `📦 Pedido: ${pedido.cliente}`,
+                            'location': pedido.lugar || 'Lugar no especificado',
+                            'description': descripcion,
+                            'start': { 'dateTime': startIso, 'timeZone': 'America/Mexico_City' },
+                            'end': { 'dateTime': endIso, 'timeZone': 'America/Mexico_City' },
+                            'reminders': {
+                                'useDefault': false,
+                                'overrides': [
+                                    { 'method': 'popup', 'minutes': 60 },
+                                    { 'method': 'popup', 'minutes': 1440 }
+                                ]
+                            }
+                        };
+
+                        const request = gapi.client.calendar.events.insert({
+                            'calendarId': 'primary',
+                            'resource': event
+                        });
+
+                        request.execute((eventResp) => {
+                            if (eventResp.htmlLink) {
+                                Swal.fire({
+                                    title: '¡Sincronizado!',
+                                    text: 'El pedido fue guardado e insertado en Google Calendar.',
+                                    icon: 'success',
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3500
+                                });
+                            } else {
+                                console.error("Error en respuesta de Google Calendar:", eventResp);
+                            }
+                        });
+
+                    } catch (error) {
+                        console.error("Error enviando datos a la API de Calendar: ", error);
+                    }
+                },
+
+                // --- MÉTODOS ORIGINALES SIN MODIFICACIONES ---
                 async persistir() {
                     try {
                         const data = { productos: JSON.parse(JSON.stringify(this.productos)), ventas: JSON.parse(JSON.stringify(this.ventasDia)) };
@@ -603,6 +734,8 @@
                 },
 
                 finalizarVentaAgendada() {
+                    let pedidoParaSincronizar = null;
+
                     if (this.editandoAgendaId) {
                         const v = this.ventasDia.find(v => v.id === this.editandoAgendaId);
                         if (v) { 
@@ -614,12 +747,33 @@
                                 const precio = this.obtenerPrecioActual(item);
                                 return acc + ((precio * item.cantidad) - (item.descuento || 0));
                             }, 0);
+                            pedidoParaSincronizar = v; 
                         }
                     } else {
-                        this.ventasDia.push({ id: Date.now(), fechaReal: new Date().toISOString(), fechaEntrega: this.agenda.fecha, cliente: this.agenda.cliente || 'Sin Nombre', lugar: this.agenda.lugar, productos: [...this.carrito], total: this.totalVenta, tipo: 'agendado', completado: false, devuelta: false });
+                        const nuevoPedido = { 
+                            id: Date.now(), 
+                            fechaReal: new Date().toISOString(), 
+                            fechaEntrega: this.agenda.fecha, 
+                            cliente: this.agenda.cliente || 'Sin Nombre', 
+                            lugar: this.agenda.lugar, 
+                            productos: [...this.carrito], 
+                            total: this.totalVenta, 
+                            tipo: 'agendado', 
+                            completado: false, 
+                            devuelta: false 
+                        };
+                        this.ventasDia.push(nuevoPedido);
+                        pedidoParaSincronizar = nuevoPedido;
                         this.carrito = [];
                     }
-                    this.cerrarModalAgenda(); this.persistir();
+                    
+                    this.cerrarModalAgenda(); 
+                    this.persistir();
+
+                    // Disparar sincronización con Google Calendar
+                    if(pedidoParaSincronizar) {
+                        this.crearEventoEnGoogleCalendar(pedidoParaSincronizar);
+                    }
                 },
 
                 completarPedido(id) { 
