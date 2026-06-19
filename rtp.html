@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>RTP Control - Despacho Híbrido Avanzado</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -18,8 +18,13 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
+            margin: 0; padding: 0; 
+            display: flex; flex-direction: column; 
+            /* Uso de dvh (Dynamic Viewport Height) para evitar el solapamiento con las barras del sistema móvil */
+            height: 100vh; height: 100dvh; 
             background-color: #f4f6f9; overflow: hidden; color: #333;
+            box-sizing: border-box;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         /* --- NAVBAR ADAPTABLE --- */
@@ -28,6 +33,7 @@
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 3px 6px rgba(0,0,0,0.2); z-index: 1100; flex-shrink: 0;
             flex-wrap: wrap; gap: 8px;
+            padding-top: env(safe-area-inset-top, 10px);
         }
         .nav-title { font-weight: 800; font-size: 1.1rem; letter-spacing: 0.5px; }
         .tabs-roles { display: flex; gap: 8px; }
@@ -40,7 +46,8 @@
 
         /* --- CONTENEDOR PRINCIPAL LÍQUIDO --- */
         .app-container { 
-            display: flex; flex-grow: 1; height: calc(100vh - 52px); 
+            display: flex; flex-grow: 1; 
+            height: calc(100vh - 52px); height: calc(100dvh - 52px); 
             position: relative; overflow: hidden; flex-direction: row; 
         }
 
@@ -97,7 +104,7 @@
         .btn-toggle-dibujo.activo-orange { background-color: var(--accent-orange); color: white; border-color: var(--accent-orange); }
 
         /* --- CONTENEDORES CON SCROLL INTERNO --- */
-        .scroll-interno { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; background: var(--bg-light); }
+        .scroll-interno { max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; background: var(--bg-light); }
 
         /* --- ELEMENTOS DE LISTAS --- */
         .item-ruta-lista, .item-bus-activo {
@@ -111,7 +118,7 @@
         /* --- PANEL DE PASAJERO FLOTANTE SMART (FAB MENU) --- */
         .panel-user-flotante {
             position: absolute; bottom: 85px; right: 20px; width: 340px; 
-            max-height: 70vh; background: var(--surface); z-index: 1050;
+            max-height: 60vh; background: var(--surface); z-index: 1050;
             border-radius: 12px; box-shadow: 0 6px 30px rgba(0,0,0,0.25);
             display: none; flex-direction: column; overflow-y: auto;
             border: 1px solid var(--border); transition: all 0.2s ease;
@@ -120,7 +127,7 @@
         .panel-user-flotante.mostrar { display: flex; opacity: 1; transform: translateY(0); }
 
         .btn-trigger-usuario {
-            position: absolute; bottom: 20px; right: 20px; z-index: 1040;
+            position: absolute; bottom: 25px; right: 20px; z-index: 1040;
             background-color: var(--primary); color: white; padding: 12px 22px;
             border: none; border-radius: 50px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 16px rgba(0,0,0,0.25); display: none;
@@ -166,7 +173,7 @@
         }
         .tramo-trafico-pesado { animation: parpadeoTrafico 1.5s infinite; stroke-dasharray: 6, 6; }
 
-        /* --- 📱 RESPONSIVE MEDIA QUERIES (ADAPTABILIDAD TOTAL) --- */
+        /* --- 📱 RESPONSIVE MEDIA QUERIES CORREGIDOS PARA NAVEGACIÓN MÓVIL --- */
         @media (max-width: 992px) {
             .panel-lateral { width: 340px; }
         }
@@ -174,12 +181,26 @@
         @media (max-width: 768px) {
             .app-container { flex-direction: column-reverse; }
             .panel-lateral { 
-                width: 100%; height: 50vh; border-right: none; 
-                border-top: 1px solid var(--border); box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+                width: 100%; 
+                height: 45vh; /* Altura segura para dejar libre el mapa y no saturar */
+                height: 45dvh;
+                border-right: none; 
+                border-top: 1px solid var(--border); 
+                box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
+                padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); /* Margen extra antibloqueo */
             }
-            .panel-user-flotante { width: calc(100% - 32px); right: 16px; left: 16px; bottom: 75px; max-height: 55vh; }
-            .btn-trigger-usuario { right: 16px; bottom: 16px; padding: 10px 20px; font-size: 0.85rem; }
-            .scroll-interno { max-height: 140px; }
+            .panel-user-flotante { 
+                width: calc(100% - 32px); right: 16px; left: 16px; 
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 75px); 
+                max-height: 50vh; 
+                max-height: 50dvh; 
+            }
+            .btn-trigger-usuario { 
+                right: 16px; 
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); 
+                padding: 12px 20px; font-size: 0.85rem; 
+            }
+            .scroll-interno { max-height: 120px; }
             .nav-title { font-size: 0.95rem; }
         }
 
@@ -189,6 +210,7 @@
             .tabs-roles { width: 100%; justify-content: center; }
             .tab-btn { flex-grow: 1; text-align: center; padding: 6px 10px; font-size: 0.8rem; }
             .grid-inputs { grid-template-columns: 1fr; gap: 0; }
+            .seccion { padding: 12px; }
         }
     </style>
 </head>
@@ -233,8 +255,8 @@
                 <div style="border: 1px solid var(--border); padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #fff;">
                     <label style="margin-bottom:6px; color: var(--primary-dark);">Herramientas de Trazo y Mapa:</label>
                     <div class="grid-herramientas">
-                        <button class="btn btn-toggle-dibujo" id="btn-modo-ida" onclick="cambiarModoHerramienta('ruta_ida')">🟢 Trazo IDA (Verde)</button>
-                        <button class="btn btn-toggle-dibujo" id="btn-modo-regreso" onclick="cambiarModoHerramienta('ruta_regreso')">🔵 Trazo REGRESO (Azul)</button>
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-ida" onclick="cambiarModoHerramienta('ruta_ida')">🟢 Trazo IDA</button>
+                        <button class="btn btn-toggle-dibujo" id="btn-modo-regreso" onclick="cambiarModoHerramienta('ruta_regreso')">🔵 Trazo REGRESO</button>
                     </div>
                     <div class="grid-herramientas">
                         <button class="btn btn-toggle-dibujo" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')">🚏 Poner Paradas</button>
@@ -247,7 +269,7 @@
                     <input type="number" id="admin-duracion" value="30" min="1">
                 </div>
                 
-                <button class="btn btn-success" onclick="finalizarGuardadoAdmin()">💾 Guardar Cambios e Infraestructura</button>
+                <button class="btn btn-success" onclick="finalizarGuardadoAdmin()">💾 Guardar Cambios</button>
             </div>
 
             <div class="seccion">
@@ -310,7 +332,9 @@
     <script>
         const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com/rutas_v3.json";
 
-        const map = L.map('map').setView([19.285, -99.010], 13);
+        const map = L.map('map', {zoomControl: false}).setView([19.285, -99.010], 13);
+        L.control.zoom({position: 'topleft'}).addTo(map);
+        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
         // States
@@ -390,10 +414,10 @@
             } else {
                 tipoHerramientaActiva = modo;
             }
-            document.getElementById('btn-modo-ida').classList.toggle('activo', tipoHerramientaActiva === 'ruta_ida');
-            document.getElementById('btn-modo-regreso').classList.toggle('activo', tipoHerramientaActiva === 'ruta_regreso');
-            document.getElementById('btn-modo-paradas').classList.toggle('activo', tipoHerramientaActiva === 'agregar_paradas');
-            document.getElementById('btn-modo-trafico').classList.toggle('activo-orange', tipoHerramientaActiva === 'reportar_trafico');
+            document.getElementById('btn-modo-ida').classList.toggle('active', tipoHerramientaActiva === 'ruta_ida');
+            document.getElementById('btn-modo-regreso').classList.toggle('active', tipoHerramientaActiva === 'ruta_regreso');
+            document.getElementById('btn-modo-paradas').classList.toggle('active', tipoHerramientaActiva === 'agregar_paradas');
+            document.getElementById('btn-modo-trafico').classList.toggle('active-orange', tipoHerramientaActiva === 'reportar_trafico');
         }
 
         // --- 2. INTERACCIÓN DIRECTA EN EL MAPA ---
@@ -436,7 +460,7 @@
                     .setLatLng(e.latlng)
                     .setContent(`
                         <div style="font-family:sans-serif; padding:5px; min-width:180px;">
-                            <b style="color:var(--primary-dark);">🚏 Nueva Parada / Estación</b><br>
+                            <b style="color:var(--primary-dark);">🚏 Nueva Parada</b><br>
                             <input type="text" id="pop-nom-parada" placeholder="Ej. Av. Jalisco" style="padding:6px; width:100%; box-sizing:border-box; margin-bottom:6px; margin-top:5px;">
                             <button class="btn btn-success" style="width:100%; font-size:0.75rem; padding:6px;" onclick="guardarParadaNube(${lat}, ${lng}, document.getElementById('pop-nom-parada').value)">💾 Fijar Parada</button>
                         </div>
@@ -823,7 +847,7 @@
                     let tiempoPorSegmentoEstandar = duracionMs / maxSegmentos;
                     let tiempoAcumuladoMesa = 0; let segmentoActualCalculado = 0;
                     
-                    while (segmentoActualCalculado < maxSegmentos) {
+                    while (segmentoActualCalculated < maxSegmentos) {
                         let esTramoConTrafico = (ruta.reportesTrafico && ruta.reportesTrafico[bus.direccion] && ruta.reportesTrafico[bus.direccion][segmentoActualCalculado] === true);
                         let costoTiempoTramo = esTramoConTrafico ? (tiempoPorSegmentoEstandar * 2.0) : tiempoPorSegmentoEstandar;
                         
@@ -999,7 +1023,7 @@
                 let item = document.createElement('div'); item.id = `card-catalog-${id}`;
                 item.className = "item-ruta-lista" + (rutaActivaId === id ? " seleccionada" : "");
                 item.setAttribute('onclick', `seleccionarYDestacarDesdeCatalogo('${id}')`);
-                item.innerHTML = `<div><strong>${r.nombre}</strong></div><div style="font-size:0.7rem; color:#666; margin-top:2px;">🏁 ${r.origen} ⇄ ${r.destino}</div><div style="margin-top:6px; display:flex; gap:4px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); cargarRutaParaEditar('${id}')">✏️ Editar</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); eliminarRutaCompleta('${id}')">🗑️ Borrar</button></div>`;
+                item.innerHTML = `<div><strong>${r.nombre}</strong></div><div style="font-size:0.7rem; color:#666; margin-top:2px;">🏁 ${r.origen} ⇄ ${r.destino}</div><div style="margin-top:6px; display:flex; gap:4px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); cargarRutaParaEditar('${id}')">✏️</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); eliminarRutaCompleta('${id}')">🗑️</button></div>`;
                 document.getElementById('lista-rutas-admin').appendChild(item);
             }
             if(datasetRutas[valGuardado]) selectorUser.value = valGuardado;
