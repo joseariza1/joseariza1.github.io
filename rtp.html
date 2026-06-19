@@ -20,14 +20,13 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0; padding: 0; 
             display: flex; flex-direction: column; 
-            /* Uso de dvh (Dynamic Viewport Height) para evitar el solapamiento con las barras del sistema móvil */
             height: 100vh; height: 100dvh; 
             background-color: #f4f6f9; overflow: hidden; color: #333;
             box-sizing: border-box;
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        /* --- NAVBAR ADAPTABLE --- */
+        /* --- NAVBAR --- */
         .navbar-roles {
             background-color: var(--primary-dark); color: white; padding: 10px 16px;
             display: flex; justify-content: space-between; align-items: center;
@@ -44,14 +43,14 @@
         }
         .tab-btn.active { background-color: white; color: var(--primary-dark); }
 
-        /* --- CONTENEDOR PRINCIPAL LÍQUIDO --- */
+        /* --- CONTENEDOR PRINCIPAL --- */
         .app-container { 
             display: flex; flex-grow: 1; 
             height: calc(100vh - 52px); height: calc(100dvh - 52px); 
             position: relative; overflow: hidden; flex-direction: row; 
         }
 
-        /* --- PANEL MONITORISTA TOTALMENTE ADAPTABLE --- */
+        /* --- PANEL LATERAL --- */
         .panel-lateral {
             width: 400px; background: var(--surface); box-shadow: 3px 0 15px rgba(0,0,0,0.1);
             display: none; flex-direction: column; z-index: 1000; overflow-y: auto;
@@ -59,7 +58,6 @@
         }
         .panel-lateral.active { display: flex; }
 
-        /* --- SECCIONES MODULARES DEL MONITORISTA --- */
         .seccion { padding: 16px; border-bottom: 1px solid var(--border); }
         .seccion-header { 
             background-color: var(--bg-light); border-bottom: 1px solid var(--border);
@@ -76,10 +74,9 @@
         }
         input:focus, select:focus { border-color: var(--primary); outline: none; }
 
-        /* Rejilla compacta de dos columnas para inputs del monitorista */
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* --- BOTONES DEL SISTEMA --- */
+        /* --- BOTONES --- */
         .btn { 
             width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; 
             cursor: pointer; color: white; margin-top: 4px; text-align: center; display: block; 
@@ -93,29 +90,40 @@
         .btn-orange { background-color: var(--accent-orange); }
         .btn-secondary { background-color: #616161; }
         
-        /* Botonera de herramientas */
         .grid-herramientas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
         .btn-toggle-dibujo { 
             background-color: #fff; color: #444; border: 1px solid #bbb; 
-            padding: 8px; font-size: 0.75rem; margin: 0; font-weight: 600;
+            padding: 8px; font-size: 0.75rem; margin: 0; font-weight: 600; border-radius: 6px;
         }
         .btn-toggle-dibujo:hover { background-color: var(--bg-light); }
         .btn-toggle-dibujo.activo { background-color: var(--primary); color: white; border-color: var(--primary); }
-        .btn-toggle-dibujo.activo-orange { background-color: var(--accent-orange); color: white; border-color: var(--accent-orange); }
+        .btn-toggle-dibujo.activo-blue { background-color: var(--accent-blue); color: white; border-color: var(--accent-blue); }
+        
+        /* Botón exclusivo Tráfico Alerta */
+        .btn-alerta-trafico {
+            background-color: #ffebee; color: #c62828; border: 2px solid #ef9a9a;
+            padding: 10px; font-weight: bold; border-radius: 6px; font-size: 0.8rem; width: 100%;
+            cursor: pointer; text-transform: uppercase; margin-top: 10px; transition: all 0.2s;
+        }
+        .btn-alerta-trafico.activo {
+            background-color: #d32f2f; color: white; border-color: #b71c1c;
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.4);
+        }
 
-        /* --- CONTENEDORES CON SCROLL INTERNO --- */
-        .scroll-interno { max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; background: var(--bg-light); }
+        .scroll-interno { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; background: var(--bg-light); }
 
-        /* --- ELEMENTOS DE LISTAS --- */
+        /* --- TARJETAS --- */
         .item-ruta-lista, .item-bus-activo {
             padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; 
-            background: #ffffff; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+            background: #ffffff; font-size: 0.8rem; transition: all 0.2s;
         }
-        .item-ruta-lista:hover, .item-bus-activo:hover { background-color: var(--bg-light); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .item-bus-activo { cursor: default; }
+        .item-ruta-lista { cursor: pointer; }
+        .item-ruta-lista:hover { background-color: var(--bg-light); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .item-ruta-lista.seleccionada { border-color: var(--primary); background-color: #e8f5e9; font-weight: 500; }
         .item-bus-activo.enfocado { border-color: var(--accent-orange); background-color: #fffde7; }
 
-        /* --- PANEL DE PASAJERO FLOTANTE SMART (FAB MENU) --- */
+        /* --- PASAJERO FLOTANTE --- */
         .panel-user-flotante {
             position: absolute; bottom: 85px; right: 20px; width: 340px; 
             max-height: 60vh; background: var(--surface); z-index: 1050;
@@ -140,7 +148,7 @@
             font-weight: bold; text-align: center;
         }
 
-        /* --- ENTORNO DEL MAPA --- */
+        /* --- ENTORNO MAPA --- */
         .mapa-contenedor { flex-grow: 1; position: relative; height: 100%; width: 100%; }
         #map { width: 100%; height: 100%; }
         
@@ -150,15 +158,14 @@
             z-index: 1000; font-size: 0.75rem; border: 1px solid var(--border); font-weight: bold;
         }
 
-        /* --- ANIMACIONES Y ESTILOS DINÁMICOS DEL MAPA --- */
         .marker-emoji-bus { transition: all 1s linear !important; }
         @keyframes resaltarFoco {
             0% { transform: scale(1); filter: drop-shadow(0 0px 0px #ffeb3b); }
-            50% { transform: scale(1.3); filter: drop-shadow(0 0 12px #d32f2f); }
+            50% { transform: scale(1.2); filter: drop-shadow(0 0 10px #d32f2f); }
             100% { transform: scale(1); filter: drop-shadow(0 0px #ffeb3b); }
         }
         .bus-resaltado { animation: resaltarFoco 0.6s ease infinite; z-index: 2000 !important; }
-        .bus-emoji-container { font-size: 26px; text-align: center; position: relative; width: 40px; height: 40px;}
+        .bus-emoji-container { font-size: 26px; text-align: center; position: relative; width: 40px; height: 40px; cursor: pointer;}
         .bus-derecha { transform: scaleX(1); }
         .bus-izquierda { transform: scaleX(-1); }
         .bus-emoji-container span { transform: scaleX(1); display: inline-block; }
@@ -173,51 +180,34 @@
         }
         .tramo-trafico-pesado { animation: parpadeoTrafico 1.5s infinite; stroke-dasharray: 6, 6; }
 
-        /* --- 📱 RESPONSIVE MEDIA QUERIES CORREGIDOS PARA NAVEGACIÓN MÓVIL --- */
-        @media (max-width: 992px) {
-            .panel-lateral { width: 340px; }
-        }
-
+        /* --- MOBILE COCHERA --- */
         @media (max-width: 768px) {
             .app-container { flex-direction: column-reverse; }
             .panel-lateral { 
-                width: 100%; 
-                height: 45vh; /* Altura segura para dejar libre el mapa y no saturar */
-                height: 45dvh;
-                border-right: none; 
-                border-top: 1px solid var(--border); 
+                width: 100%; height: 45dvh;
+                border-right: none; border-top: 1px solid var(--border); 
                 box-shadow: 0 -4px 15px rgba(0,0,0,0.1); 
-                padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); /* Margen extra antibloqueo */
+                padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
             }
             .panel-user-flotante { 
                 width: calc(100% - 32px); right: 16px; left: 16px; 
-                bottom: calc(env(safe-area-inset-bottom, 0px) + 75px); 
-                max-height: 50vh; 
-                max-height: 50dvh; 
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 75px); max-height: 50dvh; 
             }
-            .btn-trigger-usuario { 
-                right: 16px; 
-                bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); 
-                padding: 12px 20px; font-size: 0.85rem; 
-            }
-            .scroll-interno { max-height: 120px; }
-            .nav-title { font-size: 0.95rem; }
+            .btn-trigger-usuario { right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); }
+            .scroll-interno { max-height: 130px; }
         }
-
         @media (max-width: 480px) {
             .navbar-roles { padding: 8px 12px; justify-content: center; flex-direction: column; }
-            .nav-title { text-align: center; font-size: 0.9rem; }
             .tabs-roles { width: 100%; justify-content: center; }
-            .tab-btn { flex-grow: 1; text-align: center; padding: 6px 10px; font-size: 0.8rem; }
+            .tab-btn { flex-grow: 1; text-align: center; font-size: 0.8rem; }
             .grid-inputs { grid-template-columns: 1fr; gap: 0; }
-            .seccion { padding: 12px; }
         }
     </style>
 </head>
 <body>
 
     <div class="navbar-roles">
-        <div class="nav-title">🚍 RTP CONTROL - ENTORNO HÍBRIDO ADAPTABLE</div>
+        <div class="nav-title">🚍 RTP CONTROL - ENTORNO HÍBRIDO</div>
         <div class="tabs-roles">
             <button class="tab-btn active" id="btn-tab-admin" onclick="alternarPagina('admin')">💻 Monitorista</button>
             <button class="tab-btn" id="btn-tab-user" onclick="alternarPagina('user')">📱 Pasajeros</button>
@@ -226,7 +216,7 @@
 
     <div class="app-container">
         
-        <!-- ENTORNO DEL MONITORISTA OPTIMIZADO -->
+        <!-- ENTORNO MONITORISTA -->
         <div class="panel-lateral active" id="panel-admin">
             <div class="seccion-header">
                 <h3>🛠️ Consola de Infraestructura</h3>
@@ -253,15 +243,18 @@
                 </div>
                 
                 <div style="border: 1px solid var(--border); padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #fff;">
-                    <label style="margin-bottom:6px; color: var(--primary-dark);">Herramientas de Trazo y Mapa:</label>
+                    <label style="margin-bottom:6px; color: var(--primary-dark);">Trazado de Geometría y Paradas:</label>
                     <div class="grid-herramientas">
                         <button class="btn btn-toggle-dibujo" id="btn-modo-ida" onclick="cambiarModoHerramienta('ruta_ida')">🟢 Trazo IDA</button>
                         <button class="btn btn-toggle-dibujo" id="btn-modo-regreso" onclick="cambiarModoHerramienta('ruta_regreso')">🔵 Trazo REGRESO</button>
                     </div>
-                    <div class="grid-herramientas">
-                        <button class="btn btn-toggle-dibujo" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')">🚏 Poner Paradas</button>
-                        <button class="btn btn-toggle-dibujo" id="btn-modo-trafico" onclick="cambiarModoHerramienta('reportar_trafico')">🛑 Alertar Tráfico</button>
-                    </div>
+                    <button class="btn btn-toggle-dibujo" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')" style="width:100%; margin-top:8px;">🚏 Agregar Estación / Parada</button>
+                </div>
+
+                <!-- SECCIÓN DE TRÁFICO INDEPENDIENTE CON SEMÁFORO DE ADVERTENCIA -->
+                <div style="border: 1px solid #ef9a9a; padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #fff5f5;">
+                    <label style="color: #c62828;">Tránsito y Alertas de Vialidad:</label>
+                    <button class="btn-alerta-trafico" id="btn-modulo-trafico" onclick="conmutarModoTraficoExclusivo()">🛑 Reportar Tráfico Incidente</button>
                 </div>
 
                 <div class="input-group">
@@ -283,7 +276,7 @@
             </div>
         </div>
 
-        <!-- PANEL DE CONTROL USUARIO FLOTANTE (ESTILO FAB) -->
+        <!-- PANEL PASAJERO FLOTANTE -->
         <button class="btn-trigger-usuario" id="btn-menu-pasajero-abrir" onclick="conmutarMenuUsuario(true)">⚙️ Ver Rutas y Viajar</button>
 
         <div class="panel-user-flotante" id="panel-user-contenedor">
@@ -293,7 +286,9 @@
             </div>
             <div class="seccion" id="wrapper-selector-pasajero">
                 <h3>📱 Seleccionar Corredor</h3>
-                <select id="user-selector-rutas" onchange="seleccionarRutaDesdeUsuario(this.value)"></select>
+                <select id="user-selector-rutas" onchange="seleccionarRutaDesdeUsuario(this.value)">
+                    <option value="">-- Selecciona una ruta para ver su mapa --</option>
+                </select>
             </div>
             
             <div class="seccion" style="background: #fff;">
@@ -317,7 +312,7 @@
             </div>
         </div>
 
-        <!-- MAPA RESPONSIVE -->
+        <!-- MAPA -->
         <div class="mapa-contenedor">
             <div id="map"></div>
             <div class="status-float">
@@ -337,14 +332,13 @@
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
-        // States
         let datasetRutas = {}; 
         let rutaActivaId = ""; 
         let esAdminLogueado = true;
         let tipoHerramientaActiva = null;
+        let traficoHerramientaActiva = false; 
         let busSeleccionadoId = null; 
 
-        // Geometrías
         let puntosIda = []; let puntosRegreso = [];
         let capaLineaIda = null; let capaLineaRegreso = null;
         let marcadoresBorradorGrafico = [];
@@ -353,11 +347,10 @@
         let marcadoresParadasMemoria = []; 
         let marcadoresPuntosEdicionMemoria = [];
 
-        // Tracking Pasajero
         let idWatcherGpsPasajero = null;
         let busAsignadoAlPasajeroId = null;
 
-        // --- 1. CONEXIÓN Y DATOS ---
+        // --- SINCRO ---
         async function descargarDatosServidor() {
             try {
                 const r = await fetch(FIREBASE_LINK);
@@ -376,7 +369,7 @@
                 } else if (!esAdminLogueado) {
                     actualizarFlotaGlobalPasajeros();
                 }
-            } catch (e) { console.error("Error de sincronización con la nube", e); }
+            } catch (e) { console.error("Error al sincronizar con la nube", e); }
         }
 
         function alternarPagina(rol) {
@@ -409,30 +402,47 @@
         }
 
         function cambiarModoHerramienta(modo) {
+            desactivarTraficoModo(); 
+            
             if (tipoHerramientaActiva === modo) {
                 tipoHerramientaActiva = null;
             } else {
                 tipoHerramientaActiva = modo;
             }
-            document.getElementById('btn-modo-ida').classList.toggle('active', tipoHerramientaActiva === 'ruta_ida');
-            document.getElementById('btn-modo-regreso').classList.toggle('active', tipoHerramientaActiva === 'ruta_regreso');
-            document.getElementById('btn-modo-paradas').classList.toggle('active', tipoHerramientaActiva === 'agregar_paradas');
-            document.getElementById('btn-modo-trafico').classList.toggle('active-orange', tipoHerramientaActiva === 'reportar_trafico');
+            document.getElementById('btn-modo-ida').classList.toggle('activo', tipoHerramientaActiva === 'ruta_ida');
+            document.getElementById('btn-modo-regreso').classList.toggle('activo-blue', tipoHerramientaActiva === 'ruta_regreso');
+            document.getElementById('btn-modo-paradas').classList.toggle('activo', tipoHerramientaActiva === 'agregar_paradas');
         }
 
-        // --- 2. INTERACCIÓN DIRECTA EN EL MAPA ---
+        function conmutarModoTraficoExclusivo() {
+            traficoHerramientaActiva = !traficoHerramientaActiva;
+            if(traficoHerramientaActiva) {
+                tipoHerramientaActiva = null;
+                document.getElementById('btn-modo-ida').classList.remove('activo');
+                document.getElementById('btn-modo-regreso').classList.remove('activo-blue');
+                document.getElementById('btn-modo-paradas').classList.remove('activo');
+                document.getElementById('btn-modulo-trafico').classList.add('activo');
+                document.getElementById('btn-modulo-trafico').innerText = "🛑 TRÁFICO: ACTIVADO (Toca la línea)";
+            } else {
+                desactivarTraficoModo();
+            }
+        }
+
+        function desactivarTraficoModo() {
+            traficoHerramientaActiva = false;
+            document.getElementById('btn-modulo-trafico').classList.remove('activo');
+            document.getElementById('btn-modulo-trafico').innerText = "🛑 Reportar Tráfico Incidente";
+        }
+
+        // --- MAP CLICK ---
         map.on('click', function(e) {
-            if (!tipoHerramientaActiva) {
+            if (!tipoHerramientaActiva && !traficoHerramientaActiva) {
                 busSeleccionadoId = null;
                 document.querySelectorAll('.item-bus-activo').forEach(el => el.classList.remove('enfocado'));
                 for (let id in marcadoresBusesMemoria) {
                     if (marcadoresBusesMemoria[id] && marcadoresBusesMemoria[id]._icon) {
                         marcadoresBusesMemoria[id]._icon.classList.remove('bus-resaltado');
                     }
-                }
-                if (!esAdminLogueado) {
-                    rutaActivaId = "";
-                    limpiarTrazosInfraestructura();
                 }
             }
 
@@ -480,7 +490,7 @@
                 const evalResultado = calcularDistanciaMinimaRuta(clicCoords, trazoPuntos);
                 const indiceTramo = evalResultado.indiceFiel;
 
-                if (esAdminLogueado && tipoHerramientaActiva === 'reportar_trafico') {
+                if (esAdminLogueado && traficoHerramientaActiva) {
                     let traficoActual = ruta.reportesTrafico && ruta.reportesTrafico[sentidoCapa] && ruta.reportesTrafico[sentidoCapa][indiceTramo] ? true : false;
                     
                     L.popup()
@@ -497,7 +507,7 @@
                     return;
                 }
 
-                if (esAdminLogueado && !tipoHerramientaActiva) {
+                if (esAdminLogueado && !tipoHerramientaActiva && !traficoHerramientaActiva) {
                     const progresoEstimado = Math.round(evalResultado.progreso * 100);
                     L.popup()
                         .setLatLng(e.latlng)
@@ -513,7 +523,7 @@
             });
         }
 
-        // --- 3. PERSISTENCIA DE PARADAS ---
+        // --- PERSISTENCIA ---
         async function guardarParadaNube(lat, lng, nombreParada) {
             const nomFiel = nombreParada.trim() || "Parada General";
             const paradaId = "Parada_" + Date.now();
@@ -532,7 +542,6 @@
             }
         }
 
-        // --- 4. GESTIÓN DE TRÁFICO RED MULTI-CORREDOR ---
         async function guardarEstadoTraficoNube(sentido, indiceTramo, tieneTrafico) {
             if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
             map.closePopup();
@@ -553,11 +562,8 @@
                         let dist = calcularHaversine(puntoReferencia, coords);
                         if(dist <= 50) { 
                             const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rId}/reportesTrafico/1/${idx}.json`);
-                            if(tieneTrafico) {
-                                transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
-                            } else {
-                                transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
-                            }
+                            if(tieneTrafico) transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
+                            else transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
                         }
                     });
                 }
@@ -568,11 +574,8 @@
                         let dist = calcularHaversine(puntoReferencia, coords);
                         if(dist <= 50) {
                             const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rId}/reportesTrafico/-1/${idx}.json`);
-                            if(tieneTrafico) {
-                                transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
-                            } else {
-                                transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
-                            }
+                            if(tieneTrafico) transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
+                            else transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
                         }
                     });
                 }
@@ -582,7 +585,7 @@
             await descargarDatosServidor();
         }
 
-        // --- 5. GESTIÓN DE ESTRUCTURA ---
+        // --- GESTIÓN ESTRUCTURAL ---
         async function finalizarGuardadoAdmin() {
             const nombre = document.getElementById('admin-nombre').value.trim();
             const origen = document.getElementById('admin-origen').value.trim() || "Origen Terminal";
@@ -625,7 +628,7 @@
             }
         }
 
-        // --- 6. LANZAMIENTO Y CONFIGURACIÓN DE BUSES ---
+        // --- LANZAMIENTO DE UNIDADES ---
         async function inyectarAutobusMapaClick(sentido, progresoInicial) {
             if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
             const busId = "Bus_" + Date.now();
@@ -662,6 +665,10 @@
                 const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busId}.json`);
                 map.closePopup();
                 if(busSeleccionadoId === busId) busSeleccionadoId = null;
+                
+                const elemento = document.getElementById(`card-bus-${busId}`);
+                if (elemento) elemento.remove();
+
                 await fetch(url, { method: 'DELETE' });
                 await descargarDatosServidor();
             }
@@ -684,10 +691,10 @@
             if(contenedorLista) contenedorLista.classList.add('enfocado');
         }
 
-        // --- 7. TELEMETRÍA DE PASAJEROS ---
+        // --- TRACKING GPS PASAJEROS ---
         function activarRastreoAbordoPasajero() {
             if (!navigator.geolocation) { alert("Tu dispositivo no soporta localización."); return; }
-            const r = datasetRutas[rutaActivaId]; if(!r) { alert("Selecciona un corredor."); return; }
+            const r = datasetRutas[rutaActivaId]; if(!r) { alert("Por favor selecciona primero un Corredor/Ruta."); return; }
 
             document.getElementById('formulario-rastreo-inputs').style.display = 'none';
             document.getElementById('wrapper-selector-pasajero').style.display = 'none';
@@ -752,7 +759,7 @@
             document.getElementById('wrapper-selector-pasajero').style.display = 'block';
         }
 
-        // --- 8. RENDERIZADO Y DINÁMICA ---
+        // --- RENDER GEOMETRÍAS ---
         function limpiarTrazosInfraestructura() {
             if(capaLineaIda) map.removeLayer(capaLineaIda);
             if(capaLineaRegreso) map.removeLayer(capaLineaRegreso);
@@ -827,17 +834,22 @@
             else actualizarFlotaGlobalPasajeros();
         }
 
+        // --- CÁLCULO ESTABLE DE LA FLOTA EN MONITOREO ---
         async function calcularCinematicaFlotaActiva(ruta) {
-            if(!ruta || !ruta.busesActivos) { limpiarMarcadoresBusesMesa(); return; }
+            if(!ruta) { limpiarMarcadoresBusesMesa(); return; }
             const ahora = Date.now(); const duracionMs = (ruta.duracionMinutos || 30) * 60 * 1000;
             let llavesActivasEsteCiclo = [];
             const idInputEnFoco = document.activeElement ? document.activeElement.getAttribute('data-bus-id') : null;
             const listaContenedorDOM = document.getElementById('lista-buses-monitoreo');
 
-            for(let id in ruta.busesActivos) {
-                let bus = ruta.busesActivos[id]; let progresoFinal = bus.progreso; let coords = null;
+            const busesActivosSeguros = ruta.busesActivos || {};
+
+            for(let id in busesActivosSeguros) {
+                let bus = busesActivosSeguros[id]; let progresoFinal = bus.progreso; let coords = null;
                 let trazoDestino = (bus.direccion === 1) ? ruta.geometriaIda : rRegresoOInvertido(ruta);
                 let nombreTerminalDestino = (bus.direccion === 1) ? ruta.destino : ruta.origen;
+
+                if (!trazoDestino || trazoDestino.length < 2) continue;
 
                 if (bus.telemetriaReal && bus.latReal) {
                     coords = [bus.latReal, bus.lngReal]; llavesActivasEsteCiclo.push(id);
@@ -847,7 +859,7 @@
                     let tiempoPorSegmentoEstandar = duracionMs / maxSegmentos;
                     let tiempoAcumuladoMesa = 0; let segmentoActualCalculado = 0;
                     
-                    while (segmentoActualCalculated < maxSegmentos) {
+                    while (segmentoActualCalculado < maxSegmentos) {
                         let esTramoConTrafico = (ruta.reportesTrafico && ruta.reportesTrafico[bus.direccion] && ruta.reportesTrafico[bus.direccion][segmentoActualCalculado] === true);
                         let costoTiempoTramo = esTramoConTrafico ? (tiempoPorSegmentoEstandar * 2.0) : tiempoPorSegmentoEstandar;
                         
@@ -861,7 +873,9 @@
                     }
 
                     if(progresoFinal >= 1.0) {
-                        if (esAdminLogueado && idInputEnFoco !== id) fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${ruta.id}/busesActivos/${id}.json`), { method: 'DELETE' });
+                        if (esAdminLogueado && idInputEnFoco !== id) {
+                            fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${ruta.id}/busesActivos/${id}.json`), { method: 'DELETE' });
+                        }
                         continue;
                     }
                     coords = interpolarCoordenadas(progresoFinal, trazoDestino); llavesActivasEsteCiclo.push(id);
@@ -874,12 +888,25 @@
                 if (esAdminLogueado && listaContenedorDOM) {
                     let tarjetaExistente = document.getElementById(`card-bus-${id}`);
                     let claseEnfocado = (busSeleccionadoId === id) ? "enfocado" : "";
-                    let htmlTarjetaEstructura = `<b>Unidad:</b> ${id.substring(0,6)}... ⇄ ${nombreTerminalDestino}<br><b>Telemetría:</b> ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Predictivo"}<br><div style="margin-top: 4px; display:flex; gap:6px; align-items:center;">Progreso: <input type="number" value="${pctUI}" data-bus-id="${id}" style="width: 55px; padding: 2px; font-size:0.75rem;" onkeydown="if(event.key === 'Enter') { modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value); this.blur(); }"> %</div>`;
+                    let htmlTarjetaEstructura = `
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div onclick="resaltarUnidadEnMapa('${id}')" style="cursor:pointer; flex-grow:1;">
+                                <strong>Eco: ${id.substring(4,10)}</strong> ⇄ ${nombreTerminalDestino}<br>
+                                <small style="color:#666;">Modo: ${bus.telemetriaReal ? "📡 En Vivo" : "🤖 Estimado"}</small>
+                            </div>
+                            <button class="btn btn-danger" style="margin:0; padding:4px 8px; font-size:0.7rem; width:auto; text-transform:none;" onclick="event.stopPropagation(); removerBusManual('${id}')">🗑️ Retirar</button>
+                        </div>
+                        <div style="margin-top: 6px; display:flex; gap:6px; align-items:center; font-size:0.75rem;">
+                            Progreso: <input type="number" value="${pctUI}" data-bus-id="${id}" style="width: 50px; padding: 2px;" onkeydown="if(event.key === 'Enter') { modificarAtributosBusMapa('${id}', '${bus.direccion}', this.value); this.blur(); }"> %
+                        </div>`;
 
                     if (!tarjetaExistente) {
                         let nuevaCard = document.createElement('div'); nuevaCard.id = `card-bus-${id}`; nuevaCard.className = `item-bus-activo ${claseEnfocado}`;
-                        nuevaCard.setAttribute('onclick', `resaltarUnidadEnMapa('${id}')`); nuevaCard.innerHTML = htmlTarjetaEstructura; listaContenedorDOM.appendChild(nuevaCard);
-                    } else if (idInputEnFoco !== id) { tarjetaExistente.className = `item-bus-activo ${claseEnfocado}`; tarjetaExistente.innerHTML = htmlTarjetaEstructura; }
+                        nuevaCard.innerHTML = htmlTarjetaEstructura; listaContenedorDOM.appendChild(nuevaCard);
+                    } else if (idInputEnFoco !== id) { 
+                        tarjetaExistente.className = `item-bus-activo ${claseEnfocado}`; 
+                        tarjetaExistente.innerHTML = htmlTarjetaEstructura; 
+                    }
                 }
 
                 let claseDir = (bus.direccion === 1) ? "bus-derecha" : "bus-izquierda";
@@ -888,21 +915,32 @@
                 let claseResaltadoMarcador = (busSeleccionadoId === id) ? "bus-resaltado" : "";
 
                 let htmlIcono = L.divIcon({
-                    html: `<div class="bus-emoji-container ${claseDir} ${claseResaltadoMarcador}">🚍<span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span></div>`,
-                    className: 'marker-emoji-bus', iconSize: [36, 36], iconAnchor: [18, 18]
+                    html: `
+                        <div class="bus-emoji-container ${claseDir} ${claseResaltadoMarcador}" onclick="resaltarUnidadEnMapa('${id}')">
+                            🚍
+                            <span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span>
+                        </div>`,
+                    className: 'marker-emoji-bus', 
+                    iconSize: [36, 36], 
+                    iconAnchor: [18, 18]
                 });
 
-                if (marcadoresBusesMemoria[id]) { marcadoresBusesMemoria[id].setLatLng(coords); marcadoresBusesMemoria[id].setIcon(htmlIcono); } 
-                else marcadoresBusesMemoria[id] = L.marker(coords, { icon: htmlIcono }).addTo(map);
+                if (marcadoresBusesMemoria[id]) { 
+                    marcadoresBusesMemoria[id].setLatLng(coords); 
+                    marcadoresBusesMemoria[id].setIcon(htmlIcono); 
+                } else {
+                    marcadoresBusesMemoria[id] = L.marker(coords, { icon: htmlIcono }).addTo(map);
+                }
 
                 if(esAdminLogueado) {
-                    marcadoresBusesMemoria[id].bindPopup(`<b>RTP: ${id.substring(0,5)}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="removerBusManual('${id}')">🗑️ Quitar Unidad</button>`);
+                    marcadoresBusesMemoria[id].bindPopup(`<b>RTP: ${id.substring(4,10)}</b><br><button class="btn btn-danger" style="width:100%; font-size:0.7rem; margin-top:4px; padding:4px;" onclick="removerBusManual('${id}')">🗑️ Quitar Unidad</button>`);
                 }
             }
 
             if (esAdminLogueado && listaContenedorDOM) {
                 listaContenedorDOM.querySelectorAll('.item-bus-activo').forEach(t => {
-                    if (!llavesActivasEsteCiclo.includes(t.id.replace('card-bus-', ''))) t.remove();
+                    let idLimpio = t.id.replace('card-bus-', '');
+                    if (!llavesActivasEsteCiclo.includes(idLimpio)) t.remove();
                 });
             }
             for (let k in marcadoresBusesMemoria) {
@@ -956,7 +994,7 @@
                     
                     let htmlIcono = L.divIcon({
                         html: `<div class="bus-emoji-container ${claseDir}">🚍<span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span></div>`,
-                        className: 'marker-emoji-bus', iconSize: [36, 36]
+                        className: 'marker-emoji-bus', iconSize: [36, 36], iconAnchor: [18, 18]
                     });
 
                     if (marcadoresBusesMemoria[bId]) { marcadoresBusesMemoria[bId].setLatLng(coords); marcadoresBusesMemoria[bId].setIcon(htmlIcono); } 
@@ -976,7 +1014,7 @@
         function rRegresoOInvertido(ruta) { return ruta.geometriaRegreso || [...ruta.geometriaIda].reverse(); }
         function limpiarMarcadoresBusesMesa() { for (let k in marcadoresBusesMemoria) { map.removeLayer(marcadoresBusesMemoria[k]); } marcadoresBusesMemoria = {}; }
 
-        // --- 9. OPERACIONES SÍNCRONAS ---
+        // --- BUCLES ---
         setInterval(() => {
             if (esAdminLogueado && rutaActivaId && datasetRutas[rutaActivaId]) calcularCinematicaFlotaActiva(datasetRutas[rutaActivaId]);
             else if (!esAdminLogueado) { if (rutaActivaId) renderizarGeometriasRuta(rutaActivaId); else actualizarFlotaGlobalPasajeros(); }
@@ -984,7 +1022,7 @@
 
         setInterval(() => { descargarDatosServidor(); }, 5000);
 
-        // --- 10. MÓDULOS GEOGRÁFICOS ---
+        // --- CÁLCULOS GEOGRÁFICOS ---
         function calcularDistanciaMinimaRuta(userCoords, listaPuntosRuta) {
             if(!listaPuntosRuta || listaPuntosRuta.length === 0) return { distancia: Infinity, progreso: 0, indiceFiel: 0 };
             let distMin = Infinity; let indiceCercano = 0;
@@ -1004,17 +1042,20 @@
 
         function interpolarCoordenadas(progreso, listaPuntos) {
             if (progreso < 0) progreso = 0; if (progreso > 1) progreso = 1;
-            const maxSegmentos = listaPuntos.length - 1; const posMapeada = progreso * maxSegmentos;
+            const maxSegmentos = listaPuntos.length - 1; 
+            const posMapeada = progreso * maxSegmentos;
             const index = Math.floor(posMapeada); const subProgreso = posMapeada - index;
             if (index >= maxSegmentos) return listaPuntos[maxSegmentos];
             const pA = listaPuntos[index]; const pB = listaPuntos[index + 1];
             return [ pA[0] + (pB[0] - pA[0]) * subProgreso, pA[1] + (pB[1] - pA[1]) * subProgreso ];
         }
 
-        // --- 11. ACTUALIZADORES UI ---
+        // --- INTERFAZ DINÁMICA ---
         function actualizarComponentesUI() {
             const selectorUser = document.getElementById('user-selector-rutas'); const valGuardado = selectorUser.value;
-            selectorUser.innerHTML = ""; document.getElementById('lista-rutas-admin').innerHTML = "";
+            
+            selectorUser.innerHTML = '<option value="">-- Selecciona una ruta para ver su mapa --</option>'; 
+            document.getElementById('lista-rutas-admin').innerHTML = "";
 
             for(let id in datasetRutas) {
                 let r = datasetRutas[id];
@@ -1023,7 +1064,7 @@
                 let item = document.createElement('div'); item.id = `card-catalog-${id}`;
                 item.className = "item-ruta-lista" + (rutaActivaId === id ? " seleccionada" : "");
                 item.setAttribute('onclick', `seleccionarYDestacarDesdeCatalogo('${id}')`);
-                item.innerHTML = `<div><strong>${r.nombre}</strong></div><div style="font-size:0.7rem; color:#666; margin-top:2px;">🏁 ${r.origen} ⇄ ${r.destino}</div><div style="margin-top:6px; display:flex; gap:4px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); cargarRutaParaEditar('${id}')">✏️</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); eliminarRutaCompleta('${id}')">🗑️</button></div>`;
+                item.innerHTML = `<div><strong>${r.nombre}</strong></div><div style="font-size:0.7rem; color:#666; margin-top:2px;">🏁 ${r.origen} ⇄ ${r.destino}</div><div style="margin-top:6px; display:flex; gap:4px;"><button class="btn btn-primary" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); cargarRutaParaEditar('${id}')">✏️ Editar</button><button class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;" onclick="event.stopPropagation(); eliminarRutaCompleta('${id}')">🗑️ Borrar</button></div>`;
                 document.getElementById('lista-rutas-admin').appendChild(item);
             }
             if(datasetRutas[valGuardado]) selectorUser.value = valGuardado;
@@ -1033,11 +1074,41 @@
         function actualizarTextosTerminalesPasajero() {
             const r = datasetRutas[rutaActivaId];
             const optIda = document.getElementById('opt-viaje-ida'); const optRegreso = document.getElementById('opt-viaje-regreso');
-            if(r && optIda && optRegreso) { optIda.innerText = `🟢 IDA (Hacia ${r.destino})`; optRegreso.innerText = `🔵 REGRESO (Hacia ${r.origen})`; }
+            if(r && optIda && optRegreso) { 
+                optIda.innerText = `🟢 IDA (Hacia ${r.destino})`; 
+                optRegreso.innerText = `🔵 REGRESO (Hacia ${r.origen})`; 
+            } else if (optIda && optRegreso) {
+                optIda.innerText = "🟢 IDA";
+                optRegreso.innerText = "🔵 REGRESO";
+            }
         }
 
-        function seleccionarRutaDesdeUsuario(idRuta) { rutaActivaId = idRuta; busSeleccionadoId = null; limpiarMarcadoresBusesMesa(); actualizarTextosTerminalesPasajero(); renderizarGeometriasRuta(idRuta); }
-        function selectorRutaEInfraestructuraDesdeBus(idRuta) { rutaActivaId = idRuta; const s = document.getElementById('user-selector-rutas'); if(s) s.value = idRuta; actualizarTextosTerminalesPasajero(); renderizarGeometriasRuta(idRuta); conmutarMenuUsuario(true); }
+        function seleccionarRutaDesdeUsuario(idRuta) { 
+            rutaActivaId = idRuta; 
+            busSeleccionadoId = null; 
+            limpiarMarcadoresBusesMesa(); 
+            actualizarTextosTerminalesPasajero(); 
+            
+            if (idRuta) {
+                renderizarGeometriasRuta(idRuta); 
+                const r = datasetRutas[idRuta];
+                if (r && r.geometriaIda && r.geometriaIda.length > 0) {
+                    map.fitBounds(r.geometriaIda, { padding: [40, 40] });
+                }
+            } else {
+                limpiarTrazosInfraestructura();
+                actualizarFlotaGlobalPasajeros();
+            }
+        }
+
+        function selectorRutaEInfraestructuraDesdeBus(idRuta) { 
+            rutaActivaId = idRuta; 
+            const s = document.getElementById('user-selector-rutas'); 
+            if(s) s.value = idRuta; 
+            actualizarTextosTerminalesPasajero(); 
+            renderizarGeometriasRuta(idRuta); 
+            conmutarMenuUsuario(true); 
+        }
 
         function seleccionarYDestacarDesdeCatalogo(idRuta) {
             rutaActivaId = idRuta; busSeleccionadoId = null; limpiarMarcadoresBusesMesa();
@@ -1048,8 +1119,8 @@
             if (r && r.geometriaIda && r.geometriaIda.length > 0) map.fitBounds(r.geometriaIda, { padding: [50, 50] });
         }
         
-        window.cancelarEdicionAdmin = function() { puntosIda = []; puntosRegreso = []; limpiarTrazosInfraestructura(); document.getElementById('admin-id-edicion').value = ""; document.getElementById('admin-nombre').value = ""; document.getElementById('admin-origen').value = ""; document.getElementById('admin-destino').value = ""; tipoHerramientaActiva = null; document.getElementById('admin-btn-cancelar').style.display='none'; document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada')); };
-        window.eliminarRutaCompleta = async function(id) { if(confirm("¿Eliminar ruta?")) { await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${id}.json`), {method:'DELETE'}); if(rutaActivaId === id) { rutaActivaId = ""; busSeleccionadoId = null; } await descargarDatosServidor(); } };
+        window.cancelarEdicionAdmin = function() { puntosIda = []; puntosRegreso = []; limpiarTrazosInfraestructura(); document.getElementById('admin-id-edicion').value = ""; document.getElementById('admin-nombre').value = ""; document.getElementById('admin-origen').value = ""; document.getElementById('admin-destino').value = ""; tipoHerramientaActiva = null; desactivarTraficoModo(); document.getElementById('admin-btn-cancelar').style.display='none'; document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada')); };
+        window.eliminarRutaCompleta = async function(id) { if(confirm("¿Eliminar ruta completa de la red?")) { await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${id}.json`), {method:'DELETE'}); if(rutaActivaId === id) { rutaActivaId = ""; busSeleccionadoId = null; } await descargarDatosServidor(); } };
         window.cargarRutaParaEditar = function(id) { const r = datasetRutas[id]; document.getElementById('admin-id-edicion').value = id; document.getElementById('admin-nombre').value = r.nombre; document.getElementById('admin-origen').value = r.origen; document.getElementById('admin-destino').value = r.destino; document.getElementById('admin-duracion').value = r.duracionMinutos; document.getElementById('admin-btn-cancelar').style.display='inline-block'; puntosIda = r.geometriaIda || []; puntosRegreso = r.geometriaRegreso || []; rutaActivaId = id; busSeleccionadoId = null; seleccionarYDestacarDesdeCatalogo(id); };
 
         descargarDatosServidor();
