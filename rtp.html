@@ -43,26 +43,31 @@
         }
         .panel-lateral.active { display: flex; }
 
+        /* NUEVO DISEÑO: Panel de usuario flotante abajo a la derecha */
         .panel-user-flotante {
-            position: absolute; top: 15px; left: 15px; width: 340px; 
-            max-height: 85vh; background: var(--surface); z-index: 1050;
-            border-radius: 8px; box-shadow: 0 4px 25px rgba(0,0,0,0.25);
+            position: absolute; bottom: 85px; right: 20px; width: 340px; 
+            max-height: 70vh; background: var(--surface); z-index: 1050;
+            border-radius: 12px; box-shadow: 0 6px 30px rgba(0,0,0,0.3);
             display: none; flex-direction: column; overflow-y: auto;
             border: 1px solid var(--border);
             transition: transform 0.2s ease, opacity 0.2s ease;
-            opacity: 0; transform: translateY(-10px);
+            opacity: 0; transform: translateY(10px);
         }
         .panel-user-flotante.mostrar { display: flex; opacity: 1; transform: translateY(0); }
 
+        /* NUEVO DISEÑO: Botón de menú flotante inferior derecho (FAB) */
         .btn-trigger-usuario {
-            position: absolute; top: 15px; left: 15px; z-index: 1040;
+            position: absolute; bottom: 20px; right: 20px; z-index: 1040;
             background-color: var(--primary); color: white; padding: 14px 24px;
-            border: none; border-radius: 6px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: none;
+            border: none; border-radius: 50px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3); display: none;
+            font-size: 0.95rem; display: flex; align-items: center; gap: 8px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
         }
+        .btn-trigger-usuario:active { transform: scale(0.96); }
 
         .seccion { padding: 16px; border-bottom: 1px solid #e0e0e0; }
-        .seccion-header-menu { display: flex; justify-content: space-between; align-items: center; background: #edf7ed; }
+        .seccion-header-menu { display: flex; justify-content: space-between; align-items: center; background: #edf7ed; border-top-left-radius: 11px; border-top-right-radius: 11px; }
         
         h3 { margin-top: 0; margin-bottom: 10px; color: var(--primary-dark); font-weight: 700; font-size: 0.95rem; text-transform: uppercase;}
         
@@ -111,7 +116,7 @@
         .marker-emoji-bus { transition: all 1s linear !important; }
         
         @keyframes resaltarFoco {
-            0% { transform: scale(1); filter: drop-shadow(0 0 0px #ffeb3b); }
+            0% { transform: scale(1); filter: drop-shadow(0 0px 0px #ffeb3b); }
             50% { transform: scale(1.4); filter: drop-shadow(0 0 15px #d32f2f); }
             100% { transform: scale(1); filter: drop-shadow(0 0px #ffeb3b); }
         }
@@ -144,7 +149,7 @@
         @media (max-width: 768px) {
             .app-container { flex-direction: column; }
             .panel-lateral { width: 100%; height: 50vh; }
-            .panel-user-flotante { width: calc(100% - 30px); left: 15px; max-height: 75vh; }
+            .panel-user-flotante { width: calc(100% - 40px); right: 20px; left: 20px; bottom: 80px; max-height: 60vh; }
         }
     </style>
 </head>
@@ -310,11 +315,13 @@
         function alternarPagina(rol) {
             esAdminLogueado = (rol === 'admin');
             document.getElementById('panel-admin').style.display = esAdminLogueado ? 'flex' : 'none';
-            document.getElementById('btn-menu-pasajero-abrir').style.display = esAdminLogueado ? 'none' : 'block';
+            document.getElementById('btn-menu-pasajero-abrir').style.display = esAdminLogueado ? 'none' : 'flex';
             document.getElementById('btn-tab-admin').classList.toggle('active', esAdminLogueado);
             document.getElementById('btn-tab-user').classList.toggle('active', !esAdminLogueado);
             cancelarEdicionAdmin();
-            conmutarMenuUsuario(!esAdminLogueado);
+            
+            // Inicialmente limpio en modo pasajero, el menú no se abre por defecto
+            conmutarMenuUsuario(false);
             
             if (esAdminLogueado) {
                 if (!rutaActivaId && Object.keys(datasetRutas).length > 0) {
@@ -471,15 +478,13 @@
 
             let transaccionesPromesas = [];
 
-            // Recorrer todos los corredores de la red para propagar en zonas adyacentes
             for (let rId in datasetRutas) {
                 const otraRuta = datasetRutas[rId];
                 
-                // Evaluar trazo de IDA de la otra ruta
                 if(otraRuta.geometriaIda) {
                     otraRuta.geometriaIda.forEach((coords, idx) => {
                         let dist = calcularHaversine(puntoReferencia, coords);
-                        if(dist <= 50) { // Radio estricto de coincidencia de infraestructura vial
+                        if(dist <= 50) { 
                             const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rId}/reportesTrafico/1/${idx}.json`);
                             if(tieneTrafico) {
                                 transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
@@ -490,7 +495,6 @@
                     });
                 }
 
-                // Evaluar trazo de REGRESO de la otra ruta
                 const otraGeometriaRegreso = rRegresoOInvertido(otraRuta);
                 if(otraGeometriaRegreso) {
                     otraGeometriaRegreso.forEach((coords, idx) => {
@@ -613,7 +617,7 @@
             if(contenedorLista) contenedorLista.classList.add('enfocado');
         }
 
-        // --- 7. TELEMETRÍA DE PASAJEROS (PRECISIÓN A 30 METROS) ---
+        // --- 7. TELEMETRÍA DE PASAJEROS ---
         function activarRastreoAbordoPasajero() {
             if (!navigator.geolocation) { alert("Tu dispositivo no soporta localización."); return; }
             const r = datasetRutas[rutaActivaId]; if(!r) { alert("Selecciona un corredor."); return; }
@@ -633,7 +637,6 @@
                 let evalReg = calcularDistanciaMinimaRuta(userLoc, r.geometriaRegreso);
                 let distMinimaRuta = Math.min(evalIda.distancia, evalReg.distancia);
 
-                // Área reducida a 30 metros de tolerancia sobre la calle
                 if(distMinimaRuta > 30) {
                     document.getElementById('viaje-status-texto').innerText = "⚠️ Fuera del eje vial de la ruta. Desconectando...";
                     setTimeout(() => { detenerRastreoAbordoPasajero(); }, 3500);
@@ -725,7 +728,6 @@
                 });
             }
 
-            // Pintar Tráficos de la Red Vial actualizados
             [1, -1].forEach(sentido => {
                 if (r.reportesTrafico && r.reportesTrafico[sentido]) {
                     const trazoCompleto = (sentido === 1) ? r.geometriaIda : rRegresoOInvertido(r);
@@ -743,7 +745,6 @@
                 }
             });
 
-            // Paradas
             if (r.paradas) {
                 for(let pId in r.paradas) {
                     let p = r.paradas[pId];
@@ -969,7 +970,7 @@
         }
 
         function seleccionarRutaDesdeUsuario(idRuta) { rutaActivaId = idRuta; busSeleccionadoId = null; limpiarMarcadoresBusesMesa(); actualizarTextosTerminalesPasajero(); renderizarGeometriasRuta(idRuta); }
-        function selectorRutaEInfraestructuraDesdeBus(idRuta) { rutaActivaId = idRuta; const s = document.getElementById('user-selector-rutas'); if(s) s.value = idRuta; actualizarTextosTerminalesPasajero(); renderizarGeometriasRuta(idRuta); }
+        function selectorRutaEInfraestructuraDesdeBus(idRuta) { rutaActivaId = idRuta; const s = document.getElementById('user-selector-rutas'); if(s) s.value = idRuta; actualizarTextosTerminalesPasajero(); renderizarGeometriasRuta(idRuta); conmutarMenuUsuario(true); }
 
         function seleccionarYDestacarDesdeCatalogo(idRuta) {
             rutaActivaId = idRuta; busSeleccionadoId = null; limpiarMarcadoresBusesMesa();
