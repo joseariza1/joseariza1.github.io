@@ -3,229 +3,262 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>M3U8 Grid - Click to Exit</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>Monitor Pro - Persistente</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.4.12/hls.min.js"></script>
     <style>
-        :root {
-            --bg: #0b0f1a;
-            --accent: #38bdf8;
-            --danger: #f43f5e;
-            --text: #f8fafc;
+        :root { 
+            --bg: #000; --card: #111; --accent: #00e676; --panel: #1a1a1a;
         }
 
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding-bottom: 50px;
+        body { 
+            background: var(--bg); color: #fff; font-family: system-ui, sans-serif; 
+            margin: 0; padding: 15px; overflow-x: hidden;
         }
 
-        header {
-            padding: 15px;
-            background: rgba(11, 15, 26, 0.98);
-            backdrop-filter: blur(12px);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            border-bottom: 1px solid #2d3748;
+        /* Cabecera */
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1200px; margin: 0 auto 20px auto;
+        }
+        .header h1 { font-size: 1.4rem; color: var(--accent); margin: 0; }
+
+        .btn-toggle {
+            background: var(--accent); color: #000; border: none;
+            padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;
         }
 
-        .controls-wrapper {
-            max-width: 900px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        /* Panel Configuración */
+        .config-panel {
+            max-height: 0; opacity: 0; overflow: hidden;
+            transition: all 0.4s ease; background: var(--panel);
+            border-radius: 12px; max-width: 800px; margin: 0 auto;
+        }
+        .config-panel.active {
+            max-height: 500px; opacity: 1; padding: 20px; margin-bottom: 25px; border: 1px solid #333;
         }
 
-        .input-container { display: flex; gap: 8px; }
-        input {
-            flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #4a5568;
-            background: #000; color: var(--accent); outline: none;
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 5px; color: #888; font-size: 14px; }
+        input { 
+            width: 100%; padding: 12px; background: #000; border: 1px solid #444;
+            color: var(--accent); border-radius: 8px; box-sizing: border-box; font-size: 16px;
         }
 
-        .btn { padding: 10px 18px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-add { background: var(--accent); color: #000; }
-        .btn-clear { background: #334155; color: var(--text); align-self: flex-end; font-size: 11px; }
-
-        /* Cuadrícula de 2 Columnas */
-        .video-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            padding: 10px;
+        /* Cuadrícula de 2 Columnas Estricta */
+        .grid { 
+            display: grid; grid-template-columns: repeat(2, 1fr); 
+            gap: 15px; max-width: 1200px; margin: 0 auto;
         }
 
-        .video-wrapper {
-            position: relative;
-            background: #000;
-            aspect-ratio: 16 / 9;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #2d3748;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .card { 
+            background: var(--card); border-radius: 12px; overflow: hidden; 
+            border: 1px solid #222; position: relative;
+        }
+        .card video { width: 100%; aspect-ratio: 16/9; background: #000; display: block; cursor: pointer; }
+
+        .card-info { 
+            padding: 10px; display: flex; justify-content: space-between; align-items: center;
+            background: #181818; border-top: 1px solid #222;
+        }
+        .btn-action { padding: 6px 10px; border-radius: 4px; border: none; font-size: 11px; color: #fff; cursor: pointer; }
+        .btn-edit { background: #2979ff; margin-right: 5px; }
+        .btn-del { background: #ff5252; }
+
+        /* Modal Maestro */
+        .modal { 
+            display: none; position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.95); z-index: 2000; flex-direction: column; justify-content: center;
+        }
+        .modal-content {
+            width: 100%; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center;
+        }
+        #masterVideo { width: 100%; max-height: 80vh; }
+        .modal-controls { padding: 20px; text-align: center; }
+        .btn-sync { 
+            background: #f59e0b; color: #000; padding: 15px 30px; 
+            border-radius: 10px; font-weight: 800; border: none; width: 100%; max-width: 300px;
         }
 
-        .card-actions { position: absolute; top: 5px; right: 5px; display: flex; gap: 4px; z-index: 30; }
-        .mini-btn { padding: 4px 8px; border-radius: 4px; border: none; font-size: 10px; color: white; cursor: pointer; opacity: 0.7; }
-        .mini-btn:hover { opacity: 1; }
-        .eb { background: #64748b; }
-        .db { background: var(--danger); }
-
-        .click-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; cursor: pointer; }
-
-        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
-        
-        /* Forzar proporción original en FullScreen nativo */
-        video:fullscreen { object-fit: contain !important; }
-        video:-webkit-full-screen { object-fit: contain !important; }
-
-        /* MODO ENFOQUE (Primer Plano) */
-        .video-wrapper.focused {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 2000; background: none; /* El fondo lo da el backdrop */
-            border: none; border-radius: 0;
-            pointer-events: none; /* Deja pasar clics al backdrop si no es sobre el video */
-        }
-
-        .video-wrapper.focused video { 
-            width: auto; height: auto;
-            max-width: 100%; max-height: 100%;
-            object-fit: contain !important; 
-            pointer-events: auto; /* Habilita controles */
-        }
-
-        .video-wrapper.focused .click-layer,
-        .video-wrapper.focused .card-actions { display: none; }
-
-        /* Fondo oscuro que detecta la pérdida de foco */
-        #backdrop {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); 
-            z-index: 1500;
-            cursor: zoom-out;
+        /* Ajuste para pantallas muy pequeñas */
+        @media (max-width: 400px) {
+            .grid { gap: 8px; }
+            .header h1 { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="controls-wrapper">
-        <div class="input-container">
-            <input type="text" id="urlInput" placeholder="URL m3u8...">
-            <button class="btn btn-add" onclick="handleAdd()">AÑADIR</button>
-        </div>
-        <button class="btn btn-clear" onclick="clearAll()">BORRAR TODO</button>
+<div class="header">
+    <h1>Monitor Center</h1>
+    <button class="btn-toggle" onclick="togglePanel()">+ Configurar</button>
+</div>
+
+<div class="config-panel" id="configPanel">
+    <input type="hidden" id="editIndex" value="-1">
+    <div class="input-group">
+        <label>Link Video (.m3u8)</label>
+        <input type="text" id="vUrl" placeholder="https://...">
     </div>
-</header>
+    <div class="input-group">
+        <label>Link Audio (.m3u8) (Opcional)</label>
+        <input type="text" id="aUrl" placeholder="https://...">
+    </div>
+    <button class="btn-toggle" style="width:100%" onclick="guardarStream()">Guardar Canal</button>
+</div>
 
-<div id="backdrop" onclick="exitFocus()"></div>
+<div class="grid" id="mainGrid"></div>
 
-<main class="video-grid" id="mainGrid"></main>
+<div class="modal" id="masterModal" onclick="evaluarCierreModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <video id="masterVideo" controls playsinline></video>
+        <audio id="masterAudio"></audio>
+        <div class="modal-controls">
+            <button class="btn-sync" id="btnSync" onclick="forzarSincro()">⚡ RE-SINCRONIZAR AUDIO</button>
+        </div>
+    </div>
+</div>
 
 <script>
+    let streams = JSON.parse(localStorage.getItem('my_streams')) || [];
     const grid = document.getElementById('mainGrid');
-    const backdrop = document.getElementById('backdrop');
-    let currentFocus = null;
-    let savedUrls = JSON.parse(localStorage.getItem('m3u8_v7')) || [];
+    const panel = document.getElementById('configPanel');
+    const mVideo = document.getElementById('masterVideo');
+    const mAudio = document.getElementById('masterAudio');
+    const modal = document.getElementById('masterModal');
+    const btnSync = document.getElementById('btnSync');
+    let hlsV, hlsA;
 
-    window.onload = () => savedUrls.forEach(url => renderStream(url));
+    // Al cargar la página, dibujamos lo guardado
+    window.onload = renderGrid;
 
-    function handleAdd() {
-        const url = document.getElementById('urlInput').value.trim();
-        if (!url || savedUrls.includes(url)) return;
-        savedUrls.push(url);
-        updateStorage();
-        renderStream(url);
-        document.getElementById('urlInput').value = '';
+    function togglePanel() {
+        panel.classList.toggle('active');
+        if(!panel.classList.contains('active')) resetForm();
     }
 
-    function renderStream(url) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'video-wrapper';
-        wrapper.innerHTML = `
-            <div class="card-actions">
-                <button class="mini-btn eb" onclick="editStream('${url}', this.parentElement.parentElement)">Editar</button>
-                <button class="mini-btn db" onclick="removeStream('${url}', this.parentElement.parentElement)">X</button>
-            </div>
-            <div class="click-layer" onclick="enterFocus(this.parentElement)"></div>
-            <video muted autoplay playsinline></video>
-        `;
-        const video = wrapper.querySelector('video');
-        grid.appendChild(wrapper);
-        loadHls(video, url);
-    }
+    function guardarStream() {
+        const vUrl = document.getElementById('vUrl').value.trim();
+        const aUrl = document.getElementById('aUrl').value.trim();
+        const editIndex = parseInt(document.getElementById('editIndex').value);
 
-    function loadHls(video, url) {
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(url);
-            hls.attachMedia(video);
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = url;
+        if(!vUrl) return alert("Falta el enlace de Video");
+
+        if(editIndex === -1) {
+            streams.push({ vUrl, aUrl });
+        } else {
+            streams[editIndex] = { vUrl, aUrl };
         }
-    }
-
-    function enterFocus(wrapper) {
-        currentFocus = wrapper;
-        const video = wrapper.querySelector('video');
-        wrapper.classList.add('focused');
-        backdrop.style.display = 'block';
-        video.muted = false;
-        video.controls = true;
-        video.play();
-    }
-
-    function exitFocus() {
-        if (!currentFocus) return;
-        const video = currentFocus.querySelector('video');
         
-        // Salir de FullScreen si el usuario lo activó por botones nativos
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
+        localStorage.setItem('my_streams', JSON.stringify(streams));
+        togglePanel();
+        renderGrid();
+    }
+
+    function renderGrid() {
+        grid.innerHTML = '';
+        streams.forEach((s, index) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <video muted playsinline id="v-${index}"></video>
+                <div class="card-info">
+                    <span style="font-size:11px; font-weight:bold; color:#00e676">CH ${index + 1}</span>
+                    <div>
+                        <button class="btn-action btn-edit" onclick="prepararEdicion(${index})">EDIT</button>
+                        <button class="btn-action btn-del" onclick="eliminarStream(${index})">BORRAR</button>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+            
+            const vEl = document.getElementById(`v-${index}`);
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(s.vUrl);
+                hls.attachMedia(vEl);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => vEl.play());
+            }
+            vEl.onclick = () => abrirMaestro(s.vUrl, s.aUrl);
+        });
+    }
+
+    function eliminarStream(index) {
+        if(confirm("¿Eliminar este canal permanentemente?")) {
+            streams.splice(index, 1);
+            localStorage.setItem('my_streams', JSON.stringify(streams));
+            renderGrid();
+        }
+    }
+
+    function prepararEdicion(index) {
+        document.getElementById('vUrl').value = streams[index].vUrl;
+        document.getElementById('aUrl').value = streams[index].aUrl || '';
+        document.getElementById('editIndex').value = index;
+        if(!panel.classList.contains('active')) togglePanel();
+    }
+
+    function resetForm() {
+        document.getElementById('vUrl').value = '';
+        document.getElementById('aUrl').value = '';
+        document.getElementById('editIndex').value = '-1';
+    }
+
+    function abrirMaestro(v, a) {
+        modal.style.display = 'flex';
+        if(hlsV) hlsV.destroy();
+        if(hlsA) hlsA.destroy();
+
+        hlsV = new Hls(); 
+        hlsV.loadSource(v); 
+        hlsV.attachMedia(mVideo);
+
+        if (a && a.trim() !== "") {
+            btnSync.style.display = 'inline-block';
+            hlsA = new Hls(); 
+            hlsA.loadSource(a); 
+            hlsA.attachMedia(mAudio);
+            hlsV.on(Hls.Events.MANIFEST_PARSED, () => { mVideo.play(); mAudio.play(); });
+        } else {
+            btnSync.style.display = 'none';
+            mAudio.src = ""; 
+            hlsV.on(Hls.Events.MANIFEST_PARSED, () => { mVideo.play(); });
         }
 
-        currentFocus.classList.remove('focused');
-        video.muted = true;
-        video.controls = false;
-        backdrop.style.display = 'none';
-        currentFocus = null;
+        mVideo.onplay = () => { if(hlsA) mAudio.play(); };
+        mVideo.onpause = () => { if(hlsA) mAudio.pause(); };
+        mVideo.onseeking = () => { if(hlsA) mAudio.currentTime = mVideo.currentTime; };
     }
 
-    function removeStream(url, el) {
-        savedUrls = savedUrls.filter(u => u !== url);
-        updateStorage();
-        el.remove();
+    function cerrarMaestro() {
+        modal.style.display = 'none';
+        mVideo.pause(); 
+        if(hlsA) mAudio.pause();
+        if(hlsV) hlsV.destroy(); 
+        if(hlsA) hlsA.destroy();
+        hlsA = null;
     }
 
-    function editStream(oldUrl, el) {
-        const n = prompt("Nueva URL:", oldUrl);
-        if (n && n !== oldUrl) {
-            savedUrls[savedUrls.indexOf(oldUrl)] = n;
-            updateStorage();
-            location.reload();
+    // Cierra el reproductor únicamente si haces click en el fondo desenfocado (.modal)
+    function evaluarCierreModal(event) {
+        if (event.target === modal) {
+            cerrarMaestro();
         }
     }
 
-    function clearAll() {
-        if(confirm("¿Eliminar todos los videos guardados?")) {
-            localStorage.removeItem('m3u8_v7');
-            location.reload();
+    function forzarSincro() {
+        if (hlsA) {
+            mAudio.currentTime = mVideo.currentTime;
+            mAudio.play();
         }
     }
 
-    function updateStorage() {
-        localStorage.setItem('m3u8_v7', JSON.stringify(savedUrls));
-    }
-
-    document.addEventListener('keydown', (e) => { if(e.key === "Escape") exitFocus(); });
+    setInterval(() => {
+        if(modal.style.display === 'flex' && !mVideo.paused && hlsA) {
+            if(Math.abs(mVideo.currentTime - mAudio.currentTime) > 0.4) {
+                mAudio.currentTime = mVideo.currentTime;
+            }
+        }
+    }, 800);
 </script>
-
 </body>
 </html>
