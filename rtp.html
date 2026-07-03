@@ -86,7 +86,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com/rutas_v3.json";
-        const DISTANCIA_MAXIMA_METROS = 50; // CAMBIO 1: Ajusta la tolerancia aquí (ej. 50 metros)
+        const DISTANCIA_MAXIMA_METROS = 70; // CAMBIO 1: Ajusta la tolerancia aquí (ej. 50 metros)
         const map = L.map('map', {zoomControl: false}).setView([19.285, -99.010], 12);
         L.control.zoom({position: 'topleft'}).addTo(map);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
