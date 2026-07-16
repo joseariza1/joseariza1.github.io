@@ -3,37 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PWA Chat en Tiempo Real</title>
-    <!-- Enlace vacío que llenaremos dinámicamente con JavaScript -->
+    <title>PWA Chat - Redes Estrictas</title>
+    <!-- Enlace para el manifest de la PWA -->
     <link id="manifest-link" rel="manifest" href="">
-    <!-- Librería MQTT para la comunicación en tiempo real -->
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
-        /* Estilos básicos de la aplicación */
         body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f0f2f5; }
-        header { background: #0056b3; color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        header { background: #10b981; color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2, h3 { margin: 0; }
         #setup, #chat { padding: 1rem; flex: 1; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         #chat { display: none; }
         #messages { flex: 1; overflow-y: auto; background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         .msg { margin-bottom: 0.5rem; padding: 0.6rem 1rem; border-radius: 18px; background: #e9ecef; width: fit-content; max-width: 80%; word-break: break-word; }
-        .msg.me { background: #0056b3; color: white; align-self: flex-end; }
+        .msg.me { background: #10b981; color: white; align-self: flex-end; }
         .input-group { display: flex; gap: 0.5rem; }
         input { flex: 1; padding: 0.8rem; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 16px; }
-        button { padding: 0.8rem 1.5rem; background: #0056b3; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px; }
-        button:hover { background: #004494; }
+        button { padding: 0.8rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background: #059669; }
         #status { color: #555; text-align: center; margin-top: 1rem; font-weight: bold; }
     </style>
 </head>
 <body>
     <header>
-        <h2>Chat PWA</h2>
+        <h2>Chat Anti-Bloqueos</h2>
     </header>
 
-    <!-- Pantalla de conexión -->
     <div id="setup">
         <h3 style="margin-bottom: 1rem;">Conectar a una sala</h3>
-        <p>Ingresa un código compartido para conectar varios dispositivos (ej. 7788).</p>
+        <p>Este método funciona incluso en redes de oficina o escuela muy estrictas.</p>
         <div class="input-group">
             <input type="text" id="roomId" placeholder="Código de la sala" value="7788">
             <button onclick="joinRoom()">Entrar</button>
@@ -41,7 +37,6 @@
         <p id="status"></p>
     </div>
 
-    <!-- Pantalla de chat -->
     <div id="chat">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3>Sala: <span id="currentRoom"></span></h3>
@@ -55,17 +50,16 @@
     </div>
 
     <script>
-        // 1. INYECTAR MANIFEST (Hace que el navegador la reconozca como app instalable)
+        // 1. PWA: INYECTAR MANIFEST
         const manifest = {
-            name: "PWA Chat Tiempo Real",
-            short_name: "ChatApp",
+            name: "Chat Anti-Bloqueos",
+            short_name: "ChatSeguro",
             display: "standalone",
             start_url: ".",
             background_color: "#f0f2f5",
-            theme_color: "#0056b3",
+            theme_color: "#10b981",
             icons: [{
-                // Icono generado en base64 SVG para no depender de imágenes externas
-                src: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230056b3'/%3E%3Cpath d='M30 50 a20 20 0 0 1 40 0' stroke='white' stroke-width='8' fill='none'/%3E%3C/svg%3E",
+                src: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%2310b981'/%3E%3Cpath d='M30 50 a20 20 0 0 1 40 0' stroke='white' stroke-width='8' fill='none'/%3E%3C/svg%3E",
                 sizes: "192x192",
                 type: "image/svg+xml",
                 purpose: "any maskable"
@@ -74,7 +68,7 @@
         const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
         document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
 
-        // 2. INYECTAR SERVICE WORKER (Requisito para PWA y funcionamiento offline básico)
+        // 2. PWA: INYECTAR SERVICE WORKER
         const swCode = `
             self.addEventListener('install', e => self.skipWaiting());
             self.addEventListener('activate', e => self.clients.claim());
@@ -84,69 +78,81 @@
         `;
         const swBlob = new Blob([swCode], { type: 'application/javascript' });
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register(URL.createObjectURL(swBlob))
-                .catch(err => console.error('Error en Service Worker:', err));
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(console.error);
         }
 
-        // 3. LÓGICA DE COMUNICACIÓN EN TIEMPO REAL (MQTT)
-        let client;
-        let roomTopic;
-        // Creamos un ID aleatorio para identificar a este dispositivo y no duplicar sus propios mensajes
-        const myId = Math.random().toString(36).substring(2, 10); 
+        // 3. COMUNICACIÓN HTTP/SSE (ntfy.sh)
+        let eventSource;
+        let currentTopic = '';
+        const myId = Math.random().toString(36).substring(2, 10); // ID único del dispositivo
 
         function joinRoom() {
             const roomInput = document.getElementById('roomId').value.trim();
             if (!roomInput) return;
             
-            document.getElementById('status').innerText = "Conectando al servidor...";
+            // Creamos un nombre de sala único para que no choque con otras apps de ntfy
+            currentTopic = 'pwa_chat_secreto_' + roomInput;
             
-            // Conexión al broker público de HiveMQ vía WebSockets cifrados (Menos propenso a bloqueos de red)
-            client = mqtt.connect('wss://broker.hivemq.com:8443/mqtt');
+            document.getElementById('status').innerText = "Conectando...";
+
+            // Si ya había una conexión, la cerramos
+            if(eventSource) eventSource.close();
+
+            // Usamos Server-Sent Events nativo del navegador (no bloqueado por firewalls)
+            eventSource = new EventSource(`https://ntfy.sh/${currentTopic}/sse`);
             
-            client.on('connect', () => {
-                // Creamos un canal único basado en el código ingresado
-                roomTopic = 'mi-pwa-chat-unica/' + roomInput;
-                client.subscribe(roomTopic);
-                
-                // Cambiamos la interfaz al chat
+            eventSource.onopen = () => {
                 document.getElementById('setup').style.display = 'none';
                 document.getElementById('chat').style.display = 'flex';
                 document.getElementById('currentRoom').innerText = roomInput;
                 document.getElementById('messages').innerHTML = ''; 
                 document.getElementById('status').innerText = "";
-            });
+            };
 
-            client.on('message', (topic, message) => {
+            // Escuchar mensajes entrantes
+            eventSource.onmessage = (e) => {
                 try {
-                    const data = JSON.parse(message.toString());
-                    // Si el mensaje viene de otro dispositivo, lo mostramos
-                    if (data.sender !== myId) {
-                        addMessageToUI(data.text, false);
+                    const data = JSON.parse(e.data);
+                    // Validamos que sea un evento de mensaje
+                    if (data.event === 'message') {
+                        const payload = JSON.parse(data.message);
+                        // Solo mostramos si el mensaje viene de OTRO dispositivo
+                        if (payload.sender !== myId) {
+                            addMessageToUI(payload.text, false);
+                        }
                     }
-                } catch (e) { 
-                    console.error("Mensaje corrupto recibido"); 
+                } catch (err) { 
+                    // Si llega un formato incorrecto, lo ignoramos
                 }
-            });
+            };
 
-            client.on('error', (err) => {
-                document.getElementById('status').innerText = "Error de red. Asegúrate de tener internet.";
-            });
+            eventSource.onerror = () => {
+                // Puede desconectarse brevemente, SSE intenta reconectar automáticamente
+                console.log("Reconectando...");
+            };
         }
 
-        function sendMessage() {
+        async function sendMessage() {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
-            if (!text || !client) return;
+            if (!text || !currentTopic) return;
 
-            // Empaquetamos el mensaje con nuestro ID de dispositivo
-            const payload = JSON.stringify({ sender: myId, text: text });
-            
-            // Publicamos el mensaje en la sala
-            client.publish(roomTopic, payload);
-            
-            // Lo pintamos en nuestra propia pantalla como "yo"
+            // Mostramos el mensaje localmente de inmediato
             addMessageToUI(text, true);
             input.value = '';
+
+            // Empaquetamos el mensaje
+            const payload = JSON.stringify({ sender: myId, text: text });
+            
+            // Enviamos el mensaje usando una petición HTTP POST normal (100% amigable con redes estrictas)
+            try {
+                await fetch(`https://ntfy.sh/${currentTopic}`, {
+                    method: 'POST',
+                    body: payload
+                });
+            } catch (err) {
+                console.error("Error al enviar", err);
+            }
         }
 
         function addMessageToUI(text, isMe) {
@@ -155,15 +161,13 @@
             div.className = 'msg ' + (isMe ? 'me' : '');
             div.innerText = text;
             container.appendChild(div);
-            container.scrollTop = container.scrollHeight; // Auto-scroll hacia abajo
+            container.scrollTop = container.scrollHeight;
         }
 
         function leaveRoom() {
-            if(client) client.end(); // Desconectar del servidor
-            
+            if(eventSource) eventSource.close(); 
             document.getElementById('setup').style.display = 'flex';
             document.getElementById('chat').style.display = 'none';
-            document.getElementById('status').innerText = "";
         }
     </script>
 </body>
