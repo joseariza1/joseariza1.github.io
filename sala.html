@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PWA Chat en Tiempo Real</title>
+    <!-- Enlace vacío que llenaremos dinámicamente con JavaScript -->
+    <link id="manifest-link" rel="manifest" href="">
+    <!-- Librería MQTT para la comunicación en tiempo real -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        /* Estilos básicos de la aplicación */
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f0f2f5; }
+        header { background: #0056b3; color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2, h3 { margin: 0; }
+        #setup, #chat { padding: 1rem; flex: 1; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        #chat { display: none; }
+        #messages { flex: 1; overflow-y: auto; background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .msg { margin-bottom: 0.5rem; padding: 0.6rem 1rem; border-radius: 18px; background: #e9ecef; width: fit-content; max-width: 80%; word-break: break-word; }
+        .msg.me { background: #0056b3; color: white; align-self: flex-end; }
+        .input-group { display: flex; gap: 0.5rem; }
+        input { flex: 1; padding: 0.8rem; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 16px; }
+        button { padding: 0.8rem 1.5rem; background: #0056b3; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background: #004494; }
+        #status { color: #555; text-align: center; margin-top: 1rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>Chat PWA</h2>
+    </header>
+
+    <!-- Pantalla de conexión -->
+    <div id="setup">
+        <h3 style="margin-bottom: 1rem;">Conectar a una sala</h3>
+        <p>Ingresa un código compartido para conectar varios dispositivos (ej. 7788).</p>
+        <div class="input-group">
+            <input type="text" id="roomId" placeholder="Código de la sala" value="7788">
+            <button onclick="joinRoom()">Entrar</button>
+        </div>
+        <p id="status"></p>
+    </div>
+
+    <!-- Pantalla de chat -->
+    <div id="chat">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>Sala: <span id="currentRoom"></span></h3>
+            <button onclick="leaveRoom()" style="background: #dc3545; padding: 0.4rem 1rem;">Salir</button>
+        </div>
+        <div id="messages"></div>
+        <div class="input-group">
+            <input type="text" id="msgInput" placeholder="Escribe un mensaje..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. INYECTAR MANIFEST (Hace que el navegador la reconozca como app instalable)
+        const manifest = {
+            name: "PWA Chat Tiempo Real",
+            short_name: "ChatApp",
+            display: "standalone",
+            start_url: ".",
+            background_color: "#f0f2f5",
+            theme_color: "#0056b3",
+            icons: [{
+                // Icono generado en base64 SVG para no depender de imágenes externas
+                src: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230056b3'/%3E%3Cpath d='M30 50 a20 20 0 0 1 40 0' stroke='white' stroke-width='8' fill='none'/%3E%3C/svg%3E",
+                sizes: "192x192",
+                type: "image/svg+xml",
+                purpose: "any maskable"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
+
+        // 2. INYECTAR SERVICE WORKER (Requisito para PWA y funcionamiento offline básico)
+        const swCode = `
+            self.addEventListener('install', e => self.skipWaiting());
+            self.addEventListener('activate', e => self.clients.claim());
+            self.addEventListener('fetch', e => {
+                // Pasamos las peticiones normales. 
+                e.respondWith(fetch(e.request).catch(() => new Response('Sin conexión a internet')));
+            });
+        `;
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob))
+                .catch(err => console.error('Error en Service Worker:', err));
+        }
+
+        // 3. LÓGICA DE COMUNICACIÓN EN TIEMPO REAL (MQTT)
+        let client;
+        let roomTopic;
+        // Creamos un ID aleatorio para identificar a este dispositivo y no duplicar sus propios mensajes
+        const myId = Math.random().toString(36).substring(2, 10); 
+
+        function joinRoom() {
+            const roomInput = document.getElementById('roomId').value.trim();
+            if (!roomInput) return;
+            
+            document.getElementById('status').innerText = "Conectando al servidor...";
+            
+            // Conexión al broker público de pruebas de Mosquitto vía WebSockets cifrados
+            client = mqtt.connect('wss://test.mosquitto.org:8081');
+            
+            client.on('connect', () => {
+                // Creamos un canal único basado en el código ingresado
+                roomTopic = 'mi-pwa-chat-unica/' + roomInput;
+                client.subscribe(roomTopic);
+                
+                // Cambiamos la interfaz al chat
+                document.getElementById('setup').style.display = 'none';
+                document.getElementById('chat').style.display = 'flex';
+                document.getElementById('currentRoom').innerText = roomInput;
+                document.getElementById('messages').innerHTML = ''; 
+            });
+
+            client.on('message', (topic, message) => {
+                try {
+                    const data = JSON.parse(message.toString());
+                    // Si el mensaje viene de otro dispositivo, lo mostramos
+                    if (data.sender !== myId) {
+                        addMessageToUI(data.text, false);
+                    }
+                } catch (e) { 
+                    console.error("Mensaje corrupto recibido"); 
+                }
+            });
+
+            client.on('error', (err) => {
+                document.getElementById('status').innerText = "Error de red. Intenta de nuevo.";
+            });
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            if (!text || !client) return;
+
+            // Empaquetamos el mensaje con nuestro ID de dispositivo
+            const payload = JSON.stringify({ sender: myId, text: text });
+            
+            // Publicamos el mensaje en la sala
+            client.publish(roomTopic, payload);
+            
+            // Lo pintamos en nuestra propia pantalla como "yo"
+            addMessageToUI(text, true);
+            input.value = '';
+        }
+
+        function addMessageToUI(text, isMe) {
+            const container = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'msg ' + (isMe ? 'me' : '');
+            div.innerText = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight; // Auto-scroll hacia abajo
+        }
+
+        function leaveRoom() {
+            if(client) client.end(); // Desconectar del servidor
+            
+            document.getElementById('setup').style.display = 'flex';
+            document.getElementById('chat').style.display = 'none';
+            document.getElementById('status').innerText = "";
+        }
+    </script>
+</body>
+</html>
