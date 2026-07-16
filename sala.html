@@ -79,7 +79,6 @@
             self.addEventListener('install', e => self.skipWaiting());
             self.addEventListener('activate', e => self.clients.claim());
             self.addEventListener('fetch', e => {
-                // Pasamos las peticiones normales. 
                 e.respondWith(fetch(e.request).catch(() => new Response('Sin conexión a internet')));
             });
         `;
@@ -101,8 +100,8 @@
             
             document.getElementById('status').innerText = "Conectando al servidor...";
             
-            // Conexión al broker público de pruebas de Mosquitto vía WebSockets cifrados
-            client = mqtt.connect('wss://test.mosquitto.org:8081');
+            // Conexión al broker público de HiveMQ vía WebSockets cifrados (Menos propenso a bloqueos de red)
+            client = mqtt.connect('wss://broker.hivemq.com:8443/mqtt');
             
             client.on('connect', () => {
                 // Creamos un canal único basado en el código ingresado
@@ -114,6 +113,7 @@
                 document.getElementById('chat').style.display = 'flex';
                 document.getElementById('currentRoom').innerText = roomInput;
                 document.getElementById('messages').innerHTML = ''; 
+                document.getElementById('status').innerText = "";
             });
 
             client.on('message', (topic, message) => {
@@ -129,7 +129,7 @@
             });
 
             client.on('error', (err) => {
-                document.getElementById('status').innerText = "Error de red. Intenta de nuevo.";
+                document.getElementById('status').innerText = "Error de red. Asegúrate de tener internet.";
             });
         }
 
