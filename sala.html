@@ -3,63 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PWA Chat - Redes Estrictas</title>
+    <title>Airdrop Universal PWA</title>
     <!-- Enlace para el manifest de la PWA -->
     <link id="manifest-link" rel="manifest" href="">
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #f0f2f5; }
-        header { background: #10b981; color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        header { background: #6366f1; color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2, h3 { margin: 0; }
         #setup, #chat { padding: 1rem; flex: 1; display: flex; flex-direction: column; max-width: 600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         #chat { display: none; }
         #messages { flex: 1; overflow-y: auto; background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-        .msg { margin-bottom: 0.5rem; padding: 0.6rem 1rem; border-radius: 18px; background: #e9ecef; width: fit-content; max-width: 80%; word-break: break-word; }
-        .msg.me { background: #10b981; color: white; align-self: flex-end; }
-        .input-group { display: flex; gap: 0.5rem; }
-        input { flex: 1; padding: 0.8rem; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 16px; }
-        button { padding: 0.8rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px; }
-        button:hover { background: #059669; }
+        
+        .msg { margin-bottom: 0.8rem; padding: 0.8rem 1rem; border-radius: 18px; background: #e9ecef; width: fit-content; max-width: 80%; word-break: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg.me { background: #6366f1; color: white; align-self: flex-end; }
+        .msg.me a { color: #e0e7ff; } /* Enlaces más claros en mensajes propios */
+        
+        .input-group { display: flex; gap: 0.5rem; align-items: center; }
+        input[type="text"] { flex: 1; padding: 0.8rem; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 16px; }
+        button { padding: 0.8rem 1.2rem; background: #6366f1; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 16px; transition: background 0.2s; }
+        button:hover { background: #4f46e5; }
+        
+        /* Botón especial para archivos */
+        .btn-file { background: #9ca3af; padding: 0; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+        .btn-file:hover { background: #6b7280; }
+        
+        .file-preview { display: flex; align-items: center; gap: 0.5rem; }
+        .file-preview img { max-width: 100%; border-radius: 8px; margin-bottom: 0.5rem; }
+        
         #status { color: #555; text-align: center; margin-top: 1rem; font-weight: bold; }
     </style>
 </head>
 <body>
     <header>
-        <h2>Chat Anti-Bloqueos</h2>
+        <h2>Airdrop Universal</h2>
     </header>
 
     <div id="setup">
-        <h3 style="margin-bottom: 1rem;">Conectar a una sala</h3>
-        <p>Este método funciona incluso en redes de oficina o escuela muy estrictas.</p>
+        <h3 style="margin-bottom: 1rem;">Conectar Dispositivos</h3>
+        <p>Usa la misma clave en todos los dispositivos para crear una red de transferencia segura.</p>
         <div class="input-group">
-            <input type="text" id="roomId" placeholder="Código de la sala" value="7788">
-            <button onclick="joinRoom()">Entrar</button>
+            <input type="text" id="roomId" placeholder="Clave de red (ej. oficina77)" value="oficina77">
+            <button onclick="joinRoom()">Conectar</button>
         </div>
         <p id="status"></p>
     </div>
 
     <div id="chat">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3>Sala: <span id="currentRoom"></span></h3>
-            <button onclick="leaveRoom()" style="background: #dc3545; padding: 0.4rem 1rem;">Salir</button>
+            <h3 style="font-size: 1.1rem;">Red: <span id="currentRoom"></span></h3>
+            <button onclick="leaveRoom()" style="background: #ef4444; padding: 0.4rem 1rem;">Desconectar</button>
         </div>
+        
         <div id="messages"></div>
+        
         <div class="input-group">
-            <input type="text" id="msgInput" placeholder="Escribe un mensaje..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <!-- Input oculto para seleccionar archivos -->
+            <input type="file" id="fileInput" style="display: none;" onchange="sendFile(event)">
+            <!-- Botón clip que activa el input oculto -->
+            <button class="btn-file" onclick="document.getElementById('fileInput').click()" title="Enviar archivo">📎</button>
+            
+            <input type="text" id="msgInput" placeholder="Enviar texto o enlace..." onkeypress="if(event.key === 'Enter') sendMessage()">
             <button onclick="sendMessage()">Enviar</button>
         </div>
     </div>
 
     <script>
-        // 1. PWA: INYECTAR MANIFEST
+        // 1. CONFIGURACIÓN DE LA PWA
         const manifest = {
-            name: "Chat Anti-Bloqueos",
-            short_name: "ChatSeguro",
+            name: "Airdrop Universal",
+            short_name: "Airdrop Web",
             display: "standalone",
             start_url: ".",
             background_color: "#f0f2f5",
-            theme_color: "#10b981",
+            theme_color: "#6366f1",
             icons: [{
-                src: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%2310b981'/%3E%3Cpath d='M30 50 a20 20 0 0 1 40 0' stroke='white' stroke-width='8' fill='none'/%3E%3C/svg%3E",
+                src: "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%236366f1'/%3E%3Cpath d='M50 20 L80 50 L60 50 L60 80 L40 80 L40 50 L20 50 Z' fill='white'/%3E%3C/svg%3E",
                 sizes: "192x192",
                 type: "image/svg+xml",
                 purpose: "any maskable"
@@ -68,37 +86,29 @@
         const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
         document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
 
-        // 2. PWA: INYECTAR SERVICE WORKER
         const swCode = `
             self.addEventListener('install', e => self.skipWaiting());
             self.addEventListener('activate', e => self.clients.claim());
-            self.addEventListener('fetch', e => {
-                e.respondWith(fetch(e.request).catch(() => new Response('Sin conexión a internet')));
-            });
+            self.addEventListener('fetch', e => { e.respondWith(fetch(e.request).catch(() => new Response('Sin conexión'))); });
         `;
-        const swBlob = new Blob([swCode], { type: 'application/javascript' });
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(console.error);
+            navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: 'application/javascript' })));
         }
 
-        // 3. COMUNICACIÓN HTTP/SSE (ntfy.sh)
+        // 2. LÓGICA DE TRANSFERENCIA
         let eventSource;
         let currentTopic = '';
-        const myId = Math.random().toString(36).substring(2, 10); // ID único del dispositivo
+        const myId = Math.random().toString(36).substring(2, 15);
 
         function joinRoom() {
             const roomInput = document.getElementById('roomId').value.trim();
             if (!roomInput) return;
             
-            // Creamos un nombre de sala único para que no choque con otras apps de ntfy
-            currentTopic = 'pwa_chat_secreto_' + roomInput;
-            
+            currentTopic = 'airdrop_pwa_' + roomInput;
             document.getElementById('status').innerText = "Conectando...";
 
-            // Si ya había una conexión, la cerramos
             if(eventSource) eventSource.close();
 
-            // Usamos Server-Sent Events nativo del navegador (no bloqueado por firewalls)
             eventSource = new EventSource(`https://ntfy.sh/${currentTopic}/sse`);
             
             eventSource.onopen = () => {
@@ -107,59 +117,107 @@
                 document.getElementById('currentRoom').innerText = roomInput;
                 document.getElementById('messages').innerHTML = ''; 
                 document.getElementById('status').innerText = "";
+                addMessageToUI("✅ Conectado. Todo lo que envíes aparecerá en los demás dispositivos.", true, false, "", true);
             };
 
-            // Escuchar mensajes entrantes
             eventSource.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
-                    // Validamos que sea un evento de mensaje
                     if (data.event === 'message') {
-                        const payload = JSON.parse(data.message);
-                        // Solo mostramos si el mensaje viene de OTRO dispositivo
-                        if (payload.sender !== myId) {
-                            addMessageToUI(payload.text, false);
+                        // SI ES UN ARCHIVO:
+                        if (data.attachment) {
+                            const senderId = data.title; // Extraemos el ID del remitente de los headers
+                            if (senderId !== myId) {
+                                addMessageToUI(data.attachment.name, false, true, data.attachment.url);
+                            }
+                        } 
+                        // SI ES TEXTO:
+                        else {
+                            const payload = JSON.parse(data.message);
+                            if (payload.sender !== myId && payload.type === 'text') {
+                                addMessageToUI(payload.text, false);
+                            }
                         }
                     }
-                } catch (err) { 
-                    // Si llega un formato incorrecto, lo ignoramos
-                }
-            };
-
-            eventSource.onerror = () => {
-                // Puede desconectarse brevemente, SSE intenta reconectar automáticamente
-                console.log("Reconectando...");
+                } catch (err) {}
             };
         }
 
+        // Enviar Texto
         async function sendMessage() {
             const input = document.getElementById('msgInput');
             const text = input.value.trim();
             if (!text || !currentTopic) return;
 
-            // Mostramos el mensaje localmente de inmediato
             addMessageToUI(text, true);
             input.value = '';
 
-            // Empaquetamos el mensaje
-            const payload = JSON.stringify({ sender: myId, text: text });
-            
-            // Enviamos el mensaje usando una petición HTTP POST normal (100% amigable con redes estrictas)
+            const payload = JSON.stringify({ sender: myId, type: 'text', text: text });
+            fetch(`https://ntfy.sh/${currentTopic}`, { method: 'POST', body: payload });
+        }
+
+        // Enviar Archivo
+        async function sendFile(event) {
+            const file = event.target.files[0];
+            if (!file || !currentTopic) return;
+
+            // Límite de seguridad para evitar cuelgues (15MB)
+            if (file.size > 15 * 1024 * 1024) {
+                alert("Para asegurar la fluidez, el límite por archivo es de 15MB.");
+                return;
+            }
+
+            // Mostrar el archivo en mi propia pantalla de inmediato
+            const fileUrlLocal = URL.createObjectURL(file);
+            addMessageToUI(file.name, true, true, fileUrlLocal);
+            event.target.value = ''; // Limpiar el input
+
             try {
+                // Quitamos espacios y caracteres raros del nombre para que el servidor no falle
+                const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                
                 await fetch(`https://ntfy.sh/${currentTopic}`, {
-                    method: 'POST',
-                    body: payload
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Filename': safeName,
+                        'Title': myId // Enviamos nuestro ID para que los demás sepan quién es
+                    }
                 });
             } catch (err) {
-                console.error("Error al enviar", err);
+                addMessageToUI("❌ Error al subir el archivo.", true, false, "", true);
             }
         }
 
-        function addMessageToUI(text, isMe) {
+        // Dibujar el mensaje o archivo en la pantalla
+        function addMessageToUI(content, isMe, isFile = false, fileUrl = "", isSystem = false) {
             const container = document.getElementById('messages');
             const div = document.createElement('div');
-            div.className = 'msg ' + (isMe ? 'me' : '');
-            div.innerText = text;
+            
+            div.className = 'msg ' + (isMe && !isSystem ? 'me' : '');
+            if (isSystem) div.style.background = "#fff3cd";
+
+            if (isFile) {
+                // Si es una imagen, mostramos una vista previa
+                if (content.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+                    div.innerHTML = `
+                        <img src="${fileUrl}" alt="Vista previa" style="max-width: 100%; border-radius: 8px; margin-bottom: 5px;"><br>
+                        <a href="${fileUrl}" target="_blank" download style="text-decoration: underline; font-weight: bold; font-size: 14px;">💾 Guardar ${content}</a>
+                    `;
+                } 
+                // Si es un documento, mostramos un botón/enlace de descarga
+                else {
+                    div.innerHTML = `
+                        <div class="file-preview">
+                            <span style="font-size: 24px;">📄</span>
+                            <a href="${fileUrl}" target="_blank" download style="text-decoration: underline; font-weight: bold;">Descargar ${content}</a>
+                        </div>
+                    `;
+                }
+            } else {
+                div.innerText = content;
+            }
+
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
         }
