@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NanoWallet V34.5 - Ordenar Cuentas</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Agregamos Chart.js para la gráfica de barras -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
@@ -56,6 +58,11 @@
             <div class="bg-blue-600/10 p-5 rounded-2xl border border-blue-500/20 flex justify-between items-center">
                 <div><p class="text-[8px] text-blue-400 font-bold uppercase">Total Real a Pagar</p><p id="resumenTotalMes" class="text-2xl font-black tracking-tighter">$0.00</p></div>
                 <div class="text-right"><p class="text-[9px] font-black text-blue-500 uppercase italic tracking-widest">Exigible</p></div>
+            </div>
+            
+            <!-- Contenedor para la Gráfica de Barras -->
+            <div class="h-32 mt-4 pt-2 border-t border-slate-800/50">
+                <canvas id="graficaMeses"></canvas>
             </div>
         </div>
 
@@ -213,6 +220,7 @@
     <script>
         let db = JSON.parse(localStorage.getItem('nanowallet_v34_0')) || { cuentas: [], movimientos: [], deudas: [] };
         let modoActual = 'Gasto';
+        let chartObligaciones = null; // Variable global para la gráfica
 
         function guardarLocal() { localStorage.setItem('nanowallet_v34_0', JSON.stringify(db)); render(); }
         function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -225,16 +233,14 @@
             document.getElementById('tabDebts').classList.toggle('active', v === 'debts');
         }
 
-        // NUEVA FUNCIÓN PARA MOVER CUENTAS DE POSICIÓN lateralmente
         function moverCuenta(id, direccion, evento) {
-            evento.stopPropagation(); // Evita que se abra el modal de edición al presionar la flecha
+            evento.stopPropagation(); 
             const index = db.cuentas.findIndex(c => c.id == id);
             if (index === -1) return;
 
             let nuevoIndex = index + direccion;
             if (nuevoIndex < 0 || nuevoIndex >= db.cuentas.length) return;
 
-            // Intercambiar las posiciones en el arreglo
             const temp = db.cuentas[index];
             db.cuentas[index] = db.cuentas[nuevoIndex];
             db.cuentas[nuevoIndex] = temp;
@@ -578,6 +584,110 @@
             return new Date(anioDePago, mesDePago, diaLimite, 23, 59, 59, 999).getTime();
         }
 
+        // Nueva función para obtener la proyección de pagos a varios meses
+        function proyectarGastos(mesesHaciaAdelante) {
+            let etiquetas = [];
+            let totales = [];
+            const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+            for (let mAdd = 0; mAdd < mesesHaciaAdelante; mAdd++) {
+                let hoy = new Date();
+                let mesConsultado = hoy.getMonth() + mAdd;
+                let anioConsultado = hoy.getFullYear();
+                let baseCalendar = new Date(anioConsultado, mesConsultado, 1);
+                
+                let timestampInicioMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth(), 1, 0, 0, 0, 0).getTime();
+                let timestampFinMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+                let tMSI = 0, tCorrientes = 0;
+                
+                db.deudas.forEach(d => {
+                    if(d.msi && d.msi.restantes > mAdd) tMSI += (d.monto / d.msi.restantes);
+                    else if(!d.msi && mAdd === 0) tCorrientes += d.monto;
+                });
+
+                db.cuentas.filter(c => c.tipo === 'TDC').forEach(tdc => {
+                    let dc = tdc.diaCorte || 15;
+                    let dl = tdc.diaLimite || 5;
+
+                    db.movimientos.filter(m => m.oId == tdc.id && m.t === 'Gasto' && !m.msi).forEach(m => {
+                        let tMov = m.date || m.id;
+                        let tLimitePago = calcularFechaLimiteDeGasto(tMov, dc, dl);
+                        if (tLimitePago >= timestampInicioMes && tLimitePago <= timestampFinMes) {
+                            tCorrientes += m.val;
+                        }
+                    });
+
+                    db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0).forEach(m => {
+                        let tMov = m.date || m.id;
+                        const cuota = m.val / m.msi.restantes;
+                        let primeraFechaLimite = calcularFechaLimiteDeGasto(tMov, dc, dl);
+                        
+                        let cuotasPorAsignar = m.msi.restantes;
+                        for(let i = m.msi.total - 1; i >= 0; i--) {
+                            let fLimiteMensualidad = new Date(primeraFechaLimite);
+                            fLimiteMensualidad.setMonth(fLimiteMensualidad.getMonth() + i);
+                            let tLimiteMensualidad = fLimiteMensualidad.getTime();
+
+                            if (tLimiteMensualidad >= timestampInicioMes && tLimiteMensualidad <= timestampFinMes) {
+                                if (cuotasPorAsignar > 0) {
+                                    tMSI += cuota;
+                                }
+                            }
+                            
+                            if (tLimiteMensualidad >= timestampInicioMes) {
+                                cuotasPorAsignar--;
+                            }
+                        }
+                    });
+                });
+                
+                totales.push(tMSI + tCorrientes);
+                etiquetas.push(mAdd === 0 ? 'Este Mes' : nombresMeses[baseCalendar.getMonth()]);
+            }
+            return { etiquetas, totales };
+        }
+
+        // Función para renderizar la gráfica
+        function actualizarGrafica() {
+            const ctx = document.getElementById('graficaMeses').getContext('2d');
+            const proyeccion = proyectarGastos(5); // Proyectaremos 5 meses (actual + 4)
+
+            if (chartObligaciones) {
+                chartObligaciones.data.labels = proyeccion.etiquetas;
+                chartObligaciones.data.datasets[0].data = proyeccion.totales;
+                chartObligaciones.update();
+            } else {
+                chartObligaciones = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: proyeccion.etiquetas,
+                        datasets: [{
+                            label: 'A pagar ($)',
+                            data: proyeccion.totales,
+                            backgroundColor: '#3b82f6', // blue-500
+                            hoverBackgroundColor: '#60a5fa',
+                            borderRadius: 4,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { display: false },
+                            x: {
+                                grid: { display: false, drawBorder: false },
+                                ticks: { color: '#64748b', font: { family: 'Plus Jakarta Sans', size: 10, weight: 'bold' } }
+                            }
+                        },
+                        animation: { duration: 500 }
+                    }
+                });
+            }
+        }
+
         function render() {
             const mesesAdd = parseInt(document.getElementById('selectorMesProg').value);
             
@@ -639,7 +749,6 @@
             document.getElementById('resumenCorrientes').innerText = `$${totalCorrientes.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             document.getElementById('resumenTotalMes').innerText = `$${(totalMSI + totalCorrientes).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
 
-            // CONTROLADORES DE REORDENAMIENTO LATERAL VISUALES EN LA RENDICIÓN
             document.getElementById('listaCuentas').innerHTML = db.cuentas.map(c => `
                 <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[180px] p-5 rounded-[2rem] border border-slate-800 bg-slate-900 active:scale-95 transition-transform flex flex-col justify-between">
                     <div>
@@ -703,6 +812,9 @@
 
             document.getElementById('pagoProximoMes').innerText = `$${totalMSI.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             document.getElementById('deudaTotalLabel').innerText = `$${(db.deudas.reduce((s,d)=>s+d.monto,0) + db.cuentas.filter(c=>c.tipo==='TDC').reduce((s,c)=>s+c.saldo,0)).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+            
+            // Refrescar la gráfica al final del render
+            actualizarGrafica();
         }
         render();
     </script>
