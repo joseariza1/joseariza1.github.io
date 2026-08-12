@@ -26,7 +26,6 @@
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-        /* --- NAVBAR --- */
         .navbar-roles {
             background-color: var(--primary-dark); color: white; padding: 10px 16px;
             display: flex; justify-content: space-between; align-items: center;
@@ -43,14 +42,12 @@
         }
         .tab-btn.active { background-color: white; color: var(--primary-dark); }
 
-        /* --- CONTENEDOR PRINCIPAL --- */
         .app-container { 
             display: flex; flex-grow: 1; 
             height: calc(100vh - 52px); height: calc(100dvh - 52px); 
             position: relative; overflow: hidden; flex-direction: row; 
         }
 
-        /* --- PANEL LATERAL --- */
         .panel-lateral {
             width: 400px; background: var(--surface); box-shadow: 3px 0 15px rgba(0,0,0,0.1);
             display: none; flex-direction: column; z-index: 1000; overflow-y: auto;
@@ -76,7 +73,6 @@
 
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* --- BOTONES --- */
         .btn { 
             width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; 
             cursor: pointer; color: white; margin-top: 4px; text-align: center; display: block; 
@@ -99,7 +95,6 @@
         .btn-toggle-dibujo.activo { background-color: var(--primary); color: white; border-color: var(--primary); }
         .btn-toggle-dibujo.activo-blue { background-color: var(--accent-blue); color: white; border-color: var(--accent-blue); }
         
-        /* Botón exclusivo Tráfico Alerta */
         .btn-alerta-trafico {
             background-color: #ffebee; color: #c62828; border: 2px solid #ef9a9a;
             padding: 10px; font-weight: bold; border-radius: 6px; font-size: 0.8rem; width: 100%;
@@ -112,7 +107,6 @@
 
         .scroll-interno { max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 4px; background: var(--bg-light); }
 
-        /* --- TARJETAS --- */
         .item-ruta-lista, .item-bus-activo {
             padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; 
             background: #ffffff; font-size: 0.8rem; transition: all 0.2s;
@@ -123,7 +117,6 @@
         .item-ruta-lista.seleccionada { border-color: var(--primary); background-color: #e8f5e9; font-weight: 500; }
         .item-bus-activo.enfocado { border-color: var(--accent-orange); background-color: #fffde7; }
 
-        /* --- PASAJERO FLOTANTE --- */
         .panel-user-flotante {
             position: absolute; bottom: 85px; right: 20px; width: 340px; 
             max-height: 60vh; background: var(--surface); z-index: 1050;
@@ -148,7 +141,6 @@
             font-weight: bold; text-align: center;
         }
 
-        /* --- ENTORNO MAPA --- */
         .mapa-contenedor { flex-grow: 1; position: relative; height: 100%; width: 100%; }
         #map { width: 100%; height: 100%; }
         
@@ -180,7 +172,6 @@
         }
         .tramo-trafico-pesado { animation: parpadeoTrafico 1.5s infinite; stroke-dasharray: 6, 6; }
 
-        /* --- MOBILE COCHERA --- */
         @media (max-width: 768px) {
             .app-container { flex-direction: column-reverse; }
             .panel-lateral { 
@@ -216,7 +207,6 @@
 
     <div class="app-container">
         
-        <!-- ENTORNO MONITORISTA -->
         <div class="panel-lateral active" id="panel-admin">
             <div class="seccion-header">
                 <h3>🛠️ Consola de Infraestructura</h3>
@@ -251,7 +241,6 @@
                     <button class="btn btn-toggle-dibujo" id="btn-modo-paradas" onclick="cambiarModoHerramienta('agregar_paradas')" style="width:100%; margin-top:8px;">🚏 Agregar Estación / Parada</button>
                 </div>
 
-                <!-- SECCIÓN DE TRÁFICO INDEPENDIENTE CON SEMÁFORO DE ADVERTENCIA -->
                 <div style="border: 1px solid #ef9a9a; padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #fff5f5;">
                     <label style="color: #c62828;">Tránsito y Alertas de Vialidad:</label>
                     <button class="btn-alerta-trafico" id="btn-modulo-trafico" onclick="conmutarModoTraficoExclusivo()">🛑 Reportar Tráfico Incidente</button>
@@ -276,7 +265,6 @@
             </div>
         </div>
 
-        <!-- PANEL PASAJERO FLOTANTE -->
         <button class="btn-trigger-usuario" id="btn-menu-pasajero-abrir" onclick="conmutarMenuUsuario(true)">⚙️ Ver Rutas y Viajar</button>
 
         <div class="panel-user-flotante" id="panel-user-contenedor">
@@ -312,7 +300,6 @@
             </div>
         </div>
 
-        <!-- MAPA -->
         <div class="mapa-contenedor">
             <div id="map"></div>
             <div class="status-float">
@@ -329,7 +316,6 @@
 
         const map = L.map('map', {zoomControl: false}).setView([19.285, -99.010], 13);
         L.control.zoom({position: 'topleft'}).addTo(map);
-        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
         let datasetRutas = {}; 
@@ -349,8 +335,8 @@
 
         let idWatcherGpsPasajero = null;
         let busAsignadoAlPasajeroId = null;
+        let intentosFueraRango = 0;
 
-        // --- SINCRO ---
         async function descargarDatosServidor() {
             try {
                 const r = await fetch(FIREBASE_LINK);
@@ -403,12 +389,9 @@
 
         function cambiarModoHerramienta(modo) {
             desactivarTraficoModo(); 
+            if (tipoHerramientaActiva === modo) tipoHerramientaActiva = null;
+            else tipoHerramientaActiva = modo;
             
-            if (tipoHerramientaActiva === modo) {
-                tipoHerramientaActiva = null;
-            } else {
-                tipoHerramientaActiva = modo;
-            }
             document.getElementById('btn-modo-ida').classList.toggle('activo', tipoHerramientaActiva === 'ruta_ida');
             document.getElementById('btn-modo-regreso').classList.toggle('activo-blue', tipoHerramientaActiva === 'ruta_regreso');
             document.getElementById('btn-modo-paradas').classList.toggle('activo', tipoHerramientaActiva === 'agregar_paradas');
@@ -434,7 +417,6 @@
             document.getElementById('btn-modulo-trafico').innerText = "🛑 Reportar Tráfico Incidente";
         }
 
-        // --- MAP CLICK ---
         map.on('click', function(e) {
             if (!tipoHerramientaActiva && !traficoHerramientaActiva) {
                 busSeleccionadoId = null;
@@ -482,8 +464,7 @@
         function configurarEventosClickLineas(polylineObj, sentidoCapa) {
             polylineObj.on('click', function(e) {
                 const ruta = datasetRutas[rutaActivaId];
-                if (!ruta) return;
-                if (tipoHerramientaActiva === 'agregar_paradas') return; 
+                if (!ruta || tipoHerramientaActiva === 'agregar_paradas') return; 
 
                 const clicCoords = [e.latlng.lat, e.latlng.lng];
                 const trazoPuntos = (sentidoCapa === 1) ? ruta.geometriaIda : rRegresoOInvertido(ruta);
@@ -492,7 +473,6 @@
 
                 if (esAdminLogueado && traficoHerramientaActiva) {
                     let traficoActual = ruta.reportesTrafico && ruta.reportesTrafico[sentidoCapa] && ruta.reportesTrafico[sentidoCapa][indiceTramo] ? true : false;
-                    
                     L.popup()
                         .setLatLng(e.latlng)
                         .setContent(`
@@ -523,7 +503,6 @@
             });
         }
 
-        // --- PERSISTENCIA ---
         async function guardarParadaNube(lat, lng, nombreParada) {
             const nomFiel = nombreParada.trim() || "Parada General";
             const paradaId = "Parada_" + Date.now();
@@ -549,30 +528,24 @@
             const rutaOrigen = datasetRutas[rutaActivaId];
             const trazoOrigen = (sentido === 1) ? rutaOrigen.geometriaIda : rRegresoOInvertido(rutaOrigen);
             const puntoReferencia = trazoOrigen[indiceTramo];
-            
             if(!puntoReferencia) return;
 
             let transaccionesPromesas = [];
-
             for (let rId in datasetRutas) {
                 const otraRuta = datasetRutas[rId];
-                
                 if(otraRuta.geometriaIda) {
                     otraRuta.geometriaIda.forEach((coords, idx) => {
-                        let dist = calcularHaversine(puntoReferencia, coords);
-                        if(dist <= 50) { 
+                        if(calcularHaversine(puntoReferencia, coords) <= 50) { 
                             const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rId}/reportesTrafico/1/${idx}.json`);
                             if(tieneTrafico) transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
                             else transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
                         }
                     });
                 }
-
                 const otraGeometriaRegreso = rRegresoOInvertido(otraRuta);
                 if(otraGeometriaRegreso) {
                     otraGeometriaRegreso.forEach((coords, idx) => {
-                        let dist = calcularHaversine(puntoReferencia, coords);
-                        if(dist <= 50) {
+                        if(calcularHaversine(puntoReferencia, coords) <= 50) {
                             const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rId}/reportesTrafico/-1/${idx}.json`);
                             if(tieneTrafico) transaccionesPromesas.push(fetch(url, { method: 'PUT', body: 'true' }));
                             else transaccionesPromesas.push(fetch(url, { method: 'DELETE' }));
@@ -580,12 +553,10 @@
                     });
                 }
             }
-
             await Promise.all(transaccionesPromesas);
             await descargarDatosServidor();
         }
 
-        // --- GESTIÓN ESTRUCTURAL ---
         async function finalizarGuardadoAdmin() {
             const nombre = document.getElementById('admin-nombre').value.trim();
             const origen = document.getElementById('admin-origen').value.trim() || "Origen Terminal";
@@ -593,10 +564,9 @@
             const duracion = parseInt(document.getElementById('admin-duracion').value) || 30;
             const idDoc = document.getElementById('admin-id-edicion').value || "Ruta_" + Date.now();
             
-            if (!nombre || puntosIda.length < 2) { alert("El trazo de Realizar trazo de IDA es obligatorio."); return; }
+            if (!nombre || puntosIda.length < 2) { alert("El trazo de IDA es obligatorio."); return; }
             
             const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${idDoc}.json`);
-
             const payload = {
                 id: idDoc, nombre: nombre, origen: origen, destino: destino, duracionMinutos: duracion,
                 geometriaIda: puntosIda, 
@@ -628,7 +598,6 @@
             }
         }
 
-        // --- LANZAMIENTO DE UNIDADES ---
         async function inyectarAutobusMapaClick(sentido, progresoInicial) {
             if(!rutaActivaId || !datasetRutas[rutaActivaId]) return;
             const busId = "Bus_" + Date.now();
@@ -665,10 +634,8 @@
                 const url = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busId}.json`);
                 map.closePopup();
                 if(busSeleccionadoId === busId) busSeleccionadoId = null;
-                
                 const elemento = document.getElementById(`card-bus-${busId}`);
                 if (elemento) elemento.remove();
-
                 await fetch(url, { method: 'DELETE' });
                 await descargarDatosServidor();
             }
@@ -691,10 +658,9 @@
             if(contenedorLista) contenedorLista.classList.add('enfocado');
         }
 
-        // --- TRACKING GPS PASAJEROS ---
         function activarRastreoAbordoPasajero() {
             if (!navigator.geolocation) { alert("Tu dispositivo no soporta localización."); return; }
-            const r = datasetRutas[rutaActivaId]; if(!r) { alert("Por favor selecciona primero un Corredor/Ruta."); return; }
+            const r = datasetRutas[rutaActivaId]; if(!r) { alert("Selecciona un Corredor/Ruta primero."); return; }
 
             document.getElementById('formulario-rastreo-inputs').style.display = 'none';
             document.getElementById('wrapper-selector-pasajero').style.display = 'none';
@@ -702,6 +668,7 @@
             document.getElementById('viaje-status-texto').innerText = "Validando proximidad...";
 
             const direccionSeleccionada = document.getElementById('user-direccion-viaje').value;
+            intentosFueraRango = 0;
 
             idWatcherGpsPasajero = navigator.geolocation.watchPosition(async (pos) => {
                 const uLat = pos.coords.latitude; const uLng = pos.coords.longitude;
@@ -711,10 +678,18 @@
                 let evalReg = calcularDistanciaMinimaRuta(userLoc, r.geometriaRegreso);
                 let distMinimaRuta = Math.min(evalIda.distancia, evalReg.distancia);
 
-                if(distMinimaRuta > 30) {
-                    document.getElementById('viaje-status-texto').innerText = "⚠️ Fuera de la ruta. Cancelando...";
-                    setTimeout(() => { detenerRastreoAbordoPasajero(); }, 3500);
-                    return;
+                if(distMinimaRuta > 80) {
+                    intentosFueraRango++;
+                    if (intentosFueraRango <= 5) {
+                        document.getElementById('viaje-status-texto').innerText = `⚠️ Fuera de rango (${intentosFueraRango}/5). Reconectando en 10s...`;
+                        return;
+                    } else {
+                        document.getElementById('viaje-status-texto').innerText = "⚠️ Señal perdida. Continuando ruta...";
+                        setTimeout(() => { detenerRastreoAbordoPasajero(); }, 3000);
+                        return;
+                    }
+                } else {
+                    intentosFueraRango = 0; // Se reinicia al volver al rango
                 }
 
                 let sentidoAsignado = (direccionSeleccionada === "auto") ? ((evalIda.distancia <= evalReg.distancia) ? 1 : -1) : parseInt(direccionSeleccionada);
@@ -750,8 +725,12 @@
         function detenerRastreoAbordoPasajero() {
             if(idWatcherGpsPasajero) { navigator.geolocation.clearWatch(idWatcherGpsPasajero); idWatcherGpsPasajero = null; }
             if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) {
-                const urlFreno = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}/telemetriaReal.json`);
-                fetch(urlFreno, { method: 'PUT', body: 'false' });
+                const busActual = datasetRutas[rutaActivaId].busesActivos[busAsignadoAlPasajeroId];
+                const duracionMs = (datasetRutas[rutaActivaId].duracionMinutos || 30) * 60 * 1000;
+                const nuevoTimestamp = Date.now() - (busActual.progreso * duracionMs);
+
+                const urlFreno = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`);
+                fetch(urlFreno, { method: 'PATCH', body: JSON.stringify({ telemetriaReal: false, timestampSalida: nuevoTimestamp }) });
             }
             busAsignadoAlPasajeroId = null;
             document.getElementById('viaje-status-container').style.display = 'none';
@@ -759,13 +738,38 @@
             document.getElementById('wrapper-selector-pasajero').style.display = 'block';
         }
 
-        // --- RENDER GEOMETRÍAS ---
         function limpiarTrazosInfraestructura() {
             if(capaLineaIda) map.removeLayer(capaLineaIda);
             if(capaLineaRegreso) map.removeLayer(capaLineaRegreso);
             capasTramosTrafico.forEach(capa => map.removeLayer(capa)); capasTramosTrafico = [];
             marcadoresParadasMemoria.forEach(m => map.removeLayer(m)); marcadoresParadasMemoria = [];
             marcadoresPuntosEdicionMemoria.forEach(m => map.removeLayer(m)); marcadoresPuntosEdicionMemoria = [];
+        }
+
+        function calcularDistanciaTotalRuta(trazo) {
+            let total = 0;
+            for (let i = 0; i < trazo.length - 1; i++) {
+                total += calcularHaversine(trazo[i], trazo[i + 1]);
+            }
+            return total > 0 ? total : 1;
+        }
+
+        function obtenerProgresoPorDistancia(transcurridoMs, duracionMs, trazo) {
+            const distTotal = calcularDistanciaTotalRuta(trazo);
+            const velocidad = distTotal / duracionMs;
+            let distRecorrida = velocidad * transcurridoMs;
+            if (distRecorrida >= distTotal) return 1.0;
+            
+            let acumulada = 0;
+            for (let i = 0; i < trazo.length - 1; i++) {
+                let dSeg = calcularHaversine(trazo[i], trazo[i + 1]);
+                if (acumulada + dSeg >= distRecorrida) {
+                    let resto = distRecorrida - acumulada;
+                    return (i + (resto / dSeg)) / (trazo.length - 1);
+                }
+                acumulada += dSeg;
+            }
+            return 1.0;
         }
 
         function renderizarGeometriasRuta(idRuta) {
@@ -834,14 +838,12 @@
             else actualizarFlotaGlobalPasajeros();
         }
 
-        // --- CÁLCULO ESTABLE DE LA FLOTA EN MONITOREO ---
         async function calcularCinematicaFlotaActiva(ruta) {
             if(!ruta) { limpiarMarcadoresBusesMesa(); return; }
             const ahora = Date.now(); const duracionMs = (ruta.duracionMinutos || 30) * 60 * 1000;
             let llavesActivasEsteCiclo = [];
             const idInputEnFoco = document.activeElement ? document.activeElement.getAttribute('data-bus-id') : null;
             const listaContenedorDOM = document.getElementById('lista-buses-monitoreo');
-
             const busesActivosSeguros = ruta.busesActivos || {};
 
             for(let id in busesActivosSeguros) {
@@ -855,22 +857,7 @@
                     coords = [bus.latReal, bus.lngReal]; llavesActivasEsteCiclo.push(id);
                 } else {
                     let tiempoTranscurrido = ahora - bus.timestampSalida;
-                    let maxSegmentos = trazoDestino.length - 1;
-                    let tiempoPorSegmentoEstandar = duracionMs / maxSegmentos;
-                    let tiempoAcumuladoMesa = 0; let segmentoActualCalculado = 0;
-                    
-                    while (segmentoActualCalculado < maxSegmentos) {
-                        let esTramoConTrafico = (ruta.reportesTrafico && ruta.reportesTrafico[bus.direccion] && ruta.reportesTrafico[bus.direccion][segmentoActualCalculado] === true);
-                        let costoTiempoTramo = esTramoConTrafico ? (tiempoPorSegmentoEstandar * 2.0) : tiempoPorSegmentoEstandar;
-                        
-                        if (tiempoAcumuladoMesa + costoTiempoTramo > tiempoTranscurrido) {
-                            let tiempoRestanteEnSegmento = tiempoTranscurrido - tiempoAcumuladoMesa;
-                            progresoFinal = (segmentoActualCalculado + (tiempoRestanteEnSegmento / costoTiempoTramo)) / maxSegmentos;
-                            break;
-                        }
-                        tiempoAcumuladoMesa += costoTiempoTramo; segmentoActualCalculado++;
-                        if (segmentoActualCalculado === maxSegmentos) progresoFinal = 1.0;
-                    }
+                    progresoFinal = obtenerProgresoPorDistancia(tiempoTranscurrido, duracionMs, trazoDestino);
 
                     if(progresoFinal >= 1.0) {
                         if (esAdminLogueado && idInputEnFoco !== id) {
@@ -920,9 +907,7 @@
                             🚍
                             <span style="position:absolute; bottom:-10px; left:-10px; font-size:8px; background:${colorTag}; color:white; padding:1px 4px; border-radius:3px; white-space:nowrap;">➡️ ${nombreTerminalDestino}</span>
                         </div>`,
-                    className: 'marker-emoji-bus', 
-                    iconSize: [36, 36], 
-                    iconAnchor: [18, 18]
+                    className: 'marker-emoji-bus', iconSize: [36, 36], iconAnchor: [18, 18]
                 });
 
                 if (marcadoresBusesMemoria[id]) { 
@@ -966,21 +951,7 @@
                         coords = [bus.latReal, bus.lngReal]; llavesGlobalesActivas.push(bId);
                     } else {
                         let tiempoTranscurrido = ahora - bus.timestampSalida;
-                        let maxSegmentos = trazoDestino.length - 1; let tiempoPorSegmentoEstandar = duracionMs / maxSegmentos;
-                        let tiempoAcumuladoMesa = 0; let segmentoActualCalculado = 0;
-                        
-                        while (segmentoActualCalculado < maxSegmentos) {
-                            let esTramoConTrafico = (r.reportesTrafico && r.reportesTrafico[bus.direccion] && r.reportesTrafico[bus.direccion][segmentoActualCalculado] === true);
-                            let costoTiempoTramo = esTramoConTrafico ? (tiempoPorSegmentoEstandar * 2.0) : tiempoPorSegmentoEstandar;
-                            
-                            if (tiempoAcumuladoMesa + costoTiempoTramo > tiempoTranscurrido) {
-                                let tiempoRestanteEnSegmento = tiempoTranscurrido - tiempoAcumuladoMesa;
-                                progresoFinal = (segmentoActualCalculado + (tiempoRestanteEnSegmento / costoTiempoTramo)) / maxSegmentos;
-                                break;
-                            }
-                            tiempoAcumuladoMesa += costoTiempoTramo; segmentoActualCalculado++;
-                            if (segmentoActualCalculado === maxSegmentos) progresoFinal = 1.0;
-                        }
+                        progresoFinal = obtenerProgresoPorDistancia(tiempoTranscurrido, duracionMs, trazoDestino);
                         if(progresoFinal >= 1.0) continue;
                         coords = interpolarCoordenadas(progresoFinal, trazoDestino); llavesGlobalesActivas.push(bId);
                     }
@@ -1014,7 +985,6 @@
         function rRegresoOInvertido(ruta) { return ruta.geometriaRegreso || [...ruta.geometriaIda].reverse(); }
         function limpiarMarcadoresBusesMesa() { for (let k in marcadoresBusesMemoria) { map.removeLayer(marcadoresBusesMemoria[k]); } marcadoresBusesMemoria = {}; }
 
-        // --- BUCLES ---
         setInterval(() => {
             if (esAdminLogueado && rutaActivaId && datasetRutas[rutaActivaId]) calcularCinematicaFlotaActiva(datasetRutas[rutaActivaId]);
             else if (!esAdminLogueado) { if (rutaActivaId) renderizarGeometriasRuta(rutaActivaId); else actualizarFlotaGlobalPasajeros(); }
@@ -1022,7 +992,6 @@
 
         setInterval(() => { descargarDatosServidor(); }, 5000);
 
-        // --- CÁLCULOS GEOGRÁFICOS ---
         function calcularDistanciaMinimaRuta(userCoords, listaPuntosRuta) {
             if(!listaPuntosRuta || listaPuntosRuta.length === 0) return { distancia: Infinity, progreso: 0, indiceFiel: 0 };
             let distMin = Infinity; let indiceCercano = 0;
@@ -1050,10 +1019,8 @@
             return [ pA[0] + (pB[0] - pA[0]) * subProgreso, pA[1] + (pB[1] - pA[1]) * subProgreso ];
         }
 
-        // --- INTERFAZ DINÁMICA ---
         function actualizarComponentesUI() {
             const selectorUser = document.getElementById('user-selector-rutas'); const valGuardado = selectorUser.value;
-            
             selectorUser.innerHTML = '<option value="">-- Selecciona una ruta para ver su mapa --</option>'; 
             document.getElementById('lista-rutas-admin').innerHTML = "";
 
