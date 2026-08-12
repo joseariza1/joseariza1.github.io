@@ -35,9 +35,7 @@
         
         .bus-emoji-container { font-size: 26px; text-align: center; position: relative; width: 40px; height: 40px; cursor: pointer;}
         .bus-derecha { transform: scaleX(1); } .bus-izquierda { transform: scaleX(-1); }
-        /* CORRECCIÓN PARA TEXTO AL REVÉS */
         .texto-normal { display: inline-block; transform: scaleX(-1); }
-        
         .parada-emoji-container { font-size: 20px; text-align: center; cursor: pointer; }
 
         @keyframes parpadeoTrafico { 0% { opacity: 0.5; stroke-width: 6; } 50% { opacity: 1; stroke-width: 10; } 100% { opacity: 0.5; stroke-width: 6; } }
@@ -92,7 +90,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com/rutas_v3.json";
-        const DISTANCIA_TOLERANCIA_METROS = 80; /* CAMBIO: Variable centralizada para ajustar la tolerancia de abordaje */
+        const DISTANCIA_TOLERANCIA_METROS = 80;
         
         const map = L.map('map', {zoomControl: false}).setView([19.285, -99.010], 12);
         L.control.zoom({position: 'topleft'}).addTo(map);
@@ -102,6 +100,7 @@
         let capasLinea = []; let capasTramosTrafico = []; let marcadoresParadasMemoria = [];
         let marcadoresBusesMemoria = {};
         let idWatcherGpsPasajero = null; let busAsignadoAlPasajeroId = null;
+        let intentosFueraRango = 0;
 
         async function descargarDatosServidor() {
             try {
@@ -142,6 +141,32 @@
             actualizarFlotaGlobalPasajeros();
         }
 
+        function calcularDistanciaTotalRuta(trazo) {
+            let total = 0;
+            for (let i = 0; i < trazo.length - 1; i++) {
+                total += calcularHaversine(trazo[i], trazo[i + 1]);
+            }
+            return total > 0 ? total : 1;
+        }
+
+        function obtenerProgresoPorDistancia(transcurridoMs, duracionMs, trazo) {
+            const distTotal = calcularDistanciaTotalRuta(trazo);
+            const velocidad = distTotal / duracionMs;
+            let distRecorrida = velocidad * transcurridoMs;
+            if (distRecorrida >= distTotal) return 1.0;
+            
+            let acumulada = 0;
+            for (let i = 0; i < trazo.length - 1; i++) {
+                let dSeg = calcularHaversine(trazo[i], trazo[i + 1]);
+                if (acumulada + dSeg >= distRecorrida) {
+                    let resto = distRecorrida - acumulada;
+                    return (i + (resto / dSeg)) / (trazo.length - 1);
+                }
+                acumulada += dSeg;
+            }
+            return 1.0;
+        }
+
         function actualizarFlotaGlobalPasajeros() {
             const ahora = Date.now(); let activas = [];
             let rutasAProcesar = rutaActivaId ? { [rutaActivaId]: datasetRutas[rutaActivaId] } : datasetRutas;
@@ -157,10 +182,11 @@
 
                     if (b.telemetriaReal && b.latReal) { c = [b.latReal, b.lngReal]; activas.push(bId); }
                     else {
-                        let trans = ahora - b.timestampSalida; let maxS = trazo.length - 1; let tSeg = dMs / maxS; let acum = 0; let seg = 0;
-                        while (seg < maxS) { let traf = (r.reportesTrafico && r.reportesTrafico[b.direccion] && r.reportesTrafico[b.direccion][seg]); let costo = traf ? tSeg*2 : tSeg;
-                            if (acum + costo > trans) { p = (seg + ((trans - acum) / costo)) / maxS; break; } acum += costo; seg++; if (seg === maxS) p = 1.0; }
-                        if(p >= 1.0) continue; c = interpolarCoordenadas(p, trazo); activas.push(bId);
+                        let trans = ahora - b.timestampSalida;
+                        p = obtenerProgresoPorDistancia(trans, dMs, trazo);
+                        if(p >= 1.0) continue; 
+                        c = interpolarCoordenadas(p, trazo); 
+                        activas.push(bId);
                     }
 
                     let trafActual = (r.reportesTrafico && r.reportesTrafico[b.direccion] && r.reportesTrafico[b.direccion][Math.floor(p * (trazo.length - 1))]);
@@ -219,19 +245,29 @@
             document.getElementById('viaje-status-container').style.display = 'block'; document.getElementById('viaje-status-texto').innerText = "Validando proximidad...";
 
             const dirReq = document.getElementById('user-direccion-viaje').value;
+            intentosFueraRango = 0;
 
-            /* CAMBIO: Se agregaron parámetros maximumAge y timeout para forzar la detección constante del GPS */
             idWatcherGpsPasajero = navigator.geolocation.watchPosition(async (pos) => {
                 const uLoc = [pos.coords.latitude, pos.coords.longitude];
                 let evI = calcularDistanciaMinimaRuta(uLoc, r.geometriaIda); let evR = calcularDistanciaMinimaRuta(uLoc, r.geometriaRegreso);
                 
-                /* CAMBIO: Uso de la variable DISTANCIA_TOLERANCIA_METROS en lugar del valor fijo */
-                if(Math.min(evI.distancia, evR.distancia) > DISTANCIA_TOLERANCIA_METROS) { document.getElementById('viaje-status-texto').innerText = "⚠️ Fuera de ruta. Cancelando..."; setTimeout(detenerRastreoAbordoPasajero, 3500); return; }
+                if(Math.min(evI.distancia, evR.distancia) > DISTANCIA_TOLERANCIA_METROS) {
+                    intentosFueraRango++;
+                    if (intentosFueraRango <= 5) {
+                        document.getElementById('viaje-status-texto').innerText = `⚠️ Fuera de rango (${intentosFueraRango}/5). Reconectando en 10s...`;
+                        return;
+                    } else {
+                        document.getElementById('viaje-status-texto').innerText = "⚠️ Sin señal. Continuando ruta de forma autónoma...";
+                        setTimeout(detenerRastreoAbordoPasajero, 3000);
+                        return;
+                    }
+                } else {
+                    intentosFueraRango = 0; // Reiniciar contador si vuelve al rango
+                }
 
                 let sent = (dirReq === "auto") ? ((evI.distancia <= evR.distancia) ? 1 : -1) : parseInt(dirReq);
                 let prog = (sent === 1) ? evI.progreso : evR.progreso;
 
-                /* CAMBIO: Lógica refinada para unirse a un bus existente (monitorista o pasajero) mediante distancia Haversine */
                 let esNuevoBus = false;
                 if (!busAsignadoAlPasajeroId) {
                     let bCerca = null;
@@ -246,7 +282,6 @@
                     busAsignadoAlPasajeroId = bCerca || "Bus_Pasajero_" + Date.now();
                 }
 
-                /* CAMBIO: Uso de método PATCH para no sobreescribir datos del monitorista y solo actualizar telemetría real */
                 let payload = { progreso: prog, direccion: sent, telemetriaReal: true, latReal: uLoc[0], lngReal: uLoc[1] };
                 if(esNuevoBus) { payload.id = busAsignadoAlPasajeroId; payload.timestampSalida = Date.now() - (prog * ((r.duracionMinutos || 30) * 60000)); }
 
@@ -257,8 +292,23 @@
 
         function detenerRastreoAbordoPasajero() {
             if(idWatcherGpsPasajero) { navigator.geolocation.clearWatch(idWatcherGpsPasajero); idWatcherGpsPasajero = null; }
-            if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}/telemetriaReal.json`), { method: 'PUT', body: 'false' });
-            busAsignadoAlPasajeroId = null; document.getElementById('viaje-status-container').style.display = 'none'; document.getElementById('formulario-rastreo-inputs').style.display = 'block'; document.getElementById('wrapper-selector-pasajero').style.display = 'block';
+            if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) {
+                const busActual = datasetRutas[rutaActivaId].busesActivos[busAsignadoAlPasajeroId];
+                const trazoActivo = (busActual.direccion === 1) ? datasetRutas[rutaActivaId].geometriaIda : rRegresoOInvertido(datasetRutas[rutaActivaId]);
+                const duracionMs = (datasetRutas[rutaActivaId].duracionMinutos || 30) * 60000;
+                
+                // Actualizar timestamp para que el bus continúe la ruta de forma estimada hasta terminar
+                const nuevoTimestamp = Date.now() - (busActual.progreso * duracionMs);
+                
+                fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`), { 
+                    method: 'PATCH', 
+                    body: JSON.stringify({ telemetriaReal: false, timestampSalida: nuevoTimestamp }) 
+                });
+            }
+            busAsignadoAlPasajeroId = null; 
+            document.getElementById('viaje-status-container').style.display = 'none'; 
+            document.getElementById('formulario-rastreo-inputs').style.display = 'block'; 
+            document.getElementById('wrapper-selector-pasajero').style.display = 'block';
         }
 
         setInterval(() => { if (rutaActivaId) renderizarGeometriasRuta(rutaActivaId); else actualizarFlotaGlobalPasajeros(); }, 1000);
