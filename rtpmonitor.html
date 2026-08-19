@@ -685,11 +685,11 @@
                         return;
                     } else {
                         document.getElementById('viaje-status-texto').innerText = "⚠️ Señal perdida. Continuando ruta...";
-                        setTimeout(() => { detenerRastreoAbordoPasajero(); }, 3000);
+                        setTimeout(() => { detenerRastreoAbordoPasajero(); }, 2000);
                         return;
                     }
                 } else {
-                    intentosFueraRango = 0; // Se reinicia al volver al rango
+                    intentosFueraRango = 0; 
                 }
 
                 let sentidoAsignado = (direccionSeleccionada === "auto") ? ((evalIda.distancia <= evalReg.distancia) ? 1 : -1) : parseInt(direccionSeleccionada);
@@ -724,13 +724,25 @@
 
         function detenerRastreoAbordoPasajero() {
             if(idWatcherGpsPasajero) { navigator.geolocation.clearWatch(idWatcherGpsPasajero); idWatcherGpsPasajero = null; }
+            
             if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) {
                 const busActual = datasetRutas[rutaActivaId].busesActivos[busAsignadoAlPasajeroId];
                 const duracionMs = (datasetRutas[rutaActivaId].duracionMinutos || 30) * 60 * 1000;
+                
+                // Mantiene el bus en el último progreso registrado y activa el modo automático (telemetriaReal: false)
                 const nuevoTimestamp = Date.now() - (busActual.progreso * duracionMs);
 
                 const urlFreno = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`);
-                fetch(urlFreno, { method: 'PATCH', body: JSON.stringify({ telemetriaReal: false, timestampSalida: nuevoTimestamp }) });
+                fetch(urlFreno, { 
+                    method: 'PUT', 
+                    body: JSON.stringify({
+                        id: busAsignadoAlPasajeroId,
+                        progreso: busActual.progreso,
+                        direccion: busActual.direccion,
+                        timestampSalida: nuevoTimestamp,
+                        telemetriaReal: false
+                    }) 
+                });
             }
             busAsignadoAlPasajeroId = null;
             document.getElementById('viaje-status-container').style.display = 'none';
@@ -992,14 +1004,70 @@
 
         setInterval(() => { descargarDatosServidor(); }, 5000);
 
+        // Corrección de Proyección y Cálculo Preciso del Progreso al Hacer Clic en la Ruta
         function calcularDistanciaMinimaRuta(userCoords, listaPuntosRuta) {
             if(!listaPuntosRuta || listaPuntosRuta.length === 0) return { distancia: Infinity, progreso: 0, indiceFiel: 0 };
-            let distMin = Infinity; let indiceCercano = 0;
-            for(let i=0; i<listaPuntosRuta.length; i++) {
-                let d = calcularHaversine(userCoords, listaPuntosRuta[i]);
-                if(d < distMin) { distMin = d; indiceCercano = i; }
+            
+            let distMinGlobal = Infinity;
+            let mejorProgreso = 0;
+            let mejorIndiceSegmento = 0;
+            let distanciaAcumuladaTotal = 0;
+            let distanciasAcumuladas = [0];
+
+            for (let i = 0; i < listaPuntosRuta.length - 1; i++) {
+                let dSeg = calcularHaversine(listaPuntosRuta[i], listaPuntosRuta[i+1]);
+                distanciaAcumuladaTotal += dSeg;
+                distanciasAcumuladas.push(distanciaAcumuladaTotal);
             }
-            return { distancia: distMin, progreso: indiceCercano / (listaPuntosRuta.length - 1), indiceFiel: indiceCercano };
+
+            if (distanciaAcumuladaTotal === 0) distanciaAcumuladaTotal = 1;
+
+            for(let i = 0; i < listaPuntosRuta.length - 1; i++) {
+                let p1 = listaPuntosRuta[i];
+                let p2 = listaPuntosRuta[i+1];
+                
+                // Proyección geométrica del punto sobre el segmento de recta (p1, p2)
+                let proj = proyectarPuntoEnSegmento(userCoords, p1, p2);
+                let d = calcularHaversine(userCoords, proj.punto);
+
+                if(d < distMinGlobal) {
+                    distMinGlobal = d;
+                    mejorIndiceSegmento = i;
+                    let distParcialSegmento = distanciasAcumuladas[i] + calcularHaversine(p1, proj.punto);
+                    mejorProgreso = distParcialSegmento / distanciaAcumuladaTotal;
+                }
+            }
+
+            return { distancia: distMinGlobal, progreso: Math.max(0, Math.min(1, mejorProgreso)), indiceFiel: mejorIndiceSegmento };
+        }
+
+        function proyectarPuntoEnSegmento(p, a, b) {
+            // Conversión aproximada a coordenadas planas locales para la proyección vectorial del clic
+            let x = p[1], y = p[0];
+            let x1 = a[1], y1 = a[0];
+            let x2 = b[1], y2 = b[0];
+
+            let A = x - x1;
+            let B = y - y1;
+            let C = x2 - x1;
+            let D = y2 - y1;
+
+            let dot = A * C + B * D;
+            let lenSq = C * C + D * D;
+            let param = -1;
+            if (lenSq !== 0) param = dot / lenSq;
+
+            let xx, yy;
+            if (param < 0) {
+                xx = x1; yy = y1;
+            } else if (param > 1) {
+                xx = x2; yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+
+            return { punto: [yy, xx] };
         }
 
         function calcularHaversine(p1, p2) {
