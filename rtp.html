@@ -36,6 +36,7 @@
         .bus-emoji-container { font-size: 26px; text-align: center; position: relative; width: 40px; height: 40px; cursor: pointer;}
         .bus-derecha { transform: scaleX(1); } .bus-izquierda { transform: scaleX(-1); }
         .texto-normal { display: inline-block; transform: scaleX(-1); }
+        
         .parada-emoji-container { font-size: 20px; text-align: center; cursor: pointer; }
 
         @keyframes parpadeoTrafico { 0% { opacity: 0.5; stroke-width: 6; } 50% { opacity: 1; stroke-width: 10; } 100% { opacity: 0.5; stroke-width: 6; } }
@@ -99,8 +100,13 @@
         let datasetRutas = {}; let rutaActivaId = ""; 
         let capasLinea = []; let capasTramosTrafico = []; let marcadoresParadasMemoria = [];
         let marcadoresBusesMemoria = {};
+        
         let idWatcherGpsPasajero = null; let busAsignadoAlPasajeroId = null;
-        let intentosFueraRango = 0;
+        
+        // --- VARIABLES GLOBALES PARA CONTROL DE RECONEXIÓN ---
+        let intentosReconexionGps = 0;
+        let timeoutReconexionGps = null;
+        let ultimoProgresoPasajero = 0;
 
         async function descargarDatosServidor() {
             try {
@@ -141,32 +147,6 @@
             actualizarFlotaGlobalPasajeros();
         }
 
-        function calcularDistanciaTotalRuta(trazo) {
-            let total = 0;
-            for (let i = 0; i < trazo.length - 1; i++) {
-                total += calcularHaversine(trazo[i], trazo[i + 1]);
-            }
-            return total > 0 ? total : 1;
-        }
-
-        function obtenerProgresoPorDistancia(transcurridoMs, duracionMs, trazo) {
-            const distTotal = calcularDistanciaTotalRuta(trazo);
-            const velocidad = distTotal / duracionMs;
-            let distRecorrida = velocidad * transcurridoMs;
-            if (distRecorrida >= distTotal) return 1.0;
-            
-            let acumulada = 0;
-            for (let i = 0; i < trazo.length - 1; i++) {
-                let dSeg = calcularHaversine(trazo[i], trazo[i + 1]);
-                if (acumulada + dSeg >= distRecorrida) {
-                    let resto = distRecorrida - acumulada;
-                    return (i + (resto / dSeg)) / (trazo.length - 1);
-                }
-                acumulada += dSeg;
-            }
-            return 1.0;
-        }
-
         function actualizarFlotaGlobalPasajeros() {
             const ahora = Date.now(); let activas = [];
             let rutasAProcesar = rutaActivaId ? { [rutaActivaId]: datasetRutas[rutaActivaId] } : datasetRutas;
@@ -182,11 +162,10 @@
 
                     if (b.telemetriaReal && b.latReal) { c = [b.latReal, b.lngReal]; activas.push(bId); }
                     else {
-                        let trans = ahora - b.timestampSalida;
-                        p = obtenerProgresoPorDistancia(trans, dMs, trazo);
-                        if(p >= 1.0) continue; 
-                        c = interpolarCoordenadas(p, trazo); 
-                        activas.push(bId);
+                        let trans = ahora - b.timestampSalida; let maxS = trazo.length - 1; let tSeg = dMs / maxS; let acum = 0; let seg = 0;
+                        while (seg < maxS) { let traf = (r.reportesTrafico && r.reportesTrafico[b.direccion] && r.reportesTrafico[b.direccion][seg]); let costo = traf ? tSeg*2 : tSeg;
+                            if (acum + costo > trans) { p = (seg + ((trans - acum) / costo)) / maxS; break; } acum += costo; seg++; if (seg === maxS) p = 1.0; }
+                        if(p >= 1.0) continue; c = interpolarCoordenadas(p, trazo); activas.push(bId);
                     }
 
                     let trafActual = (r.reportesTrafico && r.reportesTrafico[b.direccion] && r.reportesTrafico[b.direccion][Math.floor(p * (trazo.length - 1))]);
@@ -245,70 +224,104 @@
             document.getElementById('viaje-status-container').style.display = 'block'; document.getElementById('viaje-status-texto').innerText = "Validando proximidad...";
 
             const dirReq = document.getElementById('user-direccion-viaje').value;
-            intentosFueraRango = 0;
 
-            idWatcherGpsPasajero = navigator.geolocation.watchPosition(async (pos) => {
-                const uLoc = [pos.coords.latitude, pos.coords.longitude];
-                let evI = calcularDistanciaMinimaRuta(uLoc, r.geometriaIda); let evR = calcularDistanciaMinimaRuta(uLoc, r.geometriaRegreso);
-                
-                if(Math.min(evI.distancia, evR.distancia) > DISTANCIA_TOLERANCIA_METROS) {
-                    intentosFueraRango++;
-                    if (intentosFueraRango <= 5) {
-                        document.getElementById('viaje-status-texto').innerText = `⚠️ Fuera de rango (${intentosFueraRango}/5). Reconectando en 10s...`;
-                        return;
-                    } else {
-                        document.getElementById('viaje-status-texto').innerText = "⚠️ Sin señal. Continuando ruta de forma autónoma...";
-                        setTimeout(detenerRastreoAbordoPasajero, 3000);
-                        return;
+            // Restablecer contadores y timers de reconexión
+            intentosReconexionGps = 0;
+            if (timeoutReconexionGps) clearTimeout(timeoutReconexionGps);
+
+            function iniciarWatchGPS() {
+                if (idWatcherGpsPasajero) navigator.geolocation.clearWatch(idWatcherGpsPasajero);
+
+                idWatcherGpsPasajero = navigator.geolocation.watchPosition(async (pos) => {
+                    // Si el GPS conecta con éxito, reseteamos contadores
+                    intentosReconexionGps = 0;
+                    if (timeoutReconexionGps) clearTimeout(timeoutReconexionGps);
+
+                    const uLoc = [pos.coords.latitude, pos.coords.longitude];
+                    let evI = calcularDistanciaMinimaRuta(uLoc, r.geometriaIda); let evR = calcularDistanciaMinimaRuta(uLoc, r.geometriaRegreso);
+                    
+                    if(Math.min(evI.distancia, evR.distancia) > DISTANCIA_TOLERANCIA_METROS) { 
+                        document.getElementById('viaje-status-texto').innerText = "⚠️ Fuera de ruta. Cancelando..."; 
+                        setTimeout(detenerRastreoAbordoPasajero, 3500); 
+                        return; 
                     }
-                } else {
-                    intentosFueraRango = 0; // Reiniciar contador si vuelve al rango
-                }
 
-                let sent = (dirReq === "auto") ? ((evI.distancia <= evR.distancia) ? 1 : -1) : parseInt(dirReq);
-                let prog = (sent === 1) ? evI.progreso : evR.progreso;
+                    let sent = (dirReq === "auto") ? ((evI.distancia <= evR.distancia) ? 1 : -1) : parseInt(dirReq);
+                    let prog = (sent === 1) ? evI.progreso : evR.progreso;
+                    
+                    // Almacenamos el progreso para que el bus sepa dónde continuar si la señal se pierde
+                    ultimoProgresoPasajero = prog;
 
-                let esNuevoBus = false;
-                if (!busAsignadoAlPasajeroId) {
-                    let bCerca = null;
-                    for (let id in r.busesActivos || {}) {
-                        let bus = r.busesActivos[id];
-                        if (bus.direccion === sent) {
-                            if (bus.latReal && calcularHaversine(uLoc, [bus.latReal, bus.lngReal]) < 500) { bCerca = id; break; }
-                            else if (!bus.latReal && Math.abs(bus.progreso - prog) < 0.04) { bCerca = id; break; }
+                    let esNuevoBus = false;
+                    if (!busAsignadoAlPasajeroId) {
+                        let bCerca = null;
+                        for (let id in r.busesActivos || {}) {
+                            let bus = r.busesActivos[id];
+                            if (bus.direccion === sent) {
+                                if (bus.latReal && calcularHaversine(uLoc, [bus.latReal, bus.lngReal]) < 500) { bCerca = id; break; }
+                                else if (!bus.latReal && Math.abs(bus.progreso - prog) < 0.04) { bCerca = id; break; }
+                            }
                         }
+                        if(!bCerca) esNuevoBus = true;
+                        busAsignadoAlPasajeroId = bCerca || "Bus_Pasajero_" + Date.now();
                     }
-                    if(!bCerca) esNuevoBus = true;
-                    busAsignadoAlPasajeroId = bCerca || "Bus_Pasajero_" + Date.now();
+
+                    let payload = { progreso: prog, direccion: sent, telemetriaReal: true, latReal: uLoc[0], lngReal: uLoc[1] };
+                    if(esNuevoBus) { payload.id = busAsignadoAlPasajeroId; payload.timestampSalida = Date.now() - (prog * ((r.duracionMinutos || 30) * 60000)); }
+
+                    await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`), { method: 'PATCH', body: JSON.stringify(payload) });
+                    document.getElementById('viaje-status-texto').innerText = `📡 Transmitiendo GPS`;
+                }, err => {
+                    console.warn("Señal GPS interrumpida: ", err);
+                    gestionarPerdidaSenal();
+                }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+            }
+
+            function gestionarPerdidaSenal() {
+                if (idWatcherGpsPasajero) navigator.geolocation.clearWatch(idWatcherGpsPasajero);
+                intentosReconexionGps++;
+
+                if (intentosReconexionGps <= 5) {
+                    // Intenta reconectar hasta 5 veces, con pausas de 10 segundos
+                    document.getElementById('viaje-status-texto').innerText = `⚠️ Señal inestable. Reconectando (${intentosReconexionGps}/5)...`;
+                    timeoutReconexionGps = setTimeout(iniciarWatchGPS, 10000);
+                } else {
+                    // Después de 5 intentos fallidos, el bus pasa a modo automático
+                    document.getElementById('viaje-status-texto').innerText = `📡 Señal perdida. Continuando viaje automáticamente...`;
+                    
+                    if (busAsignadoAlPasajeroId && rutaActivaId) {
+                        const duracionMs = (r.duracionMinutos || 30) * 60000;
+                        // Ajustamos el tiempo de salida artificialmente para que matemáticamente el bus "esté" justo donde se perdió la señal
+                        const nuevoTimestamp = Date.now() - (ultimoProgresoPasajero * duracionMs);
+                        
+                        fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`), { 
+                            method: 'PATCH', 
+                            body: JSON.stringify({ 
+                                telemetriaReal: false,
+                                timestampSalida: nuevoTimestamp,
+                                progreso: ultimoProgresoPasajero
+                            }) 
+                        });
+                    }
+
+                    // Limpiamos la UI localmente después de unos segundos
+                    setTimeout(() => {
+                        busAsignadoAlPasajeroId = null; 
+                        document.getElementById('viaje-status-container').style.display = 'none'; 
+                        document.getElementById('formulario-rastreo-inputs').style.display = 'block'; 
+                        document.getElementById('wrapper-selector-pasajero').style.display = 'block';
+                    }, 4000);
                 }
+            }
 
-                let payload = { progreso: prog, direccion: sent, telemetriaReal: true, latReal: uLoc[0], lngReal: uLoc[1] };
-                if(esNuevoBus) { payload.id = busAsignadoAlPasajeroId; payload.timestampSalida = Date.now() - (prog * ((r.duracionMinutos || 30) * 60000)); }
-
-                await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`), { method: 'PATCH', body: JSON.stringify(payload) });
-                document.getElementById('viaje-status-texto').innerText = `📡 Transmitiendo GPS`;
-            }, err => console.error(err), { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+            iniciarWatchGPS();
         }
 
         function detenerRastreoAbordoPasajero() {
+            if (timeoutReconexionGps) clearTimeout(timeoutReconexionGps);
             if(idWatcherGpsPasajero) { navigator.geolocation.clearWatch(idWatcherGpsPasajero); idWatcherGpsPasajero = null; }
-            if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) {
-                const busActual = datasetRutas[rutaActivaId].busesActivos[busAsignadoAlPasajeroId];
-                const trazoActivo = (busActual.direccion === 1) ? datasetRutas[rutaActivaId].geometriaIda : rRegresoOInvertido(datasetRutas[rutaActivaId]);
-                const duracionMs = (datasetRutas[rutaActivaId].duracionMinutos || 30) * 60000;
-                
-                // Actualizar timestamp para que el bus continúe la ruta de forma estimada hasta terminar
-                const nuevoTimestamp = Date.now() - (busActual.progreso * duracionMs);
-                
-                fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`), { 
-                    method: 'PATCH', 
-                    body: JSON.stringify({ telemetriaReal: false, timestampSalida: nuevoTimestamp }) 
-                });
-            }
-            busAsignadoAlPasajeroId = null; 
-            document.getElementById('viaje-status-container').style.display = 'none'; 
-            document.getElementById('formulario-rastreo-inputs').style.display = 'block'; 
-            document.getElementById('wrapper-selector-pasajero').style.display = 'block';
+            if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}/telemetriaReal.json`), { method: 'PUT', body: 'false' });
+            busAsignadoAlPasajeroId = null; document.getElementById('viaje-status-container').style.display = 'none'; document.getElementById('formulario-rastreo-inputs').style.display = 'block'; document.getElementById('wrapper-selector-pasajero').style.display = 'block';
         }
 
         setInterval(() => { if (rutaActivaId) renderizarGeometriasRuta(rutaActivaId); else actualizarFlotaGlobalPasajeros(); }, 1000);
