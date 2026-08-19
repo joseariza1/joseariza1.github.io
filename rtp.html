@@ -95,6 +95,15 @@
             z-index: 1000; font-size: 0.75rem; border: 1px solid var(--border); font-weight: bold;
         }
 
+        /* Botón flotante para ver la ubicación propia del usuario */
+        .btn-mi-ubicacion {
+            position: absolute; top: 55px; right: 12px; background: #ffffff; color: var(--accent-blue);
+            padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000; font-size: 0.75rem; border: 1px solid var(--border); font-weight: bold;
+            cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.2s;
+        }
+        .btn-mi-ubicacion:hover { background: #f0f4f8; }
+
         .marker-emoji-bus { transition: all 1s linear !important; }
         .bus-derecha { transform: scaleX(1); }
         .bus-izquierda { transform: scaleX(-1); }
@@ -119,7 +128,7 @@
     </div>
 
     <div class="app-container">
-        <!-- Panel Flotante configurado con la clase .collapsed para iniciar oculto -->
+        <!-- Panel Flotante Oculto por Defecto (.collapsed) -->
         <div class="panel-user-flotante collapsed" id="panel-user-contenedor">
             <div class="panel-header-control" onclick="togglePanelFlotante()">
                 <span>🎛️ Menú de Viaje y Rutas</span>
@@ -161,6 +170,10 @@
             <div class="status-float">
                 Red: <span id="txt-notificaciones" style="color: green;">Conectada</span>
             </div>
+            <!-- Botón de Ubicación Privada Local -->
+            <button class="btn-mi-ubicacion" onclick="centrarMiUbicacionLocal()">
+                📍 Mi Ubicación
+            </button>
         </div>
     </div>
 
@@ -186,6 +199,7 @@
         let intentosReconexion = 0;
         const MAX_INTENTOS_RECONEXION = 5;
         let timerReconexion = null;
+        let marcadorMiUbicacionLocal = null; // Variable para la ubicación privada local
 
         function togglePanelFlotante() {
             const panel = document.getElementById('panel-user-contenedor');
@@ -251,7 +265,6 @@
             const ahora = Date.now(); let llavesGlobalesActivas = [];
 
             for (let rId in datasetRutas) {
-                if (rutaActivaId && rutaActivaId !== rId) continue;
                 let r = datasetRutas[rId]; if (!r || !r.busesActivos) continue;
                 const duracionMs = (r.duracionMinutos || 30) * 60 * 1000;
 
@@ -285,7 +298,7 @@
                         html: `
                             <div style="position:relative; width:40px; height:40px; text-align:center;">
                                 <div style="position:absolute; top:-24px; left:50%; transform:translateX(-50%); background:#1565c0; color:white; padding:2px 7px; border-radius:5px; font-size:10px; font-weight:800; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3); z-index:10;">
-                                    ${nombreTerminalDestino}
+                                    🏁 ${nombreTerminalDestino}
                                 </div>
                                 <div class="${claseDir}" style="font-size:28px; line-height:40px;">🚍</div>
                                 <div style="position:absolute; bottom:-24px; left:50%; transform:translateX(-50%); background:${colorFondoEstado}; color:white; padding:2px 7px; border-radius:5px; font-size:10px; font-weight:800; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3); z-index:10;">
@@ -311,6 +324,36 @@
             for (let k in marcadoresBusesMemoria) {
                 if (!llavesGlobalesActivas.includes(k)) { map.removeLayer(marcadoresBusesMemoria[k]); delete marcadoresBusesMemoria[k]; }
             }
+        }
+
+        // Función para mostrar la ubicación privada local del usuario en su dispositivo
+        function centrarMiUbicacionLocal() {
+            if (!navigator.geolocation) {
+                alert("Tu dispositivo no soporta geolocalización.");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const uLat = pos.coords.latitude;
+                    const uLng = pos.coords.longitude;
+                    
+                    if (marcadorMiUbicacionLocal) {
+                        marcadorMiUbicacionLocal.setLatLng([uLat, uLng]);
+                    } else {
+                        let htmlUserLocal = L.divIcon({
+                            html: `<div style="background:#1565c0; color:white; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.4); font-size:14px; border:2px solid white;">👤</div>`,
+                            className: '', iconSize: [28, 28], iconAnchor: [14, 14]
+                        });
+                        marcadorMiUbicacionLocal = L.marker([uLat, uLng], { icon: htmlUserLocal }).addTo(map);
+                        marcadorMiUbicacionLocal.bindPopup("<b>📍 Tu Ubicación Actual</b><br><i>(Privada y solo visible en tu dispositivo)</i>");
+                    }
+                    map.setView([uLat, uLng], 16);
+                },
+                (err) => {
+                    alert("No se pudo obtener tu ubicación actual. Revisa los permisos de GPS de tu navegador.");
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
         }
 
         function rRegresoOInvertido(ruta) { return ruta.geometriaRegreso || [...ruta.geometriaIda].reverse(); }
@@ -573,7 +616,6 @@
 
         function seleccionarRutaDesdeUsuario(idRuta) { 
             rutaActivaId = idRuta; 
-            limpiarMarcadoresBusesMesa(); 
             actualizarTextosTerminalesPasajero(); 
             
             if (idRuta) {
@@ -584,7 +626,6 @@
                 }
             } else {
                 limpiarTrazosInfraestructura();
-                actualizarFlotaGlobalPasajeros();
             }
         }
 
