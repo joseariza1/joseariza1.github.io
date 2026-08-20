@@ -210,7 +210,9 @@
         <div class="panel-lateral active" id="panel-admin">
             <div class="seccion-header">
                 <h3>🛠️ Consola de Infraestructura</h3>
-                <button class="btn btn-secondary" id="admin-btn-cancelar" onclick="cancelarEdicionAdmin()" style="display:none; margin:0; padding:4px 10px; font-size:0.7rem;">Limpiar</button>
+                <!-- Botón fijo para crear una Nueva Ruta y limpiar el mapa -->
+                <button class="btn btn-primary" id="admin-btn-nueva" onclick="cancelarEdicionAdmin()" style="margin:0; padding:4px 10px; font-size:0.7rem;">➕ Nueva Ruta</button>
+                <button class="btn btn-secondary" id="admin-btn-cancelar" onclick="cancelarEdicionAdmin()" style="display:none; margin:0; margin-left: 5px; padding:4px 10px; font-size:0.7rem;">Limpiar</button>
             </div>
             
             <div class="seccion" style="background-color: #fafafa;">
@@ -347,8 +349,9 @@
                     renderizarGeometriasRuta(rutaActivaId);
                 } else if (Object.keys(datasetRutas).length > 0 && !rutaActivaId) {
                     if (esAdminLogueado) {
-                        rutaActivaId = Object.keys(datasetRutas)[0];
-                        renderizarGeometriasRuta(rutaActivaId);
+                        // Opcional: si quieres que al cargar no muestre ruta inicial, puedes comentar la sig. línea
+                        // rutaActivaId = Object.keys(datasetRutas)[0]; 
+                        // renderizarGeometriasRuta(rutaActivaId);
                     } else {
                         actualizarFlotaGlobalPasajeros();
                     }
@@ -445,7 +448,9 @@
                 capaLineaRegreso = L.polyline(puntosRegreso, {color: '#2196f3', weight: 4}).addTo(map);
             }
             else if (esAdminLogueado && tipoHerramientaActiva === 'agregar_paradas') {
-                if(!rutaActivaId) { alert("Selecciona o crea una ruta primero."); return; }
+                if(!rutaActivaId && !document.getElementById('admin-id-edicion').value) { 
+                    alert("Por favor, guarda la ruta al menos una vez antes de añadir paradas."); return; 
+                }
                 const lat = e.latlng.lat; const lng = e.latlng.lng;
 
                 L.popup()
@@ -506,7 +511,8 @@
         async function guardarParadaNube(lat, lng, nombreParada) {
             const nomFiel = nombreParada.trim() || "Parada General";
             const paradaId = "Parada_" + Date.now();
-            const urlParada = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/paradas/${paradaId}.json`);
+            const targetId = document.getElementById('admin-id-edicion').value || rutaActivaId;
+            const urlParada = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${targetId}/paradas/${paradaId}.json`);
             map.closePopup();
             await fetch(urlParada, { method: 'PUT', body: JSON.stringify({ id: paradaId, lat: lat, lng: lng, nombre: nomFiel }) });
             await descargarDatosServidor();
@@ -577,8 +583,12 @@
             };
 
             await fetch(url, { method: 'PUT', body: JSON.stringify(payload) });
-            cancelarEdicionAdmin(); 
+            rutaActivaId = idDoc; 
+            document.getElementById('admin-id-edicion').value = idDoc;
+            tipoHerramientaActiva = null; 
+            desactivarTraficoModo();
             await descargarDatosServidor();
+            seleccionarYDestacarDesdeCatalogo(idDoc);
         }
 
         window.eliminarPuntoRutaIndividual = async function(sentido, indice) {
@@ -1004,7 +1014,6 @@
 
         setInterval(() => { descargarDatosServidor(); }, 5000);
 
-        // Corrección de Proyección y Cálculo Preciso del Progreso al Hacer Clic en la Ruta
         function calcularDistanciaMinimaRuta(userCoords, listaPuntosRuta) {
             if(!listaPuntosRuta || listaPuntosRuta.length === 0) return { distancia: Infinity, progreso: 0, indiceFiel: 0 };
             
@@ -1026,7 +1035,6 @@
                 let p1 = listaPuntosRuta[i];
                 let p2 = listaPuntosRuta[i+1];
                 
-                // Proyección geométrica del punto sobre el segmento de recta (p1, p2)
                 let proj = proyectarPuntoEnSegmento(userCoords, p1, p2);
                 let d = calcularHaversine(userCoords, proj.punto);
 
@@ -1042,31 +1050,18 @@
         }
 
         function proyectarPuntoEnSegmento(p, a, b) {
-            // Conversión aproximada a coordenadas planas locales para la proyección vectorial del clic
             let x = p[1], y = p[0];
             let x1 = a[1], y1 = a[0];
             let x2 = b[1], y2 = b[0];
 
-            let A = x - x1;
-            let B = y - y1;
-            let C = x2 - x1;
-            let D = y2 - y1;
-
-            let dot = A * C + B * D;
-            let lenSq = C * C + D * D;
-            let param = -1;
-            if (lenSq !== 0) param = dot / lenSq;
+            let A = x - x1; let B = y - y1; let C = x2 - x1; let D = y2 - y1;
+            let dot = A * C + B * D; let lenSq = C * C + D * D;
+            let param = -1; if (lenSq !== 0) param = dot / lenSq;
 
             let xx, yy;
-            if (param < 0) {
-                xx = x1; yy = y1;
-            } else if (param > 1) {
-                xx = x2; yy = y2;
-            } else {
-                xx = x1 + param * C;
-                yy = y1 + param * D;
-            }
-
+            if (param < 0) { xx = x1; yy = y1; } 
+            else if (param > 1) { xx = x2; yy = y2; } 
+            else { xx = x1 + param * C; yy = y1 + param * D; }
             return { punto: [yy, xx] };
         }
 
@@ -1154,7 +1149,25 @@
             if (r && r.geometriaIda && r.geometriaIda.length > 0) map.fitBounds(r.geometriaIda, { padding: [50, 50] });
         }
         
-        window.cancelarEdicionAdmin = function() { puntosIda = []; puntosRegreso = []; limpiarTrazosInfraestructura(); document.getElementById('admin-id-edicion').value = ""; document.getElementById('admin-nombre').value = ""; document.getElementById('admin-origen').value = ""; document.getElementById('admin-destino').value = ""; tipoHerramientaActiva = null; desactivarTraficoModo(); document.getElementById('admin-btn-cancelar').style.display='none'; document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada')); };
+        // Modificación principal para deseleccionar rutaActivaId y limpiar totalmente el entorno de dibujo
+        window.cancelarEdicionAdmin = function() { 
+            puntosIda = []; 
+            puntosRegreso = []; 
+            limpiarTrazosInfraestructura(); 
+            limpiarMarcadoresBusesMesa(); // Oculta autobuses previos
+            rutaActivaId = "";            // Deselecciona la ruta para que no se redibuje
+            busSeleccionadoId = null;
+            document.getElementById('admin-id-edicion').value = ""; 
+            document.getElementById('admin-nombre').value = ""; 
+            document.getElementById('admin-origen').value = ""; 
+            document.getElementById('admin-destino').value = ""; 
+            document.getElementById('admin-duracion').value = "30"; 
+            tipoHerramientaActiva = null; 
+            desactivarTraficoModo(); 
+            document.getElementById('admin-btn-cancelar').style.display = 'none'; 
+            document.querySelectorAll('.item-ruta-lista').forEach(el => el.classList.remove('seleccionada')); 
+        };
+        
         window.eliminarRutaCompleta = async function(id) { if(confirm("¿Eliminar ruta completa de la red?")) { await fetch(FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${id}.json`), {method:'DELETE'}); if(rutaActivaId === id) { rutaActivaId = ""; busSeleccionadoId = null; } await descargarDatosServidor(); } };
         window.cargarRutaParaEditar = function(id) { const r = datasetRutas[id]; document.getElementById('admin-id-edicion').value = id; document.getElementById('admin-nombre').value = r.nombre; document.getElementById('admin-origen').value = r.origen; document.getElementById('admin-destino').value = r.destino; document.getElementById('admin-duracion').value = r.duracionMinutos; document.getElementById('admin-btn-cancelar').style.display='inline-block'; puntosIda = r.geometriaIda || []; puntosRegreso = r.geometriaRegreso || []; rutaActivaId = id; busSeleccionadoId = null; seleccionarYDestacarDesdeCatalogo(id); };
 
