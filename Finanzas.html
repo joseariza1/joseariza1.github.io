@@ -589,6 +589,93 @@
             return new Date(anioDePago, mesDePago, diaLimite, 23, 59, 59, 999).getTime();
         }
 
+        // ---- NUEVA FUNCIÓN PARA CENTRALIZAR EL CÁLCULO DE OBLIGACIONES Y RESTAR PAGOS REALIZADOS ----
+        function calcularObligaciones(mesesHaciaAdelante) {
+            let hoy = new Date();
+            let mesConsultado = hoy.getMonth() + mesesHaciaAdelante;
+            let anioConsultado = hoy.getFullYear();
+            let baseCalendar = new Date(anioConsultado, mesConsultado, 1);
+            
+            let timestampInicioMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth(), 1, 0, 0, 0, 0).getTime();
+            let timestampFinMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+            let tMSI = 0, tCorrientes = 0;
+            
+            db.deudas.forEach(d => {
+                if(d.msi && d.msi.restantes > mesesHaciaAdelante) {
+                    tMSI += (d.monto / d.msi.restantes);
+                } else if(!d.msi && mesesHaciaAdelante === 0) {
+                    tCorrientes += d.monto;
+                }
+            });
+
+            db.cuentas.filter(c => c.tipo === 'TDC').forEach(tdc => {
+                let dc = tdc.diaCorte || 15;
+                let dl = tdc.diaLimite || 5;
+
+                // Identificamos deuda actual en MSI
+                let msiList = db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0);
+                let msiDebt = msiList.reduce((s, m) => s + m.val, 0);
+                
+                // Saldo real de deuda corriente = Saldo total en la tarjeta menos lo que corresponde a MSI
+                let saldoCorrienteActual = Math.max(0, tdc.saldo - msiDebt);
+                
+                // Filtramos todos los gastos corrientes históricos
+                let tdcGastos = db.movimientos.filter(m => m.oId == tdc.id && m.t === 'Gasto' && !m.msi);
+                // Los ordenamos de más antiguos a más recientes
+                tdcGastos.sort((a, b) => (a.date || a.id) - (b.date || b.id));
+                
+                // Calculamos cuánto se ha pagado a lo largo del tiempo
+                let historicGastos = tdcGastos.reduce((s, m) => s + m.val, 0);
+                let paidCorriente = Math.max(0, historicGastos - saldoCorrienteActual);
+                
+                // Asignamos la deuda corriente restante restando los abonos a los gastos más viejos
+                tdcGastos.forEach(m => {
+                    let valToPay = m.val;
+                    if (paidCorriente >= valToPay) {
+                        paidCorriente -= valToPay;
+                        valToPay = 0; // Gasto totalmente pagado
+                    } else {
+                        valToPay -= paidCorriente;
+                        paidCorriente = 0;
+                    }
+
+                    if (valToPay > 0) {
+                        let tMov = m.date || m.id;
+                        let tLimitePago = calcularFechaLimiteDeGasto(tMov, dc, dl);
+                        if (tLimitePago >= timestampInicioMes && tLimitePago <= timestampFinMes) {
+                            tCorrientes += valToPay;
+                        }
+                    }
+                });
+
+                // Calculamos proyecciones MSI (ya contempla disminución porque si se abona la mensualidad bajan los 'restantes')
+                msiList.forEach(m => {
+                    let tMov = m.date || m.id;
+                    const cuota = m.val / m.msi.restantes;
+                    let primeraFechaLimite = calcularFechaLimiteDeGasto(tMov, dc, dl);
+                    
+                    let cuotasPorAsignar = m.msi.restantes;
+                    for(let i = m.msi.total - 1; i >= 0; i--) {
+                        let fLimiteMensualidad = new Date(primeraFechaLimite);
+                        fLimiteMensualidad.setMonth(fLimiteMensualidad.getMonth() + i);
+                        let tLimiteMensualidad = fLimiteMensualidad.getTime();
+
+                        if (tLimiteMensualidad >= timestampInicioMes && tLimiteMensualidad <= timestampFinMes) {
+                            if (cuotasPorAsignar > 0) {
+                                tMSI += cuota;
+                            }
+                        }
+                        
+                        if (tLimiteMensualidad >= timestampInicioMes) {
+                            cuotasPorAsignar--;
+                        }
+                    }
+                });
+            });
+            return { tMSI, tCorrientes };
+        }
+
         function proyectarGastos(mesesHaciaAdelante) {
             let etiquetas = [];
             let totales = [];
@@ -600,53 +687,8 @@
                 let anioConsultado = hoy.getFullYear();
                 let baseCalendar = new Date(anioConsultado, mesConsultado, 1);
                 
-                let timestampInicioMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth(), 1, 0, 0, 0, 0).getTime();
-                let timestampFinMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-
-                let tMSI = 0, tCorrientes = 0;
-                
-                db.deudas.forEach(d => {
-                    if(d.msi && d.msi.restantes > mAdd) tMSI += (d.monto / d.msi.restantes);
-                    else if(!d.msi && mAdd === 0) tCorrientes += d.monto;
-                });
-
-                db.cuentas.filter(c => c.tipo === 'TDC').forEach(tdc => {
-                    let dc = tdc.diaCorte || 15;
-                    let dl = tdc.diaLimite || 5;
-
-                    db.movimientos.filter(m => m.oId == tdc.id && m.t === 'Gasto' && !m.msi).forEach(m => {
-                        let tMov = m.date || m.id;
-                        let tLimitePago = calcularFechaLimiteDeGasto(tMov, dc, dl);
-                        if (tLimitePago >= timestampInicioMes && tLimitePago <= timestampFinMes) {
-                            tCorrientes += m.val;
-                        }
-                    });
-
-                    db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0).forEach(m => {
-                        let tMov = m.date || m.id;
-                        const cuota = m.val / m.msi.restantes;
-                        let primeraFechaLimite = calcularFechaLimiteDeGasto(tMov, dc, dl);
-                        
-                        let cuotasPorAsignar = m.msi.restantes;
-                        for(let i = m.msi.total - 1; i >= 0; i--) {
-                            let fLimiteMensualidad = new Date(primeraFechaLimite);
-                            fLimiteMensualidad.setMonth(fLimiteMensualidad.getMonth() + i);
-                            let tLimiteMensualidad = fLimiteMensualidad.getTime();
-
-                            if (tLimiteMensualidad >= timestampInicioMes && tLimiteMensualidad <= timestampFinMes) {
-                                if (cuotasPorAsignar > 0) {
-                                    tMSI += cuota;
-                                }
-                            }
-                            
-                            if (tLimiteMensualidad >= timestampInicioMes) {
-                                cuotasPorAsignar--;
-                            }
-                        }
-                    });
-                });
-                
-                totales.push(tMSI + tCorrientes);
+                let obs = calcularObligaciones(mAdd);
+                totales.push(obs.tMSI + obs.tCorrientes);
                 etiquetas.push(mAdd === 0 ? 'Este Mes' : nombresMeses[baseCalendar.getMonth()]);
             }
             return { etiquetas, totales };
@@ -694,66 +736,20 @@
         function render() {
             const mesesAdd = parseInt(document.getElementById('selectorMesProg').value);
             
-            let hoy = new Date();
-            let mesConsultado = hoy.getMonth() + mesesAdd;
-            let anioConsultado = hoy.getFullYear();
-            let baseCalendar = new Date(anioConsultado, mesConsultado, 1);
-            
-            let timestampInicioMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth(), 1, 0, 0, 0, 0).getTime();
-            let timestampFinMes = new Date(baseCalendar.getFullYear(), baseCalendar.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
-
             const cash = db.cuentas.filter(c => c.tipo !== 'TDC').reduce((s, c) => s + c.saldo, 0);
             document.getElementById('grandTotal').innerText = `$${cash.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             
-            let totalMSI = 0, totalCorrientes = 0;
-            
-            db.deudas.forEach(d => {
-                if(d.msi && d.msi.restantes > mesesAdd) totalMSI += (d.monto / d.msi.restantes);
-                else if(!d.msi && mesesAdd === 0) totalCorrientes += d.monto;
-            });
-
-            db.cuentas.filter(c => c.tipo === 'TDC').forEach(tdc => {
-                let dc = tdc.diaCorte || 15;
-                let dl = tdc.diaLimite || 5;
-
-                db.movimientos.filter(m => m.oId == tdc.id && m.t === 'Gasto' && !m.msi).forEach(m => {
-                    let tMov = m.date || m.id;
-                    let tLimitePago = calcularFechaLimiteDeGasto(tMov, dc, dl);
-                    if (tLimitePago >= timestampInicioMes && tLimitePago <= timestampFinMes) {
-                        totalCorrientes += m.val;
-                    }
-                });
-
-                db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0).forEach(m => {
-                    let tMov = m.date || m.id;
-                    const cuota = m.val / m.msi.restantes;
-                    let primeraFechaLimite = calcularFechaLimiteDeGasto(tMov, dc, dl);
-                    
-                    let cuotasPorAsignar = m.msi.restantes;
-                    for(let i = m.msi.total - 1; i >= 0; i--) {
-                        let fLimiteMensualidad = new Date(primeraFechaLimite);
-                        fLimiteMensualidad.setMonth(fLimiteMensualidad.getMonth() + i);
-                        let tLimiteMensualidad = fLimiteMensualidad.getTime();
-
-                        if (tLimiteMensualidad >= timestampInicioMes && tLimiteMensualidad <= timestampFinMes) {
-                            if (cuotasPorAsignar > 0) {
-                                totalMSI += cuota;
-                            }
-                        }
-                        
-                        if (tLimiteMensualidad >= timestampInicioMes) {
-                            cuotasPorAsignar--;
-                        }
-                    }
-                });
-            });
+            // Usamos la nueva función para obtener los valores ya ajustados
+            let obs = calcularObligaciones(mesesAdd);
+            let totalMSI = obs.tMSI;
+            let totalCorrientes = obs.tCorrientes;
 
             let totalExigible = totalMSI + totalCorrientes;
             document.getElementById('resumenMSI').innerText = `$${totalMSI.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             document.getElementById('resumenCorrientes').innerText = `$${totalCorrientes.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             document.getElementById('resumenTotalMes').innerText = `$${totalExigible.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
 
-            // ---- NUEVA LÓGICA DE CÁLCULO DE DIFERENCIA ----
+            // ---- LÓGICA DE CÁLCULO DE DIFERENCIA ----
             let estatusElement = document.getElementById('estatusCobertura');
             let diferencia = totalExigible - cash;
             
@@ -761,16 +757,13 @@
                 estatusElement.innerText = 'Sin deudas este mes';
                 estatusElement.className = 'text-[8px] font-bold mt-1 uppercase text-slate-400';
             } else if (diferencia > 0) {
-                // Falta dinero para cubrir
                 estatusElement.innerText = `Faltan $${diferencia.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
                 estatusElement.className = 'text-[8px] font-bold mt-1 uppercase text-red-400';
             } else {
-                // El saldo disponible cubre el total (sobra dinero o queda exacto)
                 let sobra = Math.abs(diferencia);
                 estatusElement.innerText = `Cubierto (Sobran $${sobra.toLocaleString('es-MX', {minimumFractionDigits:2})})`;
                 estatusElement.className = 'text-[8px] font-bold mt-1 uppercase text-green-400';
             }
-            // -------------------------------------------------
 
             document.getElementById('listaCuentas').innerHTML = db.cuentas.map(c => `
                 <div onclick="abrirModalCuenta(${c.id})" class="snap-center min-w-[180px] p-5 rounded-[2rem] border border-slate-800 bg-slate-900 active:scale-95 transition-transform flex flex-col justify-between">
@@ -833,7 +826,11 @@
                 </div>`;
             }).join('');
 
-            document.getElementById('pagoProximoMes').innerText = `$${totalMSI.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+            let totalMSIActivos = 0;
+            db.deudas.forEach(d => { if(d.msi && d.msi.restantes > 0) totalMSIActivos += (d.monto / d.msi.restantes); });
+            msiTDC.forEach(m => totalMSIActivos += (m.val / m.msi.restantes));
+
+            document.getElementById('pagoProximoMes').innerText = `$${totalMSIActivos.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             document.getElementById('deudaTotalLabel').innerText = `$${(db.deudas.reduce((s,d)=>s+d.monto,0) + db.cuentas.filter(c=>c.tipo==='TDC').reduce((s,c)=>s+c.saldo,0)).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             
             actualizarGrafica();
