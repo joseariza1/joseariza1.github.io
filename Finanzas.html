@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(10px); }
         .modal.active { display: flex; }
@@ -21,7 +21,11 @@
     <header class="p-6">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-blue-500 font-extrabold text-xl tracking-tighter uppercase italic">NanoWallet</h1>
-            <button onclick="abrirModalCuenta()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest">+ CUENTA</button>
+            <div class="flex gap-2">2.0
+                <!-- Botón para comenzar de cero con confirmación -->
+                <button onclick="reiniciarWallet()" class="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95">Reiniciar</button>
+                <button onclick="abrirModalCuenta()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95">+ CUENTA</button>
+            </div>
         </div>
         <div class="bg-gradient-to-br from-blue-700 to-indigo-900 p-8 rounded-[2.5rem] shadow-2xl border border-white/10 text-center">
             <p class="text-blue-200/60 text-[10px] font-bold uppercase tracking-widest">Saldo Real (Efectivo)</p>
@@ -61,7 +65,6 @@
                 </div>
                 <div class="text-right flex flex-col justify-end">
                     <p class="text-[9px] font-black text-blue-500 uppercase italic tracking-widest">Exigible</p>
-                    <!-- Aquí se mostrará si falta o sobra dinero -->
                     <p id="estatusCobertura" class="text-[8px] font-bold mt-1 uppercase"></p>
                 </div>
             </div>
@@ -228,6 +231,16 @@
         let chartObligaciones = null; 
 
         function guardarLocal() { localStorage.setItem('nanowallet_v34_0', JSON.stringify(db)); render(); }
+        
+        // --- FUNCIÓN PARA REINICIAR LA WALLET ---
+        function reiniciarWallet() {
+            if (confirm("¿Estás seguro de que deseas reiniciar la wallet? Se borrarán todas tus cuentas, movimientos y deudas para comenzar de cero.")) {
+                localStorage.removeItem('nanowallet_v34_0');
+                db = { cuentas: [], movimientos: [], deudas: [] };
+                render();
+            }
+        }
+
         function cerrarModal(id) { document.getElementById(id).classList.remove('active'); }
         function mostrarModal(id) { document.getElementById(id).classList.add('active'); }
         
@@ -589,7 +602,6 @@
             return new Date(anioDePago, mesDePago, diaLimite, 23, 59, 59, 999).getTime();
         }
 
-        // ---- NUEVA FUNCIÓN PARA CENTRALIZAR EL CÁLCULO DE OBLIGACIONES Y RESTAR PAGOS REALIZADOS ----
         function calcularObligaciones(mesesHaciaAdelante) {
             let hoy = new Date();
             let mesConsultado = hoy.getMonth() + mesesHaciaAdelante;
@@ -613,28 +625,22 @@
                 let dc = tdc.diaCorte || 15;
                 let dl = tdc.diaLimite || 5;
 
-                // Identificamos deuda actual en MSI
                 let msiList = db.movimientos.filter(m => m.oId == tdc.id && m.msi && m.msi.restantes > 0);
                 let msiDebt = msiList.reduce((s, m) => s + m.val, 0);
                 
-                // Saldo real de deuda corriente = Saldo total en la tarjeta menos lo que corresponde a MSI
                 let saldoCorrienteActual = Math.max(0, tdc.saldo - msiDebt);
                 
-                // Filtramos todos los gastos corrientes históricos
                 let tdcGastos = db.movimientos.filter(m => m.oId == tdc.id && m.t === 'Gasto' && !m.msi);
-                // Los ordenamos de más antiguos a más recientes
                 tdcGastos.sort((a, b) => (a.date || a.id) - (b.date || b.id));
                 
-                // Calculamos cuánto se ha pagado a lo largo del tiempo
                 let historicGastos = tdcGastos.reduce((s, m) => s + m.val, 0);
                 let paidCorriente = Math.max(0, historicGastos - saldoCorrienteActual);
                 
-                // Asignamos la deuda corriente restante restando los abonos a los gastos más viejos
                 tdcGastos.forEach(m => {
                     let valToPay = m.val;
                     if (paidCorriente >= valToPay) {
                         paidCorriente -= valToPay;
-                        valToPay = 0; // Gasto totalmente pagado
+                        valToPay = 0; 
                     } else {
                         valToPay -= paidCorriente;
                         paidCorriente = 0;
@@ -649,7 +655,6 @@
                     }
                 });
 
-                // Calculamos proyecciones MSI (ya contempla disminución porque si se abona la mensualidad bajan los 'restantes')
                 msiList.forEach(m => {
                     let tMov = m.date || m.id;
                     const cuota = m.val / m.msi.restantes;
@@ -739,7 +744,6 @@
             const cash = db.cuentas.filter(c => c.tipo !== 'TDC').reduce((s, c) => s + c.saldo, 0);
             document.getElementById('grandTotal').innerText = `$${cash.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             
-            // Usamos la nueva función para obtener los valores ya ajustados
             let obs = calcularObligaciones(mesesAdd);
             let totalMSI = obs.tMSI;
             let totalCorrientes = obs.tCorrientes;
@@ -749,7 +753,6 @@
             document.getElementById('resumenCorrientes').innerText = `$${totalCorrientes.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
             document.getElementById('resumenTotalMes').innerText = `$${totalExigible.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
 
-            // ---- LÓGICA DE CÁLCULO DE DIFERENCIA ----
             let estatusElement = document.getElementById('estatusCobertura');
             let diferencia = totalExigible - cash;
             
