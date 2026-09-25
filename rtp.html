@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RTP CDMX - Red Completa de Rutas</title>
+    <title>RTP CDMX - Red Completa y Paradas (Apimetro)</title>
     
     <meta name="theme-color" content="#006837">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -44,6 +44,13 @@
             100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
         .user-gps-pulse { animation: userPulse 2s infinite ease-out; border-radius: 50%; }
+
+        .rtp-stop-icon {
+            background: #006837;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 flex flex-col h-screen w-screen overflow-hidden select-none">
@@ -60,7 +67,7 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-sm text-white">RTP CDMX (Red Total)</h1>
-                    <span id="gps-status" class="text-[10px] text-amber-400 font-medium">Buscando GPS...</span>
+                    <span id="api-status" class="text-[10px] text-amber-400 font-medium">Conectando a Apimetro...</span>
                 </div>
             </div>
         </div>
@@ -81,14 +88,14 @@
         <div id="nearest-card" class="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-96 z-10 glass-panel rounded-2xl p-3 shadow-2xl flex items-center justify-between border border-emerald-500/30">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                    <i class="fa-solid fa-location-arrow text-lg"></i>
+                    <i class="fa-solid fa-bus text-lg"></i>
                 </div>
                 <div>
                     <span class="text-[10px] uppercase text-emerald-400 font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-bolt"></i> Ruta más cercana
+                        <i class="fa-solid fa-bolt"></i> Sistema Apimetro.dev
                     </span>
-                    <h2 id="nearest-title" class="text-xs font-bold text-white truncate max-w-[180px]">Obteniendo posición...</h2>
-                    <p id="nearest-sub" class="text-[11px] text-gray-400">Calculando distancia...</p>
+                    <h2 id="nearest-title" class="text-xs font-bold text-white truncate max-w-[180px]">Cargando paradas...</h2>
+                    <p id="nearest-sub" class="text-[11px] text-gray-400">Obteniendo red de RTP</p>
                 </div>
             </div>
             <button id="btn-focus-nearest" class="bg-emerald-600/30 text-emerald-300 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-emerald-600/60 transition">
@@ -102,8 +109,8 @@
         
         <div class="p-4 border-b border-gray-800 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-base text-white">Catálogo Completo RTP</h2>
-                <p id="route-count" class="text-[11px] text-gray-400">Cargando rutas del sistema...</p>
+                <h2 class="font-bold text-base text-white">Catálogo de Rutas RTP</h2>
+                <p id="route-count" class="text-[11px] text-gray-400">Cargando datos desde Apimetro...</p>
             </div>
             <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-2">
                 <i class="fa-solid fa-xmark text-lg"></i>
@@ -114,7 +121,7 @@
         <div class="p-3 border-b border-gray-800 bg-gray-950/60">
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                <input type="text" id="route-search-input" placeholder="Buscar por número o nombre (ej. 115, Tláhuac, Eco)..." 
+                <input type="text" id="route-search-input" placeholder="Buscar ruta o parada (ej. 34-A, Santa Fe)..." 
                        class="w-full bg-gray-900 border border-gray-700/80 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
             </div>
         </div>
@@ -126,197 +133,207 @@
     </aside>
 
     <script>
-        // BASE DE DATOS EXTENDIDA CON TODA LA RED DE RUTAS RTP CDMX
-        const RTP_STATIONS_DATA = [
-            // --- MÓDULO 1 (Cuajimalpa / Álvaro Obregón / Poniente) ---
-            { id: "34-A", number: "34-A", name: "Metro Balderas - Santa Fe", fare: "$4.00", color: "#d97706", category: "Express", waypoints: [[19.42730, -99.14920], [19.36220, -99.26050]] },
-            { id: "9-C", number: "9-C", name: "Santa Fe - Tlacuitlapa / Puerta Grande", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.36220, -99.26050], [19.37310, -99.22890]] },
-            { id: "110", number: "110", name: "Chimalpa - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.35620, -99.30050], [19.40320, -99.18720]] },
-            { id: "110-B", number: "110-B", name: "San Lorenzo Acopilco - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.34910, -99.32800], [19.40320, -99.18720]] },
-            { id: "110-C", number: "110-C", name: "La Pila - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.33850, -99.31900], [19.40320, -99.18720]] },
-            { id: "112", number: "112", name: "Ampliación Jalalpa - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.37890, -99.22150], [19.40320, -99.18720]] },
-            { id: "113-B", number: "113-B", name: "Col. Navidad - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.36100, -99.28100], [19.40320, -99.18720]] },
-            { id: "115", number: "115", name: "Jesús del Monte - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.36810, -99.28900], [19.40320, -99.18720]] },
-            { id: "115-A", number: "115-A", name: "Metro Chapultepec - Las Águilas", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.42110, -99.17150], [19.35120, -99.22100]] },
-            { id: "118", number: "118", name: "Santa Rosa Xochiac - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.33610, -99.26120], [19.40320, -99.18720]] },
-
-            // --- MÓDULO 2 (Tlalpan / Coyoacán / Benito Juárez / Sur) ---
-            { id: "34-B", number: "34-B", name: "Parque de la Bombilla - Santa Fe", fare: "$4.00", color: "#006837", category: "Ecobús", waypoints: [[19.34680, -99.18250], [19.36220, -99.26050]] },
-            { id: "2-A", number: "2-A", name: "Metro Izazaga - San Pedro Mártir", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.42610, -99.13520], [19.27150, -99.16800]] },
-            { id: "13-A", number: "13-A", name: "Metro Chapultepec - Pedregal de San Nicolás", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.42110, -99.17150], [19.28420, -99.21500]] },
-            { id: "17-E", number: "17-E", name: "Metro Universidad - San Pedro Mártir", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.32420, -99.17350], [19.27150, -99.16800]] },
-            { id: "17-F", number: "17-F", name: "Metro Tasqueña - San Pedro Mártir", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.34410, -99.14280], [19.27150, -99.16800]] },
-            { id: "116", number: "116", name: "Santa Rosa Xochiac - Metro Mixcoac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.33610, -99.26120], [19.37580, -99.18750]] },
-            { id: "120", number: "120", name: "Metro Zapata - San Mateo Tlaltenango", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.37080, -99.15850], [19.34120, -99.28100]] },
-            { id: "121-A", number: "121-A", name: "San Bartolo Ameyalco - Metro Zapata", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.34810, -99.25100], [19.37080, -99.15850]] },
-            { id: "123-A", number: "123-A", name: "Metro Universidad - Pedregal de San Nicolás", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.32420, -99.17350], [19.28420, -99.21500]] },
-            { id: "124", number: "124", name: "Puerta Grande - Metro Mixcoac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.37310, -99.22890], [19.37580, -99.18750]] },
-            { id: "125", number: "125", name: "Metro Huipulco - San Miguel Topilejo", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.28850, -99.15800], [19.19820, -99.14100]] },
-            { id: "126", number: "126", name: "Metro Pedregal de San Nicolás - Metro Universidad", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.28420, -99.21500], [19.32420, -99.17350]] },
-            { id: "134-A", number: "134-A", name: "Metro Huipulco - Parres", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.28850, -99.15800], [19.14500, -99.18200]] },
-
-            // --- MÓDULO 3 (Xochimilco / Milpa Alta / Tláhuac / Sur-Oriente) ---
-            { id: "31-B", number: "31-B", name: "Metro Izazaga - Deportivo Xochimilco", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.42610, -99.13520], [19.25200, -99.10150]] },
-            { id: "141", number: "141", name: "Villa Milpa Alta - Metro Tláhuac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.19120, -99.02310], [19.28680, -99.01420]] },
-            { id: "142", number: "142", name: "Tulyehualco - Xochimilco / Palmas", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.25310, -99.01120], [19.25620, -99.10210]] },
-            { id: "143", number: "143", name: "Villa Milpa Alta - Metro Tasqueña", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.19120, -99.02310], [19.34410, -99.14280]] },
-            { id: "144", number: "144", name: "San Pablo Oztotepec - Xochimilco", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.17620, -99.07680], [19.25620, -99.10210]] },
-            { id: "144-C", number: "144-C", name: "San Pablo Oztotepec - Metro Tasqueña", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.17620, -99.07680], [19.34410, -99.14280]] },
-            { id: "145", number: "145", name: "San Bartolomé Xicomulco - Metro Tasqueña", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.21500, -99.05800], [19.34410, -99.14280]] },
-            { id: "146", number: "146", name: "San Pedro Atocpan - Metro Tasqueña", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.20210, -99.04900], [19.34410, -99.14280]] },
-            { id: "147", number: "147", name: "San Salvador Cuauhtenco - Metro Tláhuac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.18200, -99.00800], [19.28680, -99.01420]] },
-
-            // --- MÓDULO 4 (Iztapalapa / Iztacalco / Oriente) ---
-            { id: "1-D", number: "1-D", name: "Metro Santa Martha - Metro Mixcoac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.35980, -98.98620], [19.37580, -99.18750]] },
-            { id: "52-C", number: "52-C", name: "Metro Santa Martha - Metro Zapata", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.35980, -98.98620], [19.37080, -99.15850]] },
-            { id: "161", number: "161", name: "Ampliación Santiago - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.32100, -99.01820], [19.34500, -99.06300]] },
-            { id: "161-C", number: "161-C", name: "Lomas de Zaragoza - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.34900, -98.98100], [19.34500, -99.06300]] },
-            { id: "161-D", number: "161-D", name: "Paraje Zacatepec - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.33800, -99.00200], [19.34500, -99.06300]] },
-            { id: "161-E", number: "161-E", name: "San José Buenavista - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.33100, -98.99500], [19.34500, -99.06300]] },
-            { id: "162", number: "162", name: "Santa Catarina - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.31900, -98.98210], [19.34500, -99.06300]] },
-            { id: "162-D", number: "162-D", name: "Metro Santa Martha - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.35980, -98.98620], [19.34500, -99.06300]] },
-            { id: "163", number: "163", name: "Colonia del Mar - Metro Zaragoza", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.29800, -99.03100], [19.41210, -99.08200]] },
-
-            // --- MÓDULO 5 Y 6 (Gustavo A. Madero / Venustiano Carranza / Norte) ---
-            { id: "33", number: "33", name: "León de los Aldama - Metro Chabacano", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.49310, -99.07210], [19.40820, -99.13580]] },
-            { id: "37", number: "37", name: "U.C.T.M. Atzacoalco - Carmen Serdán", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50820, -99.09820], [19.32890, -99.11210]] },
-            { id: "39", number: "39", name: "Metro Carmen Serdán - Metro San Lázaro", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.32890, -99.11210], [19.43010, -99.11500]] },
-            { id: "43", number: "43", name: "San Felipe de Jesús - Metro San Lázaro", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.49800, -99.08100], [19.43010, -99.11500]] },
-            { id: "101", number: "101", name: "Lomas de Cuautepec - La Villa / Ferroplaza", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.54980, -99.13510], [19.48210, -99.11580]] },
-            { id: "101-A", number: "101-A", name: "Vista Hermosa - Metro Indios Verdes", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.55800, -99.12900], [19.49520, -99.11900]] },
-            { id: "101-B", number: "101-B", name: "Colonia Arboledas - Metro Indios Verdes", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.56200, -99.13800], [19.49520, -99.11900]] },
-            { id: "101-D", number: "101-D", name: "La Brecha - Metro Indios Verdes", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.55100, -99.14500], [19.49520, -99.11900]] },
-            { id: "102", number: "102", name: "Cuautepec Barrio Bajo - Metro Pantitlán", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.53100, -99.14100], [19.41620, -99.07210]] },
-            { id: "103", number: "103", name: "Ampliación Malacates - Metro La Raza", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.55410, -99.14120], [19.47020, -99.13680]] },
-            { id: "104", number: "104", name: "El Carmen - Metro Potrero", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.53800, -99.12100], [19.47700, -99.13100]] },
-            { id: "107-B", number: "107-B", name: "La Forestal - Metro Indios Verdes", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.56000, -99.11500], [19.49520, -99.11900]] },
-
-            // --- MÓDULO 7 Y 8 (Azcapotzalco / Miguel Hidalgo / Nochebús / Ecobús) ---
-            { id: "18", number: "18", name: "Metro Cuatro Caminos - Col. Moctezuma 2da", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.45900, -99.21500], [19.42850, -99.09120]] },
-            { id: "19", number: "19", name: "Metro El Rosario - Parque México por Cuitláhuac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.41210, -99.16850]] },
-            { id: "19-A", number: "19-A", name: "Metro El Rosario - Metro Parque México por Camarones", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.41210, -99.16850]] },
-            { id: "57-A", number: "57-A", name: "Metro Cuatro Caminos - Metro Constitución de 1917", fare: "$4.00", color: "#d97706", category: "Express", waypoints: [[19.45900, -99.21500], [19.34500, -99.06300]] },
-            { id: "57-C", number: "57-C", name: "Metro Cuatro Caminos - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.45900, -99.21500], [19.34500, -99.06300]] },
-            { id: "59", number: "59", name: "Metro El Rosario - Metro Chapultepec", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.42110, -99.17150]] },
-            { id: "59-A", number: "59-A", name: "Metro El Rosario - Sullivan", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.43500, -99.16100]] },
-            { id: "107", number: "107", name: "Metro El Rosario - Metro Tacuba", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.45920, -99.18720]] },
-            { id: "200", number: "200", name: "Circuito Bicentenario", fare: "$3.50", color: "#006837", category: "Ecobús", waypoints: [[19.45600, -99.14200], [19.43200, -99.10900], [19.35900, -99.15500], [19.43100, -99.17300]] }
-        ];
+        const APIMETRO_ROUTES_URL = "https://apimetro.dev/movilidad/mapas/geojsonLinea?sistema=RTP";
+        const APIMETRO_STOPS_URL = "https://apimetro.dev/movilidad/mapas/geojsonEstacion?sistema=RTP";
 
         let map;
         let userLocation = null;
         let userMarker = null;
-        let processedRoutes = [];
-        let loadedPolylines = {};
-        let routeStreetGeometries = {};
+
+        let routesLayerGroup;
+        let stopsLayerGroup;
+
+        let routesGeoData = [];
+        let stopsGeoData = [];
 
         function initMap() {
             map = L.map('map', { center: [19.4326, -99.1332], zoom: 12, zoomControl: false });
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
+                attribution: '&copy; OpenStreetMap | Datos: <a href="https://apimetro.dev" target="_blank" class="underline">Apimetro.dev</a>'
             }).addTo(map);
 
             L.control.zoom({ position: 'topright' }).addTo(map);
 
-            document.getElementById('route-count').textContent = `${RTP_STATIONS_DATA.length} rutas registradas no sistema`;
+            routesLayerGroup = L.layerGroup().addTo(map);
+            stopsLayerGroup = L.layerGroup().addTo(map);
 
-            // Obtener trazados exactos vía OSRM
-            fetchStreetExactRoutes().then(() => {
-                getUserLocation();
-            });
+            getUserLocation();
+            loadApimetroData();
 
-            // Listener del buscador
             document.getElementById('route-search-input').addEventListener('input', (e) => {
                 renderRoutesList(e.target.value);
             });
         }
 
-        async function fetchStreetExactRoutes() {
-            for (let route of RTP_STATIONS_DATA) {
-                const coordinatesString = route.waypoints
-                    .map(wp => `${wp[1]},${wp[0]}`)
-                    .join(';');
+        async function loadApimetroData() {
+            const apiStatus = document.getElementById('api-status');
+            apiStatus.textContent = "Obteniendo datos de Apimetro...";
 
-                const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordinatesString}?overview=full&geometries=geojson`;
+            try {
+                // Peticiones simultáneas a Apimetro para Rutas y Paradas
+                const [routesResponse, stopsResponse] = await Promise.all([
+                    fetch(APIMETRO_ROUTES_URL),
+                    fetch(APIMETRO_STOPS_URL)
+                ]);
 
-                try {
-                    const response = await fetch(osrmUrl);
-                    const data = await response.json();
+                const routesData = await routesResponse.json();
+                const stopsData = await stopsResponse.json();
 
-                    if (data.routes && data.routes.length > 0) {
-                        const streetPath = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                        routeStreetGeometries[route.id] = streetPath;
-                        drawRoutePolyline(route, streetPath);
-                    } else {
-                        routeStreetGeometries[route.id] = route.waypoints;
-                        drawRoutePolyline(route, route.waypoints);
-                    }
-                } catch (e) {
-                    routeStreetGeometries[route.id] = route.waypoints;
-                    drawRoutePolyline(route, route.waypoints);
+                routesGeoData = routesData.features || [];
+                stopsGeoData = stopsData.features || [];
+
+                apiStatus.textContent = "Apimetro Conectado";
+                apiStatus.className = "text-[10px] text-emerald-400 font-medium";
+
+                document.getElementById('route-count').textContent = `${routesGeoData.length} líneas y ${stopsGeoData.length} paradas registradas`;
+
+                renderRoutesOnMap();
+                renderStopsOnMap();
+                renderRoutesList();
+
+                if (routesGeoData.length > 0) {
+                    const firstRoute = routesGeoData[0].properties;
+                    document.getElementById('nearest-title').textContent = `${firstRoute.nombre || firstRoute.num_comercial || 'Red RTP'}`;
+                    document.getElementById('nearest-sub').textContent = `${stopsGeoData.length} paradas activas cargadas`;
                 }
+
+            } catch (error) {
+                console.error("Error al obtener datos de Apimetro:", error);
+                apiStatus.textContent = "Error de conexión con API";
+                apiStatus.className = "text-[10px] text-red-400 font-medium";
             }
         }
 
-        function drawRoutePolyline(route, pathCoords) {
-            const polyline = L.polyline(pathCoords, {
-                color: route.color,
-                weight: 4,
-                opacity: 0.8,
-                lineCap: 'round',
-                lineJoin: 'round'
-            }).addTo(map);
+        function renderRoutesOnMap() {
+            routesLayerGroup.clearLayers();
 
-            polyline.bindPopup(`
-                <div class="p-3">
-                    <span class="text-[10px] font-bold text-emerald-400 uppercase">Ruta ${route.number} (${route.fare})</span>
-                    <h3 class="font-bold text-sm text-white mt-0.5">${route.name}</h3>
-                    <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-bus text-emerald-400"></i> Servicio ${route.category}</p>
-                </div>
-            `);
+            L.geoJSON(routesGeoData, {
+                style: function(feature) {
+                    return {
+                        color: feature.properties.color || '#006837',
+                        weight: 4,
+                        opacity: 0.85
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    const props = feature.properties;
+                    const name = props.nombre || props.num_comercial || "Ruta RTP";
+                    const routeNum = props.num_comercial || "RTP";
 
-            loadedPolylines[route.id] = polyline;
+                    layer.bindPopup(`
+                        <div class="p-3">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase">Ruta ${routeNum}</span>
+                            <h3 class="font-bold text-sm text-white mt-0.5">${name}</h3>
+                            <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-route text-emerald-400"></i> Trazo oficial de Apimetro</p>
+                        </div>
+                    `);
+                }
+            }).addTo(routesLayerGroup);
         }
 
-        function getUserLocation() {
-            const gpsStatus = document.getElementById('gps-status');
+        function renderStopsOnMap() {
+            stopsLayerGroup.clearLayers();
 
-            if (!navigator.geolocation) {
-                fallbackDefaultLocation();
+            const customStopIcon = L.divIcon({
+                className: 'rtp-stop-icon',
+                iconSize: [10, 10],
+                iconAnchor: [5, 5]
+            });
+
+            L.geoJSON(stopsGeoData, {
+                pointToLayer: function(feature, latlng) {
+                    return L.marker(latlng, { icon: customStopIcon });
+                },
+                onEachFeature: function(feature, layer) {
+                    const props = feature.properties;
+                    const stopName = props.nombre || "Parada de RTP";
+                    const alcaldia = props.alcaldia_municipio || "CDMX";
+
+                    layer.bindPopup(`
+                        <div class="p-3">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase"><i class="fa-solid fa-bus-simple"></i> Parada Oficial</span>
+                            <h3 class="font-bold text-sm text-white mt-0.5">${stopName}</h3>
+                            <p class="text-xs text-gray-400 mt-1">${alcaldia}</p>
+                        </div>
+                    `);
+                }
+            }).addTo(stopsLayerGroup);
+        }
+
+        function renderRoutesList(filterText = '') {
+            const container = document.getElementById('nearby-routes-list');
+            container.innerHTML = '';
+
+            const term = filterText.toLowerCase().trim();
+
+            const filtered = routesGeoData.filter(feature => {
+                const props = feature.properties;
+                const name = (props.nombre || '').toLowerCase();
+                const num = (props.num_comercial || '').toLowerCase();
+                return name.includes(term) || num.includes(term);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
+                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-2xl mb-2"></i>
+                        <h4 class="text-xs font-bold text-gray-300">No se encontraron resultados</h4>
+                        <p class="text-[11px] text-gray-500 mt-1">Prueba filtrando por número o alcaldía.</p>
+                    </div>
+                `;
                 return;
             }
 
-            gpsStatus.textContent = "Obteniendo GPS...";
+            filtered.forEach((feature, index) => {
+                const props = feature.properties;
+                const name = props.nombre || "Ruta Sin Nombre";
+                const num = props.num_comercial || `R-${index+1}`;
+                const color = props.color || '#006837';
+
+                const card = document.createElement('div');
+                card.className = "p-3 bg-gray-900 rounded-xl border border-gray-800 hover:border-emerald-500/50 cursor-pointer transition space-y-1.5";
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded text-white" style="background-color: ${color}">
+                                ${num}
+                            </span>
+                            <span class="font-semibold text-xs text-white truncate max-w-[170px]">${name}</span>
+                        </div>
+                    </div>
+                `;
+
+                card.onclick = () => {
+                    const tempGeoJson = L.geoJSON(feature);
+                    map.fitBounds(tempGeoJson.getBounds(), { padding: [50, 50] });
+
+                    if (window.innerWidth < 640) {
+                        document.getElementById('side-drawer').classList.add('-translate-x-full');
+                    }
+                };
+
+                container.appendChild(card);
+            });
+        }
+
+        function getUserLocation() {
+            if (!navigator.geolocation) return;
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     userLocation = [pos.coords.latitude, pos.coords.longitude];
-                    gpsStatus.textContent = "GPS Activo";
-                    gpsStatus.className = "text-[10px] text-emerald-400 font-medium";
-
                     updateUserMarker();
-                    calculateAllDistances();
                 },
-                (err) => {
-                    gpsStatus.textContent = "Ubicación aprox. (CDMX)";
-                    gpsStatus.className = "text-[10px] text-amber-400 font-medium";
-                    fallbackDefaultLocation();
-                },
-                { enableHighAccuracy: true, timeout: 7000 }
+                () => { userLocation = [19.4230, -99.1630]; updateUserMarker(); },
+                { enableHighAccuracy: true, timeout: 5000 }
             );
-        }
-
-        function fallbackDefaultLocation() {
-            userLocation = [19.4230, -99.1630]; // Centro / Roma Norte
-            updateUserMarker();
-            calculateAllDistances();
         }
 
         function updateUserMarker() {
             if (!userLocation) return;
-
             if (userMarker) map.removeLayer(userMarker);
 
             const icon = L.divIcon({
@@ -332,131 +349,15 @@
             });
 
             userMarker = L.marker(userLocation, { icon: icon }).addTo(map);
-            map.flyTo(userLocation, 13, { duration: 1.2 });
         }
 
-        function getMinDistanceToRoute(userCoords, routePath) {
-            let minDistance = Infinity;
-
-            for (let point of routePath) {
-                const dist = calculateDistanceMeters(userCoords[0], userCoords[1], point[0], point[1]);
-                if (dist < minDistance) minDistance = dist;
-            }
-
-            return minDistance;
-        }
-
-        function calculateAllDistances() {
-            if (!userLocation) return;
-
-            processedRoutes = RTP_STATIONS_DATA.map(route => {
-                const exactPath = routeStreetGeometries[route.id] || route.waypoints;
-                const distanceMeters = getMinDistanceToRoute(userLocation, exactPath);
-                return {
-                    ...route,
-                    distanceMeters: Math.round(distanceMeters)
-                };
-            });
-
-            // Ordenar por menor distancia
-            processedRoutes.sort((a, b) => a.distanceMeters - b.distanceMeters);
-
-            if (processedRoutes.length > 0) {
-                const nearest = processedRoutes[0];
-                const distLabel = nearest.distanceMeters >= 1000 
-                    ? `${(nearest.distanceMeters/1000).toFixed(1)} km` 
-                    : `${nearest.distanceMeters} m`;
-
-                document.getElementById('nearest-title').textContent = `Ruta ${nearest.number} - ${nearest.name}`;
-                document.getElementById('nearest-sub').textContent = `Pasa a ${distLabel} de tu posición`;
-                
-                document.getElementById('btn-focus-nearest').onclick = () => {
-                    if (loadedPolylines[nearest.id]) {
-                        map.fitBounds(loadedPolylines[nearest.id].getBounds(), { padding: [50, 50] });
-                        loadedPolylines[nearest.id].openPopup();
-                    }
-                };
-            }
-
-            renderRoutesList();
-        }
-
-        function renderRoutesList(filterText = '') {
-            const container = document.getElementById('nearby-routes-list');
-            container.innerHTML = '';
-
-            const term = filterText.toLowerCase().trim();
-
-            const filtered = processedRoutes.filter(route => {
-                return route.number.toLowerCase().includes(term) || 
-                       route.name.toLowerCase().includes(term) ||
-                       route.category.toLowerCase().includes(term);
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
-                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-2xl mb-2"></i>
-                        <h4 class="text-xs font-bold text-gray-300">No se encontraron rutas</h4>
-                        <p class="text-[11px] text-gray-500 mt-1">Intenta con otro número o destino.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            filtered.forEach((item) => {
-                const formatDist = item.distanceMeters >= 1000 
-                    ? `${(item.distanceMeters/1000).toFixed(1)} km` 
-                    : `${item.distanceMeters} m`;
-
-                const card = document.createElement('div');
-                card.className = "p-3 bg-gray-900 rounded-xl border border-gray-800 hover:border-emerald-500/50 cursor-pointer transition space-y-1.5";
-                
-                card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded text-white" style="background-color: ${item.color}">
-                                ${item.number}
-                            </span>
-                            <span class="font-semibold text-xs text-white truncate max-w-[160px]">${item.name}</span>
-                        </div>
-                        <span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-600/30 font-bold px-2 py-0.5 rounded">${item.fare}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-[11px] text-gray-400 pt-1">
-                        <span>Servicio: <strong class="text-gray-300">${item.category}</strong></span>
-                        <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-person-walking text-xs"></i> A ${formatDist}</span>
-                    </div>
-                `;
-
-                card.onclick = () => {
-                    if (loadedPolylines[item.id]) {
-                        map.fitBounds(loadedPolylines[item.id].getBounds(), { padding: [50, 50] });
-                        loadedPolylines[item.id].openPopup();
-
-                        if (window.innerWidth < 640) {
-                            document.getElementById('side-drawer').classList.add('-translate-x-full');
-                        }
-                    }
-                };
-
-                container.appendChild(card);
-            });
-        }
-
-        function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
-            const R = 6371000;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-        }
-
-        // Interacción
+        // Interacción UI
         document.getElementById('btn-toggle-drawer').onclick = () => document.getElementById('side-drawer').classList.remove('-translate-x-full');
         document.getElementById('btn-close-drawer').onclick = () => document.getElementById('side-drawer').classList.add('-translate-x-full');
-        document.getElementById('btn-locate').onclick = () => getUserLocation();
+        document.getElementById('btn-locate').onclick = () => {
+            if (userLocation) map.flyTo(userLocation, 14, { duration: 1.2 });
+            else getUserLocation();
+        };
 
         window.onload = initMap;
     </script>
