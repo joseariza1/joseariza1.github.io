@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RTP CDMX - Monitoreo & Rutas Exactas por Calle</title>
+    <title>RTP CDMX - Monitoreo & Búsqueda Completa</title>
     
     <meta name="theme-color" content="#006837">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -81,7 +81,7 @@
         <div id="nearest-card" class="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-96 z-10 glass-panel rounded-2xl p-3 shadow-2xl flex items-center justify-between border border-emerald-500/30">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                    <i class="fa-solid fa-route text-lg"></i>
+                    <i class="fa-solid fa-location-arrow text-lg"></i>
                 </div>
                 <div>
                     <span class="text-[10px] uppercase text-emerald-400 font-bold flex items-center gap-1">
@@ -99,39 +99,39 @@
 
     <!-- Panel Lateral -->
     <aside id="side-drawer" class="fixed top-0 left-0 bottom-0 w-full sm:w-96 z-40 glass-panel border-r border-gray-800 transform -translate-x-full transition-transform duration-300 flex flex-col">
+        
         <div class="p-4 border-b border-gray-800 flex items-center justify-between">
-            <h2 class="font-bold text-base text-white">Rutas RTP Cercanas</h2>
+            <div>
+                <h2 class="font-bold text-base text-white">Rutas del Sistema</h2>
+                <p class="text-[11px] text-gray-400">Ordenadas por cercanía a tu ubicación</p>
+            </div>
             <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-2">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
         </div>
 
-        <!-- Selector de Radio -->
+        <!-- Buscador de Rutas -->
         <div class="p-3 border-b border-gray-800 bg-gray-950/60">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-semibold text-gray-300">Radio de búsqueda:</span>
-                <span id="radius-val" class="text-[11px] font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-600/40">2.0 km</span>
-            </div>
-            <div class="grid grid-cols-4 gap-1.5">
-                <button data-r="500" class="btn-radius py-1 text-xs rounded bg-gray-800 text-gray-300">500m</button>
-                <button data-r="1000" class="btn-radius py-1 text-xs rounded bg-gray-800 text-gray-300">1 km</button>
-                <button data-r="2000" class="btn-radius py-1 text-xs rounded bg-emerald-700 text-white font-bold">2 km</button>
-                <button data-r="5000" class="btn-radius py-1 text-xs rounded bg-gray-800 text-gray-300">5 km</button>
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" id="route-search-input" placeholder="Buscar por número o nombre (ej. 34-A, Balderas)..." 
+                       class="w-full bg-gray-900 border border-gray-700/80 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
             </div>
         </div>
 
-        <!-- Lista de Rutas Cercanas -->
+        <!-- Lista de Rutas -->
         <div id="nearby-routes-list" class="flex-1 overflow-y-auto p-4 space-y-2.5">
             <!-- Se llena dinámicamente -->
         </div>
     </aside>
 
     <script>
-        // Paradas clave por las que transita la ruta para calcular el enrutamiento vial real
+        // Catálogo de Rutas RTP con sus puntos de referencia exactos por calle
         const RTP_STATIONS_DATA = [
             {
                 id: "34-A",
-                name: "Ruta 34-A (Balderas - Santa Fe)",
+                number: "34-A",
+                name: "Balderas - Santa Fe",
                 fare: "$4.00",
                 color: "#d97706",
                 category: "Express",
@@ -149,7 +149,8 @@
             },
             {
                 id: "200",
-                name: "Ruta 200 (Circuito Bicentenario)",
+                number: "200",
+                name: "Circuito Bicentenario",
                 fare: "$3.50",
                 color: "#006837",
                 category: "Ecobús",
@@ -166,7 +167,8 @@
             },
             {
                 id: "57-A",
-                name: "Ruta 57-A (Cuatro Caminos - Constitución de 1917)",
+                number: "57-A",
+                name: "Cuatro Caminos - Constitución de 1917",
                 fare: "$2.00",
                 color: "#2563eb",
                 category: "Ordinario",
@@ -183,16 +185,13 @@
         let map;
         let userLocation = null;
         let userMarker = null;
-        let radiusCircle = null;
-        let searchRadiusMeters = 2000;
-        
+        let processedRoutes = [];
         let loadedPolylines = {};
-        let routeStreetGeometries = {}; // Guarda la geometría exacta por calles enviada por OSRM
+        let routeStreetGeometries = {};
 
         function initMap() {
             map = L.map('map', { center: [19.4326, -99.1332], zoom: 12, zoomControl: false });
 
-            // Baldosas libres de OpenStreetMap
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap'
@@ -200,18 +199,19 @@
 
             L.control.zoom({ position: 'topright' }).addTo(map);
 
-            // Obtener rutas calculando su trazado real por calles vía OSRM API
+            // Obtener trazados exactos por calle vía OSRM
             fetchStreetExactRoutes().then(() => {
                 getUserLocation();
             });
+
+            // Listener de búsqueda por nombre o número
+            document.getElementById('route-search-input').addEventListener('input', (e) => {
+                renderRoutesList(e.target.value);
+            });
         }
 
-        /* ==========================================================================
-           2. CALCULAR RUTA EXACTA POR CALLES CON OSRM (Open Source Routing Machine)
-           ========================================================================== */
         async function fetchStreetExactRoutes() {
             for (let route of RTP_STATIONS_DATA) {
-                // Convertir waypoints a formato lon,lat para la API de OSRM
                 const coordinatesString = route.waypoints
                     .map(wp => `${wp[1]},${wp[0]}`)
                     .join(';');
@@ -223,19 +223,14 @@
                     const data = await response.json();
 
                     if (data.routes && data.routes.length > 0) {
-                        // Invertir coordenadas del GeoJSON [lon, lat] -> [lat, lon] para Leaflet
                         const streetPath = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
                         routeStreetGeometries[route.id] = streetPath;
-                        
-                        // Trazar línea sobre las calles reales
                         drawRoutePolyline(route, streetPath);
                     } else {
-                        // En caso de fallo de red, usar puntos clave
                         routeStreetGeometries[route.id] = route.waypoints;
                         drawRoutePolyline(route, route.waypoints);
                     }
                 } catch (e) {
-                    console.warn(`Error obteniendo la calle exacta para la ruta ${route.id}, usando trazo aproximado.`);
                     routeStreetGeometries[route.id] = route.waypoints;
                     drawRoutePolyline(route, route.waypoints);
                 }
@@ -253,18 +248,15 @@
 
             polyline.bindPopup(`
                 <div class="p-3">
-                    <span class="text-[10px] font-bold text-emerald-400 uppercase">${route.category} (${route.fare})</span>
+                    <span class="text-[10px] font-bold text-emerald-400 uppercase">Ruta ${route.number} (${route.fare})</span>
                     <h3 class="font-bold text-sm text-white mt-0.5">${route.name}</h3>
-                    <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-road text-emerald-400"></i> Trazado exacto calle por calle</p>
+                    <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-bus text-emerald-400"></i> Servicio ${route.category}</p>
                 </div>
             `);
 
             loadedPolylines[route.id] = polyline;
         }
 
-        /* ==========================================================================
-           1. DETECTAR Y FILTRAR RUTAS CERCANAS AL USUARIO
-           ========================================================================== */
         function getUserLocation() {
             const gpsStatus = document.getElementById('gps-status');
 
@@ -282,10 +274,10 @@
                     gpsStatus.className = "text-[10px] text-emerald-400 font-medium";
 
                     updateUserMarker();
-                    filterNearbyRoutes();
+                    calculateAllDistances();
                 },
                 (err) => {
-                    gpsStatus.textContent = "Ubicación aprox. (Centro CDMX)";
+                    gpsStatus.textContent = "Ubicación aprox. (CDMX)";
                     gpsStatus.className = "text-[10px] text-amber-400 font-medium";
                     fallbackDefaultLocation();
                 },
@@ -294,16 +286,15 @@
         }
 
         function fallbackDefaultLocation() {
-            userLocation = [19.4230, -99.1630]; // Metro Chapultepec / Condesa como punto base
+            userLocation = [19.4230, -99.1630]; // Chapultepec / Roma Norte
             updateUserMarker();
-            filterNearbyRoutes();
+            calculateAllDistances();
         }
 
         function updateUserMarker() {
             if (!userLocation) return;
 
             if (userMarker) map.removeLayer(userMarker);
-            if (radiusCircle) map.removeLayer(radiusCircle);
 
             const icon = L.divIcon({
                 className: 'custom-user-icon',
@@ -318,16 +309,7 @@
             });
 
             userMarker = L.marker(userLocation, { icon: icon }).addTo(map);
-            radiusCircle = L.circle(userLocation, {
-                radius: searchRadiusMeters,
-                color: '#3b82f6',
-                fillColor: '#3b82f6',
-                fillOpacity: 0.08,
-                weight: 1.5,
-                dashArray: '4, 6'
-            }).addTo(map);
-
-            map.flyTo(userLocation, 14, { duration: 1.2 });
+            map.flyTo(userLocation, 13, { duration: 1.2 });
         }
 
         function getMinDistanceToRoute(userCoords, routePath) {
@@ -341,61 +323,66 @@
             return minDistance;
         }
 
-        function filterNearbyRoutes() {
+        function calculateAllDistances() {
             if (!userLocation) return;
 
+            processedRoutes = RTP_STATIONS_DATA.map(route => {
+                const exactPath = routeStreetGeometries[route.id] || route.waypoints;
+                const distanceMeters = getMinDistanceToRoute(userLocation, exactPath);
+                return {
+                    ...route,
+                    distanceMeters: Math.round(distanceMeters)
+                };
+            });
+
+            // Ordenar por cercanía (de menor a mayor distancia)
+            processedRoutes.sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+            // Actualizar tarjeta inferior con la ruta más cercana
+            if (processedRoutes.length > 0) {
+                const nearest = processedRoutes[0];
+                const distLabel = nearest.distanceMeters >= 1000 
+                    ? `${(nearest.distanceMeters/1000).toFixed(1)} km` 
+                    : `${nearest.distanceMeters} m`;
+
+                document.getElementById('nearest-title').textContent = `Ruta ${nearest.number} - ${nearest.name}`;
+                document.getElementById('nearest-sub').textContent = `Pasa a ${distLabel} de tu posición`;
+                
+                document.getElementById('btn-focus-nearest').onclick = () => {
+                    if (loadedPolylines[nearest.id]) {
+                        map.fitBounds(loadedPolylines[nearest.id].getBounds(), { padding: [50, 50] });
+                        loadedPolylines[nearest.id].openPopup();
+                    }
+                };
+            }
+
+            renderRoutesList();
+        }
+
+        function renderRoutesList(filterText = '') {
             const container = document.getElementById('nearby-routes-list');
             container.innerHTML = '';
 
-            let nearbyResults = [];
+            const term = filterText.toLowerCase().trim();
 
-            RTP_STATIONS_DATA.forEach(route => {
-                const exactPath = routeStreetGeometries[route.id] || route.waypoints;
-                const distanceMeters = getMinDistanceToRoute(userLocation, exactPath);
-
-                if (distanceMeters <= searchRadiusMeters) {
-                    nearbyResults.push({
-                        ...route,
-                        distanceMeters: Math.round(distanceMeters)
-                    });
-                }
+            const filtered = processedRoutes.filter(route => {
+                return route.number.toLowerCase().includes(term) || 
+                       route.name.toLowerCase().includes(term) ||
+                       route.category.toLowerCase().includes(term);
             });
 
-            // Ordenar por cercanía
-            nearbyResults.sort((a, b) => a.distanceMeters - b.distanceMeters);
-
-            if (nearbyResults.length === 0) {
+            if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-400 text-2xl mb-2"></i>
-                        <h4 class="text-xs font-bold text-gray-300">No hay rutas a menos de ${(searchRadiusMeters/1000).toFixed(1)} km</h4>
-                        <p class="text-[11px] text-gray-500 mt-1">Intenta seleccionar un radio de búsqueda mayor.</p>
+                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-2xl mb-2"></i>
+                        <h4 class="text-xs font-bold text-gray-300">No se encontraron rutas</h4>
+                        <p class="text-[11px] text-gray-500 mt-1">Intenta con otro número o nombre.</p>
                     </div>
                 `;
-
-                document.getElementById('nearest-title').textContent = "Sin rutas en el área";
-                document.getElementById('nearest-sub').textContent = `Amplía el radio a más de ${(searchRadiusMeters/1000).toFixed(1)} km`;
                 return;
             }
 
-            // Actualizar Tarjeta Flotante
-            const topRoute = nearbyResults[0];
-            const distLabel = topRoute.distanceMeters >= 1000 
-                ? `${(topRoute.distanceMeters/1000).toFixed(1)} km` 
-                : `${topRoute.distanceMeters} m`;
-
-            document.getElementById('nearest-title').textContent = topRoute.name;
-            document.getElementById('nearest-sub').textContent = `Pasa a ${distLabel} de tu ubicación actual`;
-            
-            document.getElementById('btn-focus-nearest').onclick = () => {
-                if (loadedPolylines[topRoute.id]) {
-                    map.fitBounds(loadedPolylines[topRoute.id].getBounds(), { padding: [50, 50] });
-                    loadedPolylines[topRoute.id].openPopup();
-                }
-            };
-
-            // Dibujar Lista en Panel
-            nearbyResults.forEach(item => {
+            filtered.forEach((item, index) => {
                 const formatDist = item.distanceMeters >= 1000 
                     ? `${(item.distanceMeters/1000).toFixed(1)} km` 
                     : `${item.distanceMeters} m`;
@@ -405,11 +392,16 @@
                 
                 card.innerHTML = `
                     <div class="flex items-center justify-between">
-                        <span class="font-bold text-xs" style="color: ${item.color}">${item.name}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded text-white" style="background-color: ${item.color}">
+                                ${item.number}
+                            </span>
+                            <span class="font-semibold text-xs text-white truncate max-w-[160px]">${item.name}</span>
+                        </div>
                         <span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-600/30 font-bold px-2 py-0.5 rounded">${item.fare}</span>
                     </div>
                     <div class="flex items-center justify-between text-[11px] text-gray-400 pt-1">
-                        <span>Servicio: <strong class="text-white">${item.category}</strong></span>
+                        <span>Servicio: <strong class="text-gray-300">${item.category}</strong></span>
                         <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-person-walking text-xs"></i> A ${formatDist}</span>
                     </div>
                 `;
@@ -439,23 +431,10 @@
             return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
         }
 
-        // Controles de Radio y Menú
+        // Eventos
         document.getElementById('btn-toggle-drawer').onclick = () => document.getElementById('side-drawer').classList.remove('-translate-x-full');
         document.getElementById('btn-close-drawer').onclick = () => document.getElementById('side-drawer').classList.add('-translate-x-full');
         document.getElementById('btn-locate').onclick = () => getUserLocation();
-
-        document.querySelectorAll('.btn-radius').forEach(btn => {
-            btn.onclick = (e) => {
-                document.querySelectorAll('.btn-radius').forEach(b => b.className = 'btn-radius py-1 text-xs rounded bg-gray-800 text-gray-300');
-                e.target.className = 'btn-radius py-1 text-xs rounded bg-emerald-700 text-white font-bold';
-
-                searchRadiusMeters = parseInt(e.target.dataset.r);
-                document.getElementById('radius-val').textContent = `${(searchRadiusMeters/1000).toFixed(1)} km`;
-
-                updateUserMarker();
-                filterNearbyRoutes();
-            };
-        });
 
         window.onload = initMap;
     </script>
