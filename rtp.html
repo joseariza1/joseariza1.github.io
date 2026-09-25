@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RTP CDMX - Monitoreo & Búsqueda Completa</title>
+    <title>RTP CDMX - Monitoreo & Rutas Completa</title>
     
     <meta name="theme-color" content="#006837">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -102,7 +102,7 @@
         
         <div class="p-4 border-b border-gray-800 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-base text-white">Rutas del Sistema</h2>
+                <h2 class="font-bold text-base text-white">Rutas del Sistema RTP</h2>
                 <p class="text-[11px] text-gray-400">Ordenadas por cercanía a tu ubicación</p>
             </div>
             <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-2">
@@ -114,7 +114,7 @@
         <div class="p-3 border-b border-gray-800 bg-gray-950/60">
             <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                <input type="text" id="route-search-input" placeholder="Buscar por número o nombre (ej. 34-A, Balderas)..." 
+                <input type="text" id="route-search-input" placeholder="Buscar por número o nombre (ej. 101, Balderas)..." 
                        class="w-full bg-gray-900 border border-gray-700/80 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
             </div>
         </div>
@@ -126,60 +126,53 @@
     </aside>
 
     <script>
-        // Catálogo de Rutas RTP con sus puntos de referencia exactos por calle
+        // Catálogo de Rutas RTP
         const RTP_STATIONS_DATA = [
-            {
-                id: "34-A",
-                number: "34-A",
-                name: "Balderas - Santa Fe",
-                fare: "$4.00",
-                color: "#d97706",
-                category: "Express",
-                waypoints: [
-                    [19.42730, -99.14920], // Metro Balderas
-                    [19.42650, -99.15300], // Arcos de Belén
-                    [19.42480, -99.15900], // Av. Chapultepec
-                    [19.42110, -99.17150], // M. Chapultepec
-                    [19.41680, -99.18120], // Av. Constituyentes
-                    [19.39810, -99.20600], // Constituyentes y Periférico
-                    [19.38720, -99.22250], // Carretera México-Toluca
-                    [19.36900, -99.25100], // Av. Vasco de Quiroga
-                    [19.36220, -99.26050]  // Centro Comercial Santa Fe
-                ]
-            },
-            {
-                id: "200",
-                number: "200",
-                name: "Circuito Bicentenario",
-                fare: "$3.50",
-                color: "#006837",
-                category: "Ecobús",
-                waypoints: [
-                    [19.45600, -99.14200], // La Raza
-                    [19.44800, -99.12300], // Río Consulado
-                    [19.43200, -99.10900], // Aeropuerto T1
-                    [19.40800, -99.10200], // Churubusco / Eje 3 Sur
-                    [19.35900, -99.15500], // Churubusco / Tlalpan
-                    [19.36800, -99.18100], // Patriotismo
-                    [19.39800, -99.18700], // Revolución
-                    [19.43100, -99.17300]  // Melchor Ocampo
-                ]
-            },
-            {
-                id: "57-A",
-                number: "57-A",
-                name: "Cuatro Caminos - Constitución de 1917",
-                fare: "$2.00",
-                color: "#2563eb",
-                category: "Ordinario",
-                waypoints: [
-                    [19.45900, -99.21500], // Cuatro Caminos
-                    [19.44800, -99.20200], // Calz. México-Tacuba
-                    [19.41500, -99.14300], // Eje Central Lázaro Cárdenas
-                    [19.35700, -99.12500], // Eje 8 Sur Ermita
-                    [19.34500, -99.06300]  // CETRAM Constitución de 1917
-                ]
-            }
+            // --- MÓDULO 1 ---
+            { id: "34-A", number: "34-A", name: "Metro Balderas - Santa Fe", fare: "$4.00", color: "#d97706", category: "Express", waypoints: [[19.42730, -99.14920], [19.36220, -99.26050]] },
+            { id: "9-C", number: "9-C", name: "Santa Fe - Tlacuitlapa / Puerta Grande", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.36220, -99.26050], [19.37310, -99.22890]] },
+            { id: "110", number: "110", name: "Chimalpa - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.35620, -99.30050], [19.40320, -99.18720]] },
+            { id: "110-B", number: "110-B", name: "San Lorenzo Acopilco - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.34910, -99.32800], [19.40320, -99.18720]] },
+            { id: "110-C", number: "110-C", name: "La Pila - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.33850, -99.31900], [19.40320, -99.18720]] },
+            { id: "112", number: "112", name: "Ampliación Jalalpa - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.37890, -99.22150], [19.40320, -99.18720]] },
+            { id: "115", number: "115", name: "Jesús del Monte - Metro Tacubaya", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.36810, -99.28900], [19.40320, -99.18720]] },
+
+            // --- MÓDULO 2 ---
+            { id: "34-B", number: "34-B", name: "Parque de la Bombilla - Santa Fe", fare: "$4.00", color: "#006837", category: "Ecobús", waypoints: [[19.34680, -99.18250], [19.36220, -99.26050]] },
+            { id: "2-A", number: "2-A", name: "Izazaga - San Pedro Mártir", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.42610, -99.13520], [19.27150, -99.16800]] },
+            { id: "13-A", number: "13-A", name: "Metro Chapultepec - Pedregal de San Nicolás", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.42110, -99.17150], [19.28420, -99.21500]] },
+            { id: "17-E", number: "17-E", name: "Metro Universidad - San Pedro Mártir", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.32420, -99.17350], [19.27150, -99.16800]] },
+            { id: "17-F", number: "17-F", name: "Metro Tasqueña - San Pedro Mártir", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.34410, -99.14280], [19.27150, -99.16800]] },
+            { id: "116", number: "116", name: "Santa Rosa Xochiac - Metro Mixcoac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.33610, -99.26120], [19.37580, -99.18750]] },
+            { id: "120", number: "120", name: "Metro Zapata - San Mateo Tlaltenango", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.37080, -99.15850], [19.34120, -99.28100]] },
+
+            // --- MÓDULO 3 ---
+            { id: "31-B", number: "31-B", name: "Izazaga - Deportivo Xochimilco", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.42610, -99.13520], [19.25200, -99.10150]] },
+            { id: "141", number: "141", name: "Villa Milpa Alta - Metro Tláhuac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.19120, -99.02310], [19.28680, -99.01420]] },
+            { id: "142", number: "142", name: "Tulyehualco - Xochimilco / Palmas", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.25310, -99.01120], [19.25620, -99.10210]] },
+            { id: "143", number: "143", name: "Villa Milpa Alta - Metro Tasqueña", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.19120, -99.02310], [19.34410, -99.14280]] },
+            { id: "144", number: "144", name: "San Pablo Oztotepec - Xochimilco", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.17620, -99.07680], [19.25620, -99.10210]] },
+
+            // --- MÓDULO 4 ---
+            { id: "1-D", number: "1-D", name: "Metro Santa Martha - Metro Mixcoac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.35980, -98.98620], [19.37580, -99.18750]] },
+            { id: "52-C", number: "52-C", name: "Metro Santa Martha - Metro Zapata", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.35980, -98.98620], [19.37080, -99.15850]] },
+            { id: "161", number: "161", name: "Ampliación Santiago - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.32100, -99.01820], [19.34500, -99.06300]] },
+            { id: "162", number: "162", name: "Santa Catarina - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.31900, -98.98210], [19.34500, -99.06300]] },
+
+            // --- MÓDULO 5 Y 6 ---
+            { id: "33", number: "33", name: "León de los Aldama - Metro Chabacano", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.49310, -99.07210], [19.40820, -99.13580]] },
+            { id: "37", number: "37", name: "U.C.T.M. Atzacoalco - Carmen Serdán", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50820, -99.09820], [19.32890, -99.11210]] },
+            { id: "101", number: "101", name: "Lomas de Cuautepec - La Villa / Ferroplaza", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.54980, -99.13510], [19.48210, -99.11580]] },
+            { id: "103", number: "103", name: "Ampliación Malacates - Metro La Raza", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.55410, -99.14120], [19.47020, -99.13680]] },
+
+            // --- MÓDULO 7 Y 8 ---
+            { id: "18", number: "18", name: "Metro Cuatro Caminos - Col. Moctezuma 2da", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.45900, -99.21500], [19.42850, -99.09120]] },
+            { id: "19", number: "19", name: "Metro El Rosario - Parque México por Cuitláhuac", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.41210, -99.16850]] },
+            { id: "57-A", number: "57-A", name: "Metro Cuatro Caminos - Metro Constitución de 1917", fare: "$4.00", color: "#d97706", category: "Express", waypoints: [[19.45900, -99.21500], [19.34500, -99.06300]] },
+            { id: "57-C", number: "57-C", name: "Metro Cuatro Caminos - Metro Constitución de 1917", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.45900, -99.21500], [19.34500, -99.06300]] },
+            { id: "59", number: "59", name: "Metro El Rosario - Metro Chapultepec", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.42110, -99.17150]] },
+            { id: "107", number: "107", name: "Metro El Rosario - Metro Tacuba", fare: "$2.00", color: "#2563eb", category: "Ordinario", waypoints: [[19.50420, -99.20010], [19.45920, -99.18720]] },
+            { id: "200", number: "200", name: "Circuito Bicentenario", fare: "$3.50", color: "#006837", category: "Ecobús", waypoints: [[19.45600, -99.14200], [19.43200, -99.10900], [19.35900, -99.15500], [19.43100, -99.17300]] }
         ];
 
         let map;
@@ -199,12 +192,12 @@
 
             L.control.zoom({ position: 'topright' }).addTo(map);
 
-            // Obtener trazados exactos por calle vía OSRM
+            // Trazado vial mediante OSRM
             fetchStreetExactRoutes().then(() => {
                 getUserLocation();
             });
 
-            // Listener de búsqueda por nombre o número
+            // Buscador dinámico
             document.getElementById('route-search-input').addEventListener('input', (e) => {
                 renderRoutesList(e.target.value);
             });
@@ -335,10 +328,9 @@
                 };
             });
 
-            // Ordenar por cercanía (de menor a mayor distancia)
+            // Ordenar por cercanía (de menor a mayor)
             processedRoutes.sort((a, b) => a.distanceMeters - b.distanceMeters);
 
-            // Actualizar tarjeta inferior con la ruta más cercana
             if (processedRoutes.length > 0) {
                 const nearest = processedRoutes[0];
                 const distLabel = nearest.distanceMeters >= 1000 
@@ -382,7 +374,7 @@
                 return;
             }
 
-            filtered.forEach((item, index) => {
+            filtered.forEach((item) => {
                 const formatDist = item.distanceMeters >= 1000 
                     ? `${(item.distanceMeters/1000).toFixed(1)} km` 
                     : `${item.distanceMeters} m`;
@@ -431,7 +423,7 @@
             return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
         }
 
-        // Eventos
+        // Interacción de interfaz
         document.getElementById('btn-toggle-drawer').onclick = () => document.getElementById('side-drawer').classList.remove('-translate-x-full');
         document.getElementById('btn-close-drawer').onclick = () => document.getElementById('side-drawer').classList.add('-translate-x-full');
         document.getElementById('btn-locate').onclick = () => getUserLocation();
