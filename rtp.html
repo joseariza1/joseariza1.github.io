@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RTP CDMX - Red Completa y Paradas (Apimetro)</title>
+    <title>RTP CDMX - Carga Inteligente On-Demand</title>
     
     <meta name="theme-color" content="#006837">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -66,8 +66,8 @@
                     RTP
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm text-white">RTP CDMX (Red Total)</h1>
-                    <span id="api-status" class="text-[10px] text-amber-400 font-medium">Conectando a Apimetro...</span>
+                    <h1 class="font-bold text-sm text-white">RTP CDMX (Carga Cercana)</h1>
+                    <span id="api-status" class="text-[10px] text-amber-400 font-medium">Buscando ubicación...</span>
                 </div>
             </div>
         </div>
@@ -75,7 +75,7 @@
         <div class="pointer-events-auto flex items-center gap-2">
             <button id="btn-locate" class="glass-panel bg-blue-600/30 text-blue-300 border border-blue-500/40 px-3 py-2 rounded-xl text-xs font-semibold shadow-lg hover:bg-blue-600/50 transition flex items-center gap-1.5">
                 <i class="fa-solid fa-location-crosshairs"></i>
-                <span class="hidden sm:inline">Mi Ubicación</span>
+                <span class="hidden sm:inline">Recargar Zona</span>
             </button>
         </div>
     </header>
@@ -84,23 +84,20 @@
     <main class="relative flex-1 w-full h-full">
         <div id="map"></div>
 
-        <!-- Tarjeta Flotante de Ruta Más Cercana -->
+        <!-- Tarjeta Flotante -->
         <div id="nearest-card" class="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-96 z-10 glass-panel rounded-2xl p-3 shadow-2xl flex items-center justify-between border border-emerald-500/30">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                    <i class="fa-solid fa-bus text-lg"></i>
+                    <i class="fa-solid fa-filter text-lg"></i>
                 </div>
                 <div>
                     <span class="text-[10px] uppercase text-emerald-400 font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-bolt"></i> Sistema Apimetro.dev
+                        <i class="fa-solid fa-bolt"></i> Filtro Geográfico
                     </span>
-                    <h2 id="nearest-title" class="text-xs font-bold text-white truncate max-w-[180px]">Cargando paradas...</h2>
-                    <p id="nearest-sub" class="text-[11px] text-gray-400">Obteniendo red de RTP</p>
+                    <h2 id="nearest-title" class="text-xs font-bold text-white truncate max-w-[180px]">Determinando zona...</h2>
+                    <p id="nearest-sub" class="text-[11px] text-gray-400">Descarga selectiva activa</p>
                 </div>
             </div>
-            <button id="btn-focus-nearest" class="bg-emerald-600/30 text-emerald-300 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-emerald-600/60 transition">
-                Ver
-            </button>
         </div>
     </main>
 
@@ -109,8 +106,8 @@
         
         <div class="p-4 border-b border-gray-800 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-base text-white">Catálogo de Rutas RTP</h2>
-                <p id="route-count" class="text-[11px] text-gray-400">Cargando datos desde Apimetro...</p>
+                <h2 class="font-bold text-base text-white">Rutas Cercanas / Búsqueda</h2>
+                <p id="route-count" class="text-[11px] text-gray-400">Esperando ubicación...</p>
             </div>
             <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-2">
                 <i class="fa-solid fa-xmark text-lg"></i>
@@ -119,39 +116,47 @@
 
         <!-- Buscador de Rutas -->
         <div class="p-3 border-b border-gray-800 bg-gray-950/60">
-            <div class="relative">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                <input type="text" id="route-search-input" placeholder="Buscar ruta o parada (ej. 34-A, Santa Fe)..." 
-                       class="w-full bg-gray-900 border border-gray-700/80 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
+            <div class="relative flex gap-2">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" id="route-search-input" placeholder="Escribe ruta específica (ej: 34-A)..." 
+                           class="w-full bg-gray-900 border border-gray-700/80 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
+                </div>
+                <button id="btn-search-route" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded-xl text-xs font-bold transition">
+                    Buscar
+                </button>
             </div>
+            <p class="text-[10px] text-gray-500 mt-1">Busca cualquier ruta no disponible cerca para descargarla bajo demanda.</p>
         </div>
 
-        <!-- Lista de Rutas -->
+        <!-- Lista de Rutas Cargadas -->
         <div id="nearby-routes-list" class="flex-1 overflow-y-auto p-4 space-y-2.5">
             <!-- Se llena dinámicamente -->
         </div>
     </aside>
 
     <script>
-        const APIMETRO_ROUTES_URL = "https://apimetro.dev/movilidad/mapas/geojsonLinea?sistema=RTP";
-        const APIMETRO_STOPS_URL = "https://apimetro.dev/movilidad/mapas/geojsonEstacion?sistema=RTP";
+        const APIMETRO_BASE_URL = "https://apimetro.dev/movilidad/mapas";
 
         let map;
         let userLocation = null;
         let userMarker = null;
 
+        let loadedRoutesMap = new Map(); // Guarda rutas descargadas
+        let loadedStopsMap = new Map();  // Guarda paradas descargadas
+
         let routesLayerGroup;
         let stopsLayerGroup;
 
-        let routesGeoData = [];
-        let stopsGeoData = [];
+        // Radio de búsqueda cercana en grados aprox (~0.05º es aprox 5.5km)
+        const SEARCH_RADIUS_DEG = 0.05; 
 
         function initMap() {
-            map = L.map('map', { center: [19.4326, -99.1332], zoom: 12, zoomControl: false });
+            map = L.map('map', { center: [19.4326, -99.1332], zoom: 13, zoomControl: false });
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '&copy; OpenStreetMap | Datos: <a href="https://apimetro.dev" target="_blank" class="underline">Apimetro.dev</a>'
+                attribution: '&copy; OpenStreetMap | <a href="https://apimetro.dev" target="_blank">Apimetro</a>'
             }).addTo(map);
 
             L.control.zoom({ position: 'topright' }).addTo(map);
@@ -159,177 +164,43 @@
             routesLayerGroup = L.layerGroup().addTo(map);
             stopsLayerGroup = L.layerGroup().addTo(map);
 
+            // 1. Obtener ubicación del usuario en el primer segundo
             getUserLocation();
-            loadApimetroData();
 
-            document.getElementById('route-search-input').addEventListener('input', (e) => {
-                renderRoutesList(e.target.value);
-            });
-        }
-
-        async function loadApimetroData() {
-            const apiStatus = document.getElementById('api-status');
-            apiStatus.textContent = "Obteniendo datos de Apimetro...";
-
-            try {
-                // Peticiones simultáneas a Apimetro para Rutas y Paradas
-                const [routesResponse, stopsResponse] = await Promise.all([
-                    fetch(APIMETRO_ROUTES_URL),
-                    fetch(APIMETRO_STOPS_URL)
-                ]);
-
-                const routesData = await routesResponse.json();
-                const stopsData = await stopsResponse.json();
-
-                routesGeoData = routesData.features || [];
-                stopsGeoData = stopsData.features || [];
-
-                apiStatus.textContent = "Apimetro Conectado";
-                apiStatus.className = "text-[10px] text-emerald-400 font-medium";
-
-                document.getElementById('route-count').textContent = `${routesGeoData.length} líneas y ${stopsGeoData.length} paradas registradas`;
-
-                renderRoutesOnMap();
-                renderStopsOnMap();
-                renderRoutesList();
-
-                if (routesGeoData.length > 0) {
-                    const firstRoute = routesGeoData[0].properties;
-                    document.getElementById('nearest-title').textContent = `${firstRoute.nombre || firstRoute.num_comercial || 'Red RTP'}`;
-                    document.getElementById('nearest-sub').textContent = `${stopsGeoData.length} paradas activas cargadas`;
-                }
-
-            } catch (error) {
-                console.error("Error al obtener datos de Apimetro:", error);
-                apiStatus.textContent = "Error de conexión con API";
-                apiStatus.className = "text-[10px] text-red-400 font-medium";
-            }
-        }
-
-        function renderRoutesOnMap() {
-            routesLayerGroup.clearLayers();
-
-            L.geoJSON(routesGeoData, {
-                style: function(feature) {
-                    return {
-                        color: feature.properties.color || '#006837',
-                        weight: 4,
-                        opacity: 0.85
-                    };
-                },
-                onEachFeature: function(feature, layer) {
-                    const props = feature.properties;
-                    const name = props.nombre || props.num_comercial || "Ruta RTP";
-                    const routeNum = props.num_comercial || "RTP";
-
-                    layer.bindPopup(`
-                        <div class="p-3">
-                            <span class="text-[10px] font-bold text-emerald-400 uppercase">Ruta ${routeNum}</span>
-                            <h3 class="font-bold text-sm text-white mt-0.5">${name}</h3>
-                            <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-route text-emerald-400"></i> Trazo oficial de Apimetro</p>
-                        </div>
-                    `);
-                }
-            }).addTo(routesLayerGroup);
-        }
-
-        function renderStopsOnMap() {
-            stopsLayerGroup.clearLayers();
-
-            const customStopIcon = L.divIcon({
-                className: 'rtp-stop-icon',
-                iconSize: [10, 10],
-                iconAnchor: [5, 5]
-            });
-
-            L.geoJSON(stopsGeoData, {
-                pointToLayer: function(feature, latlng) {
-                    return L.marker(latlng, { icon: customStopIcon });
-                },
-                onEachFeature: function(feature, layer) {
-                    const props = feature.properties;
-                    const stopName = props.nombre || "Parada de RTP";
-                    const alcaldia = props.alcaldia_municipio || "CDMX";
-
-                    layer.bindPopup(`
-                        <div class="p-3">
-                            <span class="text-[10px] font-bold text-emerald-400 uppercase"><i class="fa-solid fa-bus-simple"></i> Parada Oficial</span>
-                            <h3 class="font-bold text-sm text-white mt-0.5">${stopName}</h3>
-                            <p class="text-xs text-gray-400 mt-1">${alcaldia}</p>
-                        </div>
-                    `);
-                }
-            }).addTo(stopsLayerGroup);
-        }
-
-        function renderRoutesList(filterText = '') {
-            const container = document.getElementById('nearby-routes-list');
-            container.innerHTML = '';
-
-            const term = filterText.toLowerCase().trim();
-
-            const filtered = routesGeoData.filter(feature => {
-                const props = feature.properties;
-                const name = (props.nombre || '').toLowerCase();
-                const num = (props.num_comercial || '').toLowerCase();
-                return name.includes(term) || num.includes(term);
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
-                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-2xl mb-2"></i>
-                        <h4 class="text-xs font-bold text-gray-300">No se encontraron resultados</h4>
-                        <p class="text-[11px] text-gray-500 mt-1">Prueba filtrando por número o alcaldía.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            filtered.forEach((feature, index) => {
-                const props = feature.properties;
-                const name = props.nombre || "Ruta Sin Nombre";
-                const num = props.num_comercial || `R-${index+1}`;
-                const color = props.color || '#006837';
-
-                const card = document.createElement('div');
-                card.className = "p-3 bg-gray-900 rounded-xl border border-gray-800 hover:border-emerald-500/50 cursor-pointer transition space-y-1.5";
-                
-                card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded text-white" style="background-color: ${color}">
-                                ${num}
-                            </span>
-                            <span class="font-semibold text-xs text-white truncate max-w-[170px]">${name}</span>
-                        </div>
-                    </div>
-                `;
-
-                card.onclick = () => {
-                    const tempGeoJson = L.geoJSON(feature);
-                    map.fitBounds(tempGeoJson.getBounds(), { padding: [50, 50] });
-
-                    if (window.innerWidth < 640) {
-                        document.getElementById('side-drawer').classList.add('-translate-x-full');
-                    }
-                };
-
-                container.appendChild(card);
+            // Configurar buscador bajo demanda
+            document.getElementById('btn-search-route').onclick = handleManualSearch;
+            document.getElementById('route-search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleManualSearch();
             });
         }
 
         function getUserLocation() {
-            if (!navigator.geolocation) return;
+            const apiStatus = document.getElementById('api-status');
+            apiStatus.textContent = "Obteniendo GPS...";
+
+            if (!navigator.geolocation) {
+                fallbackLocation();
+                return;
+            }
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     userLocation = [pos.coords.latitude, pos.coords.longitude];
                     updateUserMarker();
+                    fetchNearbyData(userLocation[0], userLocation[1]);
                 },
-                () => { userLocation = [19.4230, -99.1630]; updateUserMarker(); },
-                { enableHighAccuracy: true, timeout: 5000 }
+                () => {
+                    fallbackLocation();
+                },
+                { enableHighAccuracy: true, timeout: 6000 }
             );
+        }
+
+        function fallbackLocation() {
+            // Ubicación por defecto (Centro / Roma Norte CDMX)
+            userLocation = [19.4230, -99.1630];
+            updateUserMarker();
+            fetchNearbyData(userLocation[0], userLocation[1]);
         }
 
         function updateUserMarker() {
@@ -349,15 +220,234 @@
             });
 
             userMarker = L.marker(userLocation, { icon: icon }).addTo(map);
+            map.flyTo(userLocation, 14, { duration: 1.2 });
         }
 
-        // Interacción UI
+        // 2. Descargar SOLO datos dentro de la zona cercana al usuario
+        async function fetchNearbyData(lat, lon) {
+            const apiStatus = document.getElementById('api-status');
+            apiStatus.textContent = "Filtrando rutas cercanas...";
+
+            // Calcular Bounding Box (Límites) alrededor del usuario
+            const minLat = lat - SEARCH_RADIUS_DEG;
+            const maxLat = lat + SEARCH_RADIUS_DEG;
+            const minLon = lon - SEARCH_RADIUS_DEG;
+            const maxLon = lon + SEARCH_RADIUS_DEG;
+
+            try {
+                // Peticiones paralelas limitadas por bounding box a Apimetro
+                const [routesRes, stopsRes] = await Promise.all([
+                    fetch(`${APIMETRO_BASE_URL}/geojsonLinea?sistema=RTP`),
+                    fetch(`${APIMETRO_BASE_URL}/geojsonEstacion?sistema=RTP`)
+                ]);
+
+                const routesData = await routesRes.json();
+                const stopsData = await stopsRes.json();
+
+                // Filtrar geográficamente EN CLIENTE antes de almacenar o renderizar
+                const nearbyRoutes = (routesData.features || []).filter(feature => {
+                    return isFeatureInBBox(feature, minLat, maxLat, minLon, maxLon);
+                });
+
+                const nearbyStops = (stopsData.features || []).filter(feature => {
+                    const coords = feature.geometry?.coordinates;
+                    if (!coords) return false;
+                    return coords[1] >= minLat && coords[1] <= maxLat && coords[0] >= minLon && coords[0] <= maxLon;
+                });
+
+                // Guardar en colecciones activas
+                nearbyRoutes.forEach(r => loadedRoutesMap.set(r.properties.id || r.properties.nombre, r));
+                nearbyStops.forEach(s => loadedStopsMap.set(s.properties.id || s.properties.nombre, s));
+
+                apiStatus.textContent = "Carga cercana lista";
+                apiStatus.className = "text-[10px] text-emerald-400 font-medium";
+
+                document.getElementById('nearest-title').textContent = `${nearbyRoutes.length} rutas en tu área`;
+                document.getElementById('nearest-sub').textContent = `${nearbyStops.length} paradas locales descargadas`;
+                document.getElementById('route-count').textContent = `${nearbyRoutes.length} rutas cercanas encontradas`;
+
+                renderMapData();
+                renderDrawerList();
+
+            } catch (err) {
+                console.error("Error al descargar zona cercana:", err);
+                apiStatus.textContent = "Error al descargar datos";
+            }
+        }
+
+        // Helper para comprobar si una línea pasa por la zona BBox
+        function isFeatureInBBox(feature, minLat, maxLat, minLon, maxLon) {
+            const geom = feature.geometry;
+            if (!geom) return false;
+
+            let coords = [];
+            if (geom.type === 'LineString') coords = geom.coordinates;
+            else if (geom.type === 'MultiLineString') coords = geom.coordinates.flat();
+
+            return coords.some(c => c[1] >= minLat && c[1] <= maxLat && c[0] >= minLon && c[0] <= maxLon);
+        }
+
+        // 3. Descarga bajo demanda al buscar una ruta específica
+        async function handleManualSearch() {
+            const query = document.getElementById('route-search-input').value.trim();
+            if (!query) return;
+
+            const apiStatus = document.getElementById('api-status');
+            apiStatus.textContent = `Buscando "${query}" en Apimetro...`;
+
+            try {
+                // Descargar catálogo de líneas para ubicar la ruta consultada
+                const response = await fetch(`${APIMETRO_BASE_URL}/geojsonLinea?sistema=RTP`);
+                const data = await response.json();
+
+                const targetFeature = (data.features || []).find(f => {
+                    const props = f.properties;
+                    const num = (props.num_comercial || '').toLowerCase();
+                    const name = (props.nombre || '').toLowerCase();
+                    const q = query.toLowerCase();
+                    return num.includes(q) || name.includes(q);
+                });
+
+                if (targetFeature) {
+                    // Agregar individualmente a las colecciones activas
+                    const key = targetFeature.properties.id || targetFeature.properties.nombre;
+                    loadedRoutesMap.set(key, targetFeature);
+
+                    // Descargar paradas específicas de esa ruta
+                    await fetchStopsForSpecificRoute(targetFeature.properties.num_comercial || query);
+
+                    apiStatus.textContent = `Ruta ${query} descargada`;
+                    apiStatus.className = "text-[10px] text-emerald-400 font-medium";
+
+                    renderMapData();
+                    renderDrawerList();
+
+                    // Enfocar en la ruta buscada
+                    const tempLayer = L.geoJSON(targetFeature);
+                    map.fitBounds(tempLayer.getBounds(), { padding: [50, 50] });
+
+                } else {
+                    alert(`No se encontró la ruta "${query}" en los servidores de Apimetro.`);
+                    apiStatus.textContent = "Ruta no encontrada";
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Error al intentar buscar la ruta.");
+            }
+        }
+
+        async function fetchStopsForSpecificRoute(routeNum) {
+            try {
+                const res = await fetch(`${APIMETRO_BASE_URL}/geojsonEstacion?sistema=RTP`);
+                const data = await res.json();
+
+                const routeStops = (data.features || []).filter(f => {
+                    const props = f.properties;
+                    return (props.linea || props.num_comercial || '').toLowerCase().includes(routeNum.toLowerCase());
+                });
+
+                routeStops.forEach(s => loadedStopsMap.set(s.properties.id || s.properties.nombre, s));
+            } catch (err) {
+                console.warn("No se pudieron obtener paradas individuales", err);
+            }
+        }
+
+        function renderMapData() {
+            routesLayerGroup.clearLayers();
+            stopsLayerGroup.clearLayers();
+
+            // Dibujar rutas activas
+            const routesArray = Array.from(loadedRoutesMap.values());
+            L.geoJSON(routesArray, {
+                style: (feature) => ({
+                    color: feature.properties.color || '#006837',
+                    weight: 4,
+                    opacity: 0.85
+                }),
+                onEachFeature: (feature, layer) => {
+                    const props = feature.properties;
+                    layer.bindPopup(`
+                        <div class="p-3">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase">Ruta ${props.num_comercial || 'RTP'}</span>
+                            <h3 class="font-bold text-sm text-white mt-0.5">${props.nombre || 'Ruta RTP'}</h3>
+                        </div>
+                    `);
+                }
+            }).addTo(routesLayerGroup);
+
+            // Dibujar paradas activas
+            const stopsArray = Array.from(loadedStopsMap.values());
+            const customStopIcon = L.divIcon({
+                className: 'rtp-stop-icon',
+                iconSize: [10, 10],
+                iconAnchor: [5, 5]
+            });
+
+            L.geoJSON(stopsArray, {
+                pointToLayer: (feature, latlng) => L.marker(latlng, { icon: customStopIcon }),
+                onEachFeature: (feature, layer) => {
+                    const props = feature.properties;
+                    layer.bindPopup(`
+                        <div class="p-3">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase"><i class="fa-solid fa-bus"></i> Parada</span>
+                            <h3 class="font-bold text-sm text-white mt-0.5">${props.nombre || 'Parada RTP'}</h3>
+                        </div>
+                    `);
+                }
+            }).addTo(stopsLayerGroup);
+        }
+
+        function renderDrawerList() {
+            const container = document.getElementById('nearby-routes-list');
+            container.innerHTML = '';
+
+            const routesArray = Array.from(loadedRoutesMap.values());
+
+            if (routesArray.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
+                        <i class="fa-solid fa-location-crosshairs text-gray-500 text-2xl mb-2"></i>
+                        <h4 class="text-xs font-bold text-gray-300">No hay rutas descargadas cerca</h4>
+                        <p class="text-[11px] text-gray-500 mt-1">Usa el buscador para cargar una ruta lejana.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            routesArray.forEach((feature) => {
+                const props = feature.properties;
+                const name = props.nombre || "Ruta RTP";
+                const num = props.num_comercial || "RTP";
+                const color = props.color || '#006837';
+
+                const card = document.createElement('div');
+                card.className = "p-3 bg-gray-900 rounded-xl border border-gray-800 hover:border-emerald-500/50 cursor-pointer transition flex items-center justify-between";
+                
+                card.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded text-white" style="background-color: ${color}">${num}</span>
+                        <span class="font-semibold text-xs text-white truncate max-w-[180px]">${name}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-gray-500"></i>
+                `;
+
+                card.onclick = () => {
+                    const tempGeoJson = L.geoJSON(feature);
+                    map.fitBounds(tempGeoJson.getBounds(), { padding: [50, 50] });
+
+                    if (window.innerWidth < 640) {
+                        document.getElementById('side-drawer').classList.add('-translate-x-full');
+                    }
+                };
+
+                container.appendChild(card);
+            });
+        }
+
+        // Eventos UI
         document.getElementById('btn-toggle-drawer').onclick = () => document.getElementById('side-drawer').classList.remove('-translate-x-full');
         document.getElementById('btn-close-drawer').onclick = () => document.getElementById('side-drawer').classList.add('-translate-x-full');
-        document.getElementById('btn-locate').onclick = () => {
-            if (userLocation) map.flyTo(userLocation, 14, { duration: 1.2 });
-            else getUserLocation();
-        };
+        document.getElementById('btn-locate').onclick = () => getUserLocation();
 
         window.onload = initMap;
     </script>
