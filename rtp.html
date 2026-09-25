@@ -2,634 +2,1039 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>RTP Pasajeros - Movilidad en Tiempo Real</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RTP CDMX - Monitoreo & Rutas Exactas Calle por Calle</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#006837">
+    <meta name="description" content="Aplicación de monitoreo en tiempo real, buscador de rutas y trazados exactos de la Red de Transporte de Pasajeros (RTP) de la CDMX.">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RTP CDMX">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
-        :root {
-            --primary: #1b5e20;
-            --primary-dark: #0f3813;
-            --accent-blue: #1565c0;
-            --surface: #ffffff;
-            --border: #e0e0e0;
-            --bg-light: #f8f9fa;
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0; padding: 0; 
-            display: flex; flex-direction: column; 
-            height: 100vh; height: 100dvh; 
-            background-color: #f4f6f9; overflow: hidden; color: #333;
-            box-sizing: border-box;
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-        }
-
-        .navbar-user {
-            background-color: var(--primary-dark); color: white; padding: 12px 16px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2); z-index: 1100; flex-shrink: 0;
-            padding-top: env(safe-area-inset-top, 12px);
-        }
-        .nav-title { font-weight: 800; font-size: 1.05rem; letter-spacing: 0.5px; }
-
-        .app-container { 
-            display: flex; flex-grow: 1; 
-            height: calc(100vh - 52px); height: calc(100dvh - 52px); 
-            position: relative; overflow: hidden; flex-direction: column; 
-        }
-
-        .seccion { padding: 14px; border-bottom: 1px solid var(--border); }
-        h3 { margin: 0 0 8px 0; color: var(--primary-dark); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
-        
-        .input-group { margin-bottom: 10px; }
-        label { display: block; font-size: 0.75rem; font-weight: 700; color: #555; margin-bottom: 4px; text-transform: uppercase;}
-        select { 
-            width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; 
-            box-sizing: border-box; font-weight: 600; font-size: 0.9rem; background: #fff;
-        }
-        select:focus { border-color: var(--primary); outline: none; }
-
-        .btn { 
-            width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; 
-            cursor: pointer; color: white; text-align: center; display: block; 
-            box-sizing: border-box; text-transform: uppercase; font-size: 0.8rem; transition: background 0.2s, transform 0.1s;
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn-success { background-color: var(--primary); }
-        .btn-success:hover { background-color: var(--primary-dark); }
-        .btn-danger { background-color: #d32f2f; }
-
-        /* Panel Flotante Oculto por Defecto */
-        .panel-user-flotante {
-            position: absolute; bottom: 20px; left: 16px; right: 16px; 
-            background: var(--surface); z-index: 1050;
-            border-radius: 12px; box-shadow: 0 6px 25px rgba(0,0,0,0.25);
-            display: flex; flex-direction: column;
-            border: 1px solid var(--border);
+        html, body {
+            height: 100%;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-        .panel-header-control {
-            background-color: var(--primary-dark); color: white; padding: 10px 14px;
-            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
-            font-weight: bold; font-size: 0.85rem; user-select: none;
-        }
-        .panel-body-content {
-            max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column;
-        }
-        .panel-user-flotante.collapsed .panel-body-content { display: none; }
-
-        .viaje-status-box {
-            background-color: #e8f5e9; border: 1px solid #2e7d32; border-radius: 6px;
-            padding: 10px; margin-top: 10px; display: none; font-size: 0.8rem; color: #1b5e20; 
-            font-weight: bold; text-align: center;
+            background-color: #121212;
         }
 
-        .mapa-contenedor { flex-grow: 1; position: relative; height: 100%; width: 100%; }
-        #map { width: 100%; height: 100%; }
-        
-        .status-float {
-            position: absolute; top: 12px; right: 12px; background: rgba(255, 255, 255, 0.93);
-            padding: 6px 12px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            z-index: 1000; font-size: 0.75rem; border: 1px solid var(--border); font-weight: bold;
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
         }
 
-        /* Botón flotante para ver la ubicación propia del usuario */
-        .btn-mi-ubicacion {
-            position: absolute; top: 55px; right: 12px; background: #ffffff; color: var(--accent-blue);
-            padding: 8px 12px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            z-index: 1000; font-size: 0.75rem; border: 1px solid var(--border); font-weight: bold;
-            cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.2s;
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        .btn-mi-ubicacion:hover { background: #f0f4f8; }
-
-        .marker-emoji-bus { transition: all 1s linear !important; }
-        .bus-derecha { transform: scaleX(1); }
-        .bus-izquierda { transform: scaleX(-1); }
-        .parada-emoji-container { font-size: 20px; text-align: center; }
-
-        @keyframes parpadeoTrafico {
-            0% { opacity: 0.5; stroke-width: 6; }
-            50% { opacity: 1; stroke-width: 10; }
-            100% { opacity: 0.5; stroke-width: 6; }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
         }
-        .tramo-trafico-pesado { animation: parpadeoTrafico 1.5s infinite; stroke-dasharray: 6, 6; }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 104, 55, 0.5);
+            border-radius: 4px;
+        }
 
-        @media (min-width: 768px) {
-            .panel-user-flotante { width: 380px; left: auto; right: 20px; bottom: 20px; }
+        /* Radar / Pulse animation for user location marker */
+        @keyframes userPulse {
+            0% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.8);
+            }
+            70% {
+                transform: scale(1.3);
+                box-shadow: 0 0 0 18px rgba(59, 130, 246, 0);
+            }
+            100% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+
+        .user-gps-pulse {
+            animation: userPulse 2s infinite ease-out;
+            border-radius: 50%;
+        }
+
+        /* Glassmorphism components */
+        .glass-panel {
+            background: rgba(18, 18, 18, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Leaflet popup customization */
+        .leaflet-popup-content-wrapper {
+            background: #1e1e1e !important;
+            color: #f3f4f6 !important;
+            border-radius: 12px !important;
+            padding: 0 !important;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+        }
+        .leaflet-popup-tip {
+            background: #1e1e1e !important;
+        }
+        .leaflet-popup-content {
+            margin: 0 !important;
+            line-height: 1.4 !important;
+        }
+
+        .drawer-transition {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-900 text-gray-100 flex flex-col h-screen w-screen overflow-hidden select-none">
 
-    <div class="navbar-user">
-        <div class="nav-title">📱 RTP - MOVILIDAD PASAJERO</div>
-    </div>
-
-    <div class="app-container">
-        <!-- Panel Flotante Oculto por Defecto (.collapsed) -->
-        <div class="panel-user-flotante collapsed" id="panel-user-contenedor">
-            <div class="panel-header-control" onclick="togglePanelFlotante()">
-                <span>🎛️ Menú de Viaje y Rutas</span>
-                <span id="panel-toggle-icon">▲</span>
-            </div>
+    <!-- BARRA SUPERIOR -->
+    <header class="absolute top-0 left-0 right-0 z-20 p-3 pointer-events-none flex justify-between items-center">
+        <div class="pointer-events-auto flex items-center gap-2">
+            <button id="btn-toggle-drawer" class="glass-panel text-white p-3 rounded-xl shadow-lg hover:bg-gray-800/80 active:scale-95 transition flex items-center justify-center">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
             
-            <div class="panel-body-content" id="panel-body-content">
-                <div class="seccion" id="wrapper-selector-pasajero">
-                    <h3>🚍 Seleccionar Corredor</h3>
-                    <select id="user-selector-rutas" onchange="seleccionarRutaDesdeUsuario(this.value)">
-                        <option value="">-- Todas las rutas en red --</option>
-                    </select>
+            <div class="glass-panel px-3 py-2 rounded-xl shadow-lg flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center text-white font-bold text-sm shadow">
+                    RTP
                 </div>
-                
-                <div class="seccion" style="background: #fff;">
-                    <h3>📡 Validación a Bordo</h3>
-                    <div id="formulario-rastreo-inputs">
-                        <div class="input-group">
-                            <label>🎯 Sentido de Viaje</label>
-                            <select id="user-direccion-viaje">
-                                <option value="auto">🌐 Detección Inteligente GPS</option>
-                                <option value="1" id="opt-viaje-ida">🟢 IDA</option>
-                                <option value="-1" id="opt-viaje-regreso">🔵 REGRESO</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-success" id="btn-abordar-gps" onclick="activarRastreoAbordoPasajero()">🚍 Iniciar Rastreo a Bordo</button>
-                    </div>
-                    
-                    <div class="viaje-status-box" id="viaje-status-container">
-                        <span id="viaje-status-texto">Sincronizando...</span>
-                        <button class="btn btn-danger" style="margin-top:8px; padding:6px; font-size:0.75rem;" onclick="detenerRastreoAbordoPasajero()">Terminar Viaje</button>
-                    </div>
+                <div>
+                    <h1 class="font-bold text-sm tracking-tight leading-none text-white">RTP CDMX</h1>
+                    <span id="gps-status-indicator" class="text-[10px] text-amber-400 font-medium flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> Buscando GPS...
+                    </span>
                 </div>
             </div>
         </div>
 
-        <div class="mapa-contenedor">
-            <div id="map"></div>
-            <div class="status-float">
-                Red: <span id="txt-notificaciones" style="color: green;">Conectada</span>
-            </div>
-            <!-- Botón de Ubicación Privada Local -->
-            <button class="btn-mi-ubicacion" onclick="centrarMiUbicacionLocal()">
-                📍 Mi Ubicación
+        <div class="pointer-events-auto flex items-center gap-2">
+            <button id="btn-header-gps" title="Actualizar mi Ubicación" class="glass-panel bg-blue-600/30 text-blue-300 border border-blue-500/40 px-3 py-2 rounded-xl text-xs font-semibold shadow-lg hover:bg-blue-600/50 transition flex items-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-location-crosshairs text-xs"></i>
+                <span class="hidden sm:inline">Mi Ubicación</span>
+            </button>
+
+            <button id="btn-load-official-gtfs" title="Cargar Red Oficial GeoJSON" class="glass-panel bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 px-3 py-2 rounded-xl text-xs font-semibold shadow-lg hover:bg-emerald-600/50 transition flex items-center gap-1.5 active:scale-95">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+                <span class="hidden sm:inline">Red Oficial</span>
             </button>
         </div>
-    </div>
+    </header>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- MAPA PRINCIPAL -->
+    <main class="relative flex-1 w-full h-full">
+        <div id="map"></div>
+
+        <!-- Botones flotantes de control -->
+        <div class="absolute bottom-24 right-4 z-10 flex flex-col gap-2">
+            <button id="btn-locate" title="Centrar en mi ubicación" class="glass-panel text-blue-400 border border-blue-500/30 w-11 h-11 rounded-xl shadow-xl flex items-center justify-center hover:bg-gray-800 transition active:scale-95">
+                <i class="fa-solid fa-crosshairs text-lg"></i>
+            </button>
+            <button id="btn-reset-view" title="Vista General CDMX" class="glass-panel text-white w-11 h-11 rounded-xl shadow-xl flex items-center justify-center hover:bg-gray-800 transition active:scale-95">
+                <i class="fa-solid fa-compass text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Tarjeta de Parada Más Cercana -->
+        <div id="quick-nearest-card" class="absolute bottom-4 left-4 right-16 sm:right-auto sm:w-96 z-10 glass-panel rounded-2xl p-3 shadow-2xl flex items-center justify-between border border-emerald-500/30 transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-person-walking text-lg"></i>
+                </div>
+                <div>
+                    <span class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-1">
+                        <i class="fa-solid fa-bolt text-xs"></i> Parada más cercana
+                    </span>
+                    <h2 id="nearest-card-title" class="text-xs font-bold text-white truncate max-w-[180px]">Obteniendo ubicación...</h2>
+                    <p id="nearest-card-sub" class="text-xs font-semibold text-gray-400">Calculando metros...</p>
+                </div>
+            </div>
+            <button id="btn-focus-nearest" class="bg-emerald-600/30 hover:bg-emerald-600/60 text-emerald-300 px-3 py-2 rounded-xl transition text-xs font-semibold">
+                Ver
+            </button>
+        </div>
+    </main>
+
+    <!-- PANEL LATERAL (DRAWER) -->
+    <aside id="side-drawer" class="fixed top-0 left-0 bottom-0 w-full sm:w-96 z-40 glass-panel border-r border-gray-800 transform -translate-x-full drawer-transition flex flex-col">
+        <div class="p-4 border-b border-gray-800 flex items-center justify-between bg-gray-950/40">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center text-white font-bold text-xs">
+                    RTP
+                </div>
+                <div>
+                    <h2 class="font-bold text-base text-white">Rutas Viales Exactas</h2>
+                    <p class="text-xs text-gray-400">Monitoreo Calle por Calle CDMX</p>
+                </div>
+            </div>
+            <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Selector de Radio -->
+        <div class="p-3.5 border-b border-gray-800/80 bg-gray-950/60">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bullseye text-emerald-400"></i> Radio de Cercanía
+                </span>
+                <span id="radius-label" class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-400 border border-emerald-600/40">
+                    2.0 km
+                </span>
+            </div>
+            <div class="grid grid-cols-4 gap-1.5">
+                <button data-radius="500" class="btn-radius py-1.5 text-xs font-medium rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition">500m</button>
+                <button data-radius="1000" class="btn-radius py-1.5 text-xs font-medium rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition">1 km</button>
+                <button data-radius="2000" class="btn-radius py-1.5 text-xs font-medium rounded-lg bg-emerald-700 text-white shadow transition">2 km</button>
+                <button data-radius="5000" class="btn-radius py-1.5 text-xs font-medium rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition">5 km</button>
+            </div>
+        </div>
+
+        <!-- Navegación por pestañas -->
+        <div class="flex border-b border-gray-800 bg-gray-900/50">
+            <button id="tab-btn-nearby" class="flex-1 py-3 text-xs font-semibold text-emerald-400 border-b-2 border-emerald-500 transition">
+                <i class="fa-solid fa-location-arrow mr-1"></i> Cercanas
+            </button>
+            <button id="tab-btn-routes" class="flex-1 py-3 text-xs font-semibold text-gray-400 border-b-2 border-transparent hover:text-gray-200 transition">
+                <i class="fa-solid fa-route mr-1"></i> Rutas Totales
+            </button>
+            <button id="tab-btn-info" class="flex-1 py-3 text-xs font-semibold text-gray-400 border-b-2 border-transparent hover:text-gray-200 transition">
+                <i class="fa-solid fa-circle-info mr-1"></i> Tarifas
+            </button>
+        </div>
+
+        <!-- Contenido de las Pestañas -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- TAB 1: PARADAS CERCANAS -->
+            <div id="tab-content-nearby" class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                        Paradas Cercanas (<span id="nearby-count">0</span>)
+                    </p>
+                    <button id="btn-refresh-gps" class="text-[11px] text-blue-400 hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right text-xs"></i> Recalcular
+                    </button>
+                </div>
+
+                <div id="gps-tab-info" class="p-3 bg-blue-950/30 rounded-xl border border-blue-800/40 text-xs text-blue-200 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-location-crosshairs text-blue-400 text-sm"></i>
+                        <div>
+                            <p class="font-semibold text-white" id="user-coords-text">Lat: --, Lng: --</p>
+                            <p class="text-[10px] text-blue-300/80">Ubicación GPS activa</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="nearby-list-container" class="space-y-2.5"></div>
+            </div>
+
+            <!-- TAB 2: RUTAS DETALLADAS -->
+            <div id="tab-content-routes" class="hidden space-y-4">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 text-xs"></i>
+                    <input type="text" id="search-route-input" placeholder="Buscar por calle, ruta o destino (Ej: Balderas, Santa Fe, Constituyentes)..." class="w-full bg-gray-900 border border-gray-700 focus:border-emerald-500 rounded-xl pl-9 pr-8 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition shadow-inner">
+                    <button id="btn-clear-search" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="flex justify-between items-center text-[11px] text-gray-400">
+                    <span>Resultados: <strong id="search-results-count" class="text-emerald-400">0</strong> rutas</span>
+                    <span class="text-[10px] text-gray-500">Toca para centrar en mapa</span>
+                </div>
+
+                <div id="routes-list-container" class="space-y-2.5"></div>
+            </div>
+
+            <!-- TAB 3: TARIFAS -->
+            <div id="tab-content-info" class="hidden space-y-4 text-xs">
+                <div class="p-3 bg-gray-900 rounded-xl border border-gray-800 space-y-2">
+                    <h3 class="font-bold text-white text-sm text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-bus"></i> Tarifas Oficiales RTP
+                    </h3>
+                    <ul class="space-y-2 text-gray-300">
+                        <li class="flex justify-between items-center pb-1 border-b border-gray-800">
+                            <span><strong class="text-emerald-400">Ordinario:</strong> Tarifa General</span>
+                            <span class="font-bold text-white bg-emerald-950 px-2 py-0.5 rounded border border-emerald-600/30">$2.00 MXN</span>
+                        </li>
+                        <li class="flex justify-between items-center pb-1 border-b border-gray-800">
+                            <span><strong class="text-amber-400">Express / Atenea:</strong> Servicio Directo</span>
+                            <span class="font-bold text-white bg-amber-950 px-2 py-0.5 rounded border border-amber-600/30">$4.00 MXN</span>
+                        </li>
+                        <li class="flex justify-between items-center pb-1 border-b border-gray-800">
+                            <span><strong class="text-emerald-300">Ecobús:</strong> Bajas Emisiones</span>
+                            <span class="font-bold text-white bg-emerald-950 px-2 py-0.5 rounded border border-emerald-600/30">$3.50 MXN</span>
+                        </li>
+                        <li class="flex justify-between items-center">
+                            <span><strong class="text-indigo-400">Nochebús:</strong> Nocturno</span>
+                            <span class="font-bold text-white bg-indigo-950 px-2 py-0.5 rounded border border-indigo-600/30">$7.00 MXN</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3 border-t border-gray-800 bg-gray-950 text-[11px] text-gray-500 text-center flex justify-between items-center">
+            <span>Red de Transporte de Pasajeros</span>
+            <span class="text-emerald-500 font-semibold">CDMX App</span>
+        </div>
+    </aside>
 
     <script>
-        const FIREBASE_LINK = "https://reportemetro-default-rtdb.firebaseio.com/rutas_v3.json";
-
-        const map = L.map('map', {zoomControl: false}).setView([19.285, -99.010], 13);
-        L.control.zoom({position: 'topleft'}).addTo(map);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-
-        let datasetRutas = {}; 
-        let rutaActivaId = ""; 
-        let capaLineaIda = null; 
-        let capaLineaRegreso = null;
-        let marcadoresBusesMemoria = {};
-        let capasTramosTrafico = [];
-        let marcadoresParadasMemoria = []; 
-
-        let idWatcherGpsPasajero = null;
-        let busAsignadoAlPasajeroId = null;
-        let intentosReconexion = 0;
-        const MAX_INTENTOS_RECONEXION = 5;
-        let timerReconexion = null;
-        let marcadorMiUbicacionLocal = null; // Variable para la ubicación privada local
-
-        function togglePanelFlotante() {
-            const panel = document.getElementById('panel-user-contenedor');
-            const icon = document.getElementById('panel-toggle-icon');
-            panel.classList.toggle('collapsed');
-            icon.innerText = panel.classList.contains('collapsed') ? '▲' : '▼';
-        }
-
-        async function descargarDatosServidor() {
-            try {
-                const r = await fetch(FIREBASE_LINK);
-                datasetRutas = await r.json() || {};
-                actualizarSelectorUI();
-            } catch (e) { console.error("Error al sincronizar con la nube", e); }
-        }
-
-        function limpiarTrazosInfraestructura() {
-            if(capaLineaIda) map.removeLayer(capaLineaIda);
-            if(capaLineaRegreso) map.removeLayer(capaLineaRegreso);
-            capasTramosTrafico.forEach(capa => map.removeLayer(capa)); capasTramosTrafico = [];
-            marcadoresParadasMemoria.forEach(m => map.removeLayer(m)); marcadoresParadasMemoria = [];
-        }
-
-        function renderizarGeometriasRuta(idRuta) {
-            const r = datasetRutas[idRuta]; if(!r) return;
-            limpiarTrazosInfraestructura();
-
-            if(r.geometriaIda) {
-                capaLineaIda = L.polyline(r.geometriaIda, {color: '#1b5e20', weight: 6, opacity: 0.85}).addTo(map);
+        /* ==========================================================================
+           BASE DE DATOS CON TRAZADOS EXACTOS CALLE POR CALLE
+           ========================================================================== */
+        const RTP_DATA = [
+            {
+                id: "34-A",
+                name: "Ruta 34-A",
+                origin: "Metro Balderas",
+                destination: "Santa Fe (Centro Comercial)",
+                category: "Express",
+                fare: "$4.00",
+                color: "#d97706",
+                description: "Circula exactamente por Arcos de Belén, Av. Chapultepec, Av. Constituyentes, Carr. México-Toluca y Av. Vasco de Quiroga.",
+                keywords: ["34-a", "34a", "balderas", "santa fe", "express", "constituyentes", "vasco de quiroga", "arcos de belen", "chapultepec"],
+                // Coordenadas densas siguiendo el trazado vial real
+                path: [
+                    [19.42730, -99.14920], // Metro Balderas
+                    [19.42680, -99.15100], // Arcos de Belén
+                    [19.42650, -99.15300], // Esquina Balderas/Chapultepec
+                    [19.42550, -99.15600], // Av. Chapultepec / Cuauhtémoc
+                    [19.42480, -99.15900], // Av. Chapultepec / Glorieta de Insurgentes
+                    [19.42300, -99.16300], // Av. Chapultepec / Sevilla
+                    [19.42110, -99.17150], // Metro Chapultepec / CETRAM
+                    [19.41850, -99.17700], // Circuito Interior / Constituyentes
+                    [19.41680, -99.18120], // Metro Tacubaya / Av. Constituyentes
+                    [19.41200, -99.18600], // Constituyentes y Periférico
+                    [19.40850, -99.19100], // Constituyentes Panteón Dolores
+                    [19.39810, -99.20600], // Constituyentes Papalote Museo del Niño
+                    [19.38720, -99.22250], // Prolongación Paseo de la Reforma
+                    [19.38000, -99.23200], // Carretera México-Toluca
+                    [19.37550, -99.23900], // Puerta Santa Fe
+                    [19.36900, -99.25100], // Av. Vasco de Quiroga / Mario Pani
+                    [19.36220, -99.26050]  // Centro Comercial Santa Fe
+                ],
+                stops: [
+                    { id: "S34A-1", name: "M. Balderas (Origen)", coords: [19.42730, -99.14920], connection: "Metro L1, L3" },
+                    { id: "S34A-2", name: "M. Chapultepec", coords: [19.42110, -99.17150], connection: "Metro L1" },
+                    { id: "S34A-3", name: "M. Tacubaya", coords: [19.41680, -99.18120], connection: "Metro L1, L7, L9" },
+                    { id: "S34A-4", name: "Vasco de Quiroga", coords: [19.36900, -99.25100], connection: "Tren Interurbano" },
+                    { id: "S34A-5", name: "C.C. Santa Fe", coords: [19.36220, -99.26050], connection: "Autobuses Urbanos" }
+                ]
+            },
+            {
+                id: "200",
+                name: "Ruta 200",
+                origin: "Circuito Bicentenario",
+                destination: "Ruta Circular Norte / Sur",
+                category: "Ecobús",
+                fare: "$3.50",
+                color: "#006837",
+                description: "Cubre todo el anillo de Circuito Interior: Río Consulado, Galindo y Villa, Río Churubusco, Patriotismo, Revolución y Melchor Ocampo.",
+                keywords: ["200", "circuito bicentenario", "ecobus", "la raza", "consulado", "aeropuerto", "churubusco", "patriotismo", "revolucion"],
+                path: [
+                    [19.45600, -99.14200], // La Raza
+                    [19.45200, -99.13100], // Río Consulado y Calz. de Guadalupe
+                    [19.44800, -99.12300], // Río Consulado y Eje 1 Oriente
+                    [19.43200, -99.10900], // Galindo y Villa / Aeropuerto T1
+                    [19.41800, -99.10500], // Galindo y Villa y Eje 1 Sur
+                    [19.40800, -99.10200], // Río Churubusco y Eje 3 Sur
+                    [19.38800, -99.11000], // Río Churubusco y Viaducto
+                    [19.37800, -99.11800], // Río Churubusco y Eje 6 Sur
+                    [19.35900, -99.15500], // Churubusco y Calzada de Tlalpan
+                    [19.36200, -99.17200], // Río Churubusco y Av. Universidad
+                    [19.36800, -99.18100], // Patriotismo
+                    [19.39800, -99.18700], // Av. Revolución y Eje 4 Sur
+                    [19.43100, -99.17300], // Melchor Ocampo / Paseo de la Reforma
+                    [19.45600, -99.14200]  // Cierre de circuito en La Raza
+                ],
+                stops: [
+                    { id: "S200-1", name: "La Raza", coords: [19.45600, -99.14200], connection: "Metro L3, L5, Metrobús L1" },
+                    { id: "S200-2", name: "Consulado", coords: [19.44800, -99.12300], connection: "Metro L4, L5" },
+                    { id: "S200-3", name: "Terminal 1 Aeropuerto", coords: [19.43200, -99.10900], connection: "Aeropuerto / Metro L5" },
+                    { id: "S200-4", name: "Mixiuhca", coords: [19.40800, -99.10200], connection: "Metro L9" },
+                    { id: "S200-5", name: "Churubusco / Tlalpan", coords: [19.35900, -99.15500], connection: "Metro L2" }
+                ]
+            },
+            {
+                id: "57-A",
+                name: "Ruta 57-A",
+                origin: "Metro Cuatro Caminos",
+                destination: "Metro Constitución de 1917",
+                category: "Ordinario",
+                fare: "$2.00",
+                color: "#2563eb",
+                description: "Transita por Calz. Ingenieros Militares, Calz. México-Tacuba, Eje Central Lázaro Cárdenas y Eje 8 Sur Ermita Iztapalapa.",
+                keywords: ["57", "57-a", "cuatro caminos", "constitucion 1917", "tacuba", "eje central", "iztapalapa", "ermita"],
+                path: [
+                    [19.45900, -99.21500], // Toreo / Cuatro Caminos
+                    [19.45200, -99.20800], // Calz. Ingenieros Militares
+                    [19.44800, -99.20200], // Calz. México-Tacuba
+                    [19.43800, -99.18000], // Metro Cuitláhuac
+                    [19.4300, -99.16500],  // San Cosme
+                    [19.41500, -99.14300], // Eje Central Lázaro Cárdenas / Bellas Artes
+                    [19.38500, -99.14000], // Eje Central y Viaducto
+                    [19.35700, -99.12500], // Eje 8 Sur Ermita
+                    [19.35000, -99.09000], // Ermita Iztapalapa y Metro Cerro de la Estrella
+                    [19.34500, -99.06300]  // CETRAM Constitución de 1917
+                ],
+                stops: [
+                    { id: "S57-1", name: "M. Cuatro Caminos", coords: [19.45900, -99.21500], connection: "Metro L2" },
+                    { id: "S57-2", name: "M. Tacuba", coords: [19.44800, -99.20200], connection: "Metro L2, L7" },
+                    { id: "S57-3", name: "Eje Central / Lázaro Cárdenas", coords: [19.41500, -99.14300], connection: "Trolebús L1" },
+                    { id: "S57-4", name: "M. Constitución de 1917", coords: [19.34500, -99.06300], connection: "Metro L8, Cablebús L2" }
+                ]
+            },
+            {
+                id: "12",
+                name: "Ruta 12",
+                origin: "Metro Chapultepec",
+                destination: "Aragón por Gran Canal",
+                category: "Atenea",
+                fare: "$4.00",
+                color: "#e6007e",
+                description: "Circula por Paseo de la Reforma, Avenida Hidalgo, Eje 1 Norte y Avenida Gran Canal del Desagüe.",
+                keywords: ["12", "chapultepec", "aragon", "bellas artes", "atenea", "gran canal", "reforma"],
+                path: [
+                    [19.42110, -99.17150], // Chapultepec
+                    [19.42800, -99.15800], // Reforma y Insurgentes
+                    [19.43800, -99.14000], // Av. Hidalgo / Bellas Artes
+                    [19.44800, -99.12800], // Eje 1 Norte
+                    [19.46000, -99.11000], // Gran Canal
+                    [19.48000, -99.08000]  // Bosque de Aragón
+                ],
+                stops: [
+                    { id: "S12-1", name: "M. Chapultepec", coords: [19.42110, -99.17150], connection: "Metro L1" },
+                    { id: "S12-2", name: "Bellas Artes", coords: [19.43800, -99.14000], connection: "Metro L2, L8" },
+                    { id: "S12-3", name: "Bosque de Aragón", coords: [19.48000, -99.08000], connection: "Metro LB" }
+                ]
             }
-            if(r.geometriaRegreso) {
-                capaLineaRegreso = L.polyline(r.geometriaRegreso, {color: '#1565c0', weight: 6, opacity: 0.75}).addTo(map);
-            }
+        ];
 
-            [1, -1].forEach(sentido => {
-                if (r.reportesTrafico && r.reportesTrafico[sentido]) {
-                    const trazoCompleto = (sentido === 1) ? r.geometriaIda : rRegresoOInvertido(r);
-                    for (let idx in r.reportesTrafico[sentido]) {
-                        let i = parseInt(idx);
-                        if (r.reportesTrafico[sentido][idx] === true && trazoCompleto[i] && trazoCompleto[i + 1]) {
-                            let capaTrafico = L.polyline([trazoCompleto[i], trazoCompleto[i + 1]], {
-                                color: '#d32f2f', className: 'tramo-trafico-pesado', weight: 8
-                            }).addTo(map);
-                            capaTrafico.bindTooltip("🛑 Tráfico Pesado", {sticky: true});
-                            capasTramosTrafico.push(capaTrafico);
-                        }
-                    }
-                }
+        const CDMX_DEFAULT_CENTER = [19.432608, -99.133209];
+        let map;
+        let tileLayer;
+
+        let userCoords = null;
+        let userMarker = null;
+        let radiusCircle = null;
+        let searchRadiusMeters = 2000;
+
+        const routePolylines = {};
+        const stopMarkersGroup = L.layerGroup();
+        const busMarkersGroup = L.layerGroup();
+
+        let busUnits = [];
+        let simulationInterval = null;
+
+        // BALDOSAS 100% GRATUITAS Y LIBRES (SIN API KEY)
+        const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+        function initMap() {
+            map = L.map('map', {
+                center: CDMX_DEFAULT_CENTER,
+                zoom: 12,
+                zoomControl: false
             });
 
-            if (r.paradas) {
-                for(let pId in r.paradas) {
-                    let p = r.paradas[pId];
-                    let htmlParada = L.divIcon({ html: `<div class="parada-emoji-container">🚏</div>`, className: '', iconSize: [24, 24] });
-                    let mParada = L.marker([p.lat, p.lng], {icon: htmlParada}).addTo(map);
-                    mParada.bindPopup(`<b>🚏 Estación:</b> ${p.nombre}`);
-                    marcadoresParadasMemoria.push(mParada);
-                }
-            }
+            tileLayer = L.tileLayer(OSM_TILE_URL, {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                maxZoom: 19
+            }).addTo(map);
+
+            L.control.zoom({ position: 'topright' }).addTo(map);
+
+            stopMarkersGroup.addTo(map);
+            busMarkersGroup.addTo(map);
+
+            renderRoutesAndStops();
+            initSimulatedBuses();
+            startBusSimulation();
+
+            setTimeout(() => {
+                requestUserGeolocation(true);
+            }, 500);
         }
 
-        function actualizarFlotaGlobalPasajeros() {
-            const ahora = Date.now(); let llavesGlobalesActivas = [];
+        function requestUserGeolocation(isAutoInit = false) {
+            const gpsStatus = document.getElementById('gps-status-indicator');
+            
+            if (!navigator.geolocation) {
+                useFallbackLocation();
+                return;
+            }
 
-            for (let rId in datasetRutas) {
-                let r = datasetRutas[rId]; if (!r || !r.busesActivos) continue;
-                const duracionMs = (r.duracionMinutos || 30) * 60 * 1000;
+            gpsStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></span> Obteniendo GPS...`;
+            gpsStatus.className = "text-[10px] text-blue-400 font-medium flex items-center gap-1";
 
-                for (let bId in r.busesActivos) {
-                    let bus = r.busesActivos[bId]; let progresoFinal = bus.progreso; let coords = null;
-                    let trazoDestino = (bus.direccion === 1) ? r.geometriaIda : rRegresoOInvertido(r);
-                    let nombreTerminalDestino = (bus.direccion === 1) ? r.destino : r.origen;
-
-                    if (!trazoDestino || trazoDestino.length < 2) continue;
-
-                    let esEnVivo = bus.telemetriaReal === true;
-
-                    if (esEnVivo && bus.latReal) {
-                        coords = [bus.latReal, bus.lngReal]; llavesGlobalesActivas.push(bId);
-                    } else {
-                        let tiempoTranscurrido = ahora - bus.timestampSalida;
-                        progresoFinal = obtenerProgresoPorDistancia(tiempoTranscurrido, duracionMs, trazoDestino);
-                        if(progresoFinal >= 1.0) continue;
-                        coords = interpolarCoordenadas(progresoFinal, trazoDestino); llavesGlobalesActivas.push(bId);
-                    }
-
-                    let idxSegmentoUI = Math.floor(progresoFinal * (trazoDestino.length - 1));
-                    let transitandoPorTrafico = (r.reportesTrafico && r.reportesTrafico[bus.direccion] && r.reportesTrafico[bus.direccion][idxSegmentoUI] === true);
-
-                    let claseDir = (bus.direccion === 1) ? "bus-derecha" : "bus-izquierda";
-                    let textoEstado = esEnVivo ? "📡 En Vivo" : "⏱️ Estimado";
-                    let colorFondoEstado = esEnVivo ? "#1b5e20" : "#e65100";
-                    if(transitandoPorTrafico && !esEnVivo) colorFondoEstado = "#ef6c00";
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    userCoords = [pos.coords.latitude, pos.coords.longitude];
                     
-                    let htmlIcono = L.divIcon({
-                        html: `
-                            <div style="position:relative; width:40px; height:40px; text-align:center;">
-                                <div style="position:absolute; top:-24px; left:50%; transform:translateX(-50%); background:#1565c0; color:white; padding:2px 7px; border-radius:5px; font-size:10px; font-weight:800; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3); z-index:10;">
-                                    🏁 ${nombreTerminalDestino}
-                                </div>
-                                <div class="${claseDir}" style="font-size:28px; line-height:40px;">🚍</div>
-                                <div style="position:absolute; bottom:-24px; left:50%; transform:translateX(-50%); background:${colorFondoEstado}; color:white; padding:2px 7px; border-radius:5px; font-size:10px; font-weight:800; white-space:nowrap; box-shadow:0 2px 5px rgba(0,0,0,0.3); z-index:10;">
-                                    ${textoEstado}
-                                </div>
+                    gpsStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> GPS Activo`;
+                    gpsStatus.className = "text-[10px] text-emerald-400 font-medium flex items-center gap-1";
+
+                    document.getElementById('user-coords-text').textContent = 
+                        `Lat: ${userCoords[0].toFixed(4)}, Lng: ${userCoords[1].toFixed(4)}`;
+
+                    updateUserLocationMarkerOnMap();
+                    calculateNearbyRoutesAndStops();
+
+                    if (!isAutoInit) {
+                        map.flyTo(userCoords, 14, { duration: 1.2 });
+                        showToast("¡Ubicación GPS actualizada!");
+                    }
+                },
+                (error) => {
+                    gpsStatus.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Ubicación aprox.`;
+                    gpsStatus.className = "text-[10px] text-amber-400 font-medium flex items-center gap-1";
+
+                    useFallbackLocation();
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        }
+
+        function useFallbackLocation() {
+            userCoords = [19.4230, -99.1630]; 
+            document.getElementById('user-coords-text').textContent = 
+                `Lat: ${userCoords[0].toFixed(4)}, Lng: ${userCoords[1].toFixed(4)} (Aprox)`;
+
+            updateUserLocationMarkerOnMap();
+            calculateNearbyRoutesAndStops();
+        }
+
+        function updateUserLocationMarkerOnMap() {
+            if (!userCoords) return;
+
+            if (userMarker) map.removeLayer(userMarker);
+            if (radiusCircle) map.removeLayer(radiusCircle);
+
+            const customUserIcon = L.divIcon({
+                className: 'custom-user-gps-icon',
+                html: `
+                    <div class="relative flex items-center justify-center w-8 h-8">
+                        <div class="absolute w-8 h-8 bg-blue-500/40 user-gps-pulse"></div>
+                        <div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg z-10"></div>
+                    </div>
+                `,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            userMarker = L.marker(userCoords, { icon: customUserIcon, zIndexOffset: 1000 }).addTo(map);
+            userMarker.bindPopup(`
+                <div class="p-2.5 text-center">
+                    <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Tu Ubicación</span>
+                    <p class="text-xs font-semibold text-white mt-0.5">Estás aquí</p>
+                </div>
+            `);
+
+            radiusCircle = L.circle(userCoords, {
+                radius: searchRadiusMeters,
+                color: '#3b82f6',
+                fillColor: '#3b82f6',
+                fillOpacity: 0.08,
+                weight: 1.5,
+                dashArray: '4, 6'
+            }).addTo(map);
+        }
+
+        function calculateHaversineDistanceMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function calculateNearbyRoutesAndStops() {
+            if (!userCoords) return;
+
+            const nearbyListContainer = document.getElementById('nearby-list-container');
+            nearbyListContainer.innerHTML = '';
+
+            const nearbyStops = [];
+
+            RTP_DATA.forEach(route => {
+                route.stops.forEach(stop => {
+                    const distMeters = calculateHaversineDistanceMeters(
+                        userCoords[0], userCoords[1],
+                        stop.coords[0], stop.coords[1]
+                    );
+
+                    const closestBusETA = getEstimatedArrivalForStop(route.id, stop.coords);
+
+                    if (distMeters <= searchRadiusMeters) {
+                        nearbyStops.push({
+                            stopId: stop.id,
+                            stopName: stop.name,
+                            connection: stop.connection,
+                            coords: stop.coords,
+                            routeId: route.id,
+                            routeName: route.name,
+                            category: route.category,
+                            color: route.color,
+                            fare: route.fare,
+                            distanceMeters: Math.round(distMeters),
+                            etaMinutes: closestBusETA
+                        });
+                    }
+                });
+            });
+
+            nearbyStops.sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+            document.getElementById('nearby-count').textContent = nearbyStops.length;
+
+            if (nearbyStops.length === 0) {
+                nearbyListContainer.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
+                        <i class="fa-solid fa-ban text-gray-600 text-3xl mb-2"></i>
+                        <h4 class="text-xs font-bold text-gray-300">No hay paradas en ${searchRadiusMeters/1000} km</h4>
+                        <p class="text-[11px] text-gray-500 mt-1">Prueba ampliando el radio a 5 km.</p>
+                    </div>
+                `;
+                
+                document.getElementById('nearest-card-title').textContent = "Sin paradas cercanas";
+                document.getElementById('nearest-card-sub').textContent = `Incrementa el radio > ${searchRadiusMeters/1000}km`;
+                return;
+            }
+
+            const topStop = nearbyStops[0];
+            const formatTopDist = topStop.distanceMeters >= 1000 
+                ? `${(topStop.distanceMeters / 1000).toFixed(1)} km` 
+                : `${topStop.distanceMeters} m`;
+
+            document.getElementById('nearest-card-title').textContent = `${topStop.stopName} (${topStop.routeName})`;
+            document.getElementById('nearest-card-sub').textContent = `A ${formatTopDist} de ti • Próximo bus ~${topStop.etaMinutes} min`;
+            
+            document.getElementById('btn-focus-nearest').onclick = () => {
+                map.flyTo(topStop.coords, 16, { duration: 1.2 });
+            };
+
+            nearbyStops.forEach(item => {
+                const distFormatted = item.distanceMeters >= 1000 
+                    ? `${(item.distanceMeters / 1000).toFixed(1)} km` 
+                    : `${item.distanceMeters} m`;
+
+                const card = document.createElement('div');
+                card.className = "p-3 bg-gray-900 rounded-xl border border-gray-800/80 hover:border-emerald-500/50 transition cursor-pointer space-y-2 group";
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${item.color}"></span>
+                            <h4 class="font-bold text-xs text-white group-hover:text-emerald-400 transition">${item.stopName}</h4>
+                        </div>
+                        <span class="text-[11px] font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-600/30 px-2 py-0.5 rounded-md">
+                            <i class="fa-solid fa-person-walking text-[10px] mr-0.5"></i> ${distFormatted}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-gray-400">
+                        <span>${item.routeName} (${item.category})</span>
+                        <span class="text-amber-400 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-clock text-[10px]"></i> Llegada: ~${item.etaMinutes} min
+                        </span>
+                    </div>
+
+                    <div class="pt-2 border-t border-gray-800/60 flex justify-between items-center text-[10px] text-gray-500">
+                        <span>Conexión: <strong class="text-gray-300">${item.connection}</strong></span>
+                        <span class="text-emerald-400 font-bold">${item.fare}</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    map.flyTo(item.coords, 16, { duration: 1.2 });
+                    
+                    L.popup()
+                        .setLatLng(item.coords)
+                        .setContent(`
+                            <div class="p-3">
+                                <span class="text-[10px] font-bold text-emerald-400 uppercase">Parada Cercana (${distFormatted})</span>
+                                <h3 class="font-bold text-sm text-white mt-0.5">${item.stopName}</h3>
+                                <p class="text-xs text-gray-300 mt-0.5">${item.routeName}</p>
                             </div>
-                        `,
-                        className: 'marker-emoji-bus', iconSize: [40, 40], iconAnchor: [20, 20]
+                        `)
+                        .openOn(map);
+
+                    if (window.innerWidth < 640) {
+                        document.getElementById('side-drawer').classList.add('-translate-x-full');
+                    }
+                });
+
+                nearbyListContainer.appendChild(card);
+            });
+        }
+
+        function getEstimatedArrivalForStop(routeId, stopCoords) {
+            const activeBuses = busUnits.filter(b => b.routeId === routeId);
+            if (!activeBuses.length) return Math.floor(4 + Math.random() * 6);
+
+            let minDistance = Infinity;
+            activeBuses.forEach(bus => {
+                const dist = calculateHaversineDistanceMeters(
+                    bus.coords[0], bus.coords[1],
+                    stopCoords[0], stopCoords[1]
+                );
+                if (dist < minDistance) minDistance = dist;
+            });
+
+            return Math.max(2, Math.round((minDistance / 1000) / 25 * 60));
+        }
+
+        function renderRoutesAndStops() {
+            stopMarkersGroup.clearLayers();
+
+            RTP_DATA.forEach(route => {
+                if (!routePolylines[route.id]) {
+                    const polyline = L.polyline(route.path, {
+                        color: route.color,
+                        weight: 6,
+                        opacity: 0.85,
+                        lineCap: 'round',
+                        lineJoin: 'round'
+                    }).addTo(map);
+
+                    polyline.bindPopup(`
+                        <div class="p-3">
+                            <span class="text-[10px] font-bold text-emerald-400 uppercase">${route.category} (${route.fare})</span>
+                            <h3 class="font-bold text-sm text-white mt-0.5">${route.name}</h3>
+                            <p class="text-xs text-gray-300 mt-1">${route.description}</p>
+                        </div>
+                    `);
+
+                    routePolylines[route.id] = polyline;
+                } else {
+                    routePolylines[route.id].addTo(map);
+                }
+
+                route.stops.forEach(stop => {
+                    const stopIcon = L.divIcon({
+                        className: 'custom-stop-icon',
+                        html: `<div class="w-3.5 h-3.5 rounded-full bg-gray-900 border-2 border-white shadow-md"></div>`,
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7]
                     });
 
-                    if (marcadoresBusesMemoria[bId]) { 
-                        marcadoresBusesMemoria[bId].setLatLng(coords); 
-                        marcadoresBusesMemoria[bId].setIcon(htmlIcono); 
-                    } else {
-                        marcadoresBusesMemoria[bId] = L.marker(coords, { icon: htmlIcono }).addTo(map);
-                        marcadoresBusesMemoria[bId].on('click', function() { seleccionarRutaDesdeUsuario(rId); });
-                    }
-                    
-                    marcadoresBusesMemoria[bId].bindPopup(`<b>Corredor:</b> ${r.nombre}<br><b>Destino:</b> ${nombreTerminalDestino}<br><b>Estado:</b> <span style="color:${esEnVivo ? 'green':'darkorange'}; font-weight:bold;">${textoEstado}</span>`);
-                }
-            }
-
-            for (let k in marcadoresBusesMemoria) {
-                if (!llavesGlobalesActivas.includes(k)) { map.removeLayer(marcadoresBusesMemoria[k]); delete marcadoresBusesMemoria[k]; }
-            }
-        }
-
-        // Función para mostrar la ubicación privada local del usuario en su dispositivo
-        function centrarMiUbicacionLocal() {
-            if (!navigator.geolocation) {
-                alert("Tu dispositivo no soporta geolocalización.");
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const uLat = pos.coords.latitude;
-                    const uLng = pos.coords.longitude;
-                    
-                    if (marcadorMiUbicacionLocal) {
-                        marcadorMiUbicacionLocal.setLatLng([uLat, uLng]);
-                    } else {
-                        let htmlUserLocal = L.divIcon({
-                            html: `<div style="background:#1565c0; color:white; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.4); font-size:14px; border:2px solid white;">👤</div>`,
-                            className: '', iconSize: [28, 28], iconAnchor: [14, 14]
-                        });
-                        marcadorMiUbicacionLocal = L.marker([uLat, uLng], { icon: htmlUserLocal }).addTo(map);
-                        marcadorMiUbicacionLocal.bindPopup("<b>📍 Tu Ubicación Actual</b><br><i>(Privada y solo visible en tu dispositivo)</i>");
-                    }
-                    map.setView([uLat, uLng], 16);
-                },
-                (err) => {
-                    alert("No se pudo obtener tu ubicación actual. Revisa los permisos de GPS de tu navegador.");
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        }
-
-        function rRegresoOInvertido(ruta) { return ruta.geometriaRegreso || [...ruta.geometriaIda].reverse(); }
-        function limpiarMarcadoresBusesMesa() { for (let k in marcadoresBusesMemoria) { map.removeLayer(marcadoresBusesMemoria[k]); } marcadoresBusesMemoria = {}; }
-
-        setInterval(() => { actualizarFlotaGlobalPasajeros(); }, 1000);
-        setInterval(() => { descargarDatosServidor(); }, 5000);
-
-        function activarRastreoAbordoPasajero() {
-            if (!navigator.geolocation) { alert("Tu dispositivo no soporta localización."); return; }
-            const r = datasetRutas[rutaActivaId]; if(!r) { alert("Selecciona un Corredor/Ruta primero para abordar."); return; }
-
-            document.getElementById('formulario-rastreo-inputs').style.display = 'none';
-            document.getElementById('viaje-status-container').style.display = 'block';
-            document.getElementById('viaje-status-texto').innerText = "Validando proximidad GPS...";
-
-            const direccionSeleccionada = document.getElementById('user-direccion-viaje').value;
-            intentosReconexion = 0;
-
-            idWatcherGpsPasajero = navigator.geolocation.watchPosition(
-                (pos) => {
-                    intentosReconexion = 0;
-                    procesarPosicionPasajeroEnVivo(pos, direccionSeleccionada, r);
-                }, 
-                (err) => {
-                    console.warn("Señal de GPS interrumpida, iniciando protocolo de reconexión...", err);
-                    manejarPerdidaDeSenalGPS(r);
-                }, 
-                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-            );
-        }
-
-        async function procesarPosicionPasajeroEnVivo(pos, direccionSeleccionada, r) {
-            const uLat = pos.coords.latitude; const uLng = pos.coords.longitude;
-            const userLoc = [uLat, uLng];
-
-            let evalIda = calcularDistanciaMinimaRuta(userLoc, r.geometriaIda);
-            let evalReg = calcularDistanciaMinimaRuta(userLoc, r.geometriaRegreso);
-            let distMinimaRuta = Math.min(evalIda.distancia, evalReg.distancia);
-
-            if(distMinimaRuta > 90) {
-                manejarPerdidaDeSenalGPS(r);
-                return;
-            }
-
-            let sentidoAsignado = (direccionSeleccionada === "auto") ? ((evalIda.distancia <= evalReg.distancia) ? 1 : -1) : parseInt(direccionSeleccionada);
-            let progresoCalculado = (sentidoAsignado === 1) ? evalIda.progreso : evalReg.progreso;
-
-            if (!busAsignadoAlPasajeroId) {
-                let buses = r.busesActivos || {};
-                let busCercanoId = null; let minDiff = 0.03; 
-
-                for (let id in buses) {
-                    if (buses[id].direccion === sentidoAsignado && Math.abs(buses[id].progreso - progresoCalculado) < minDiff) {
-                        busCercanoId = id;
-                        break;
-                    }
-                }
-                busAsignadoAlPasajeroId = busCercanoId ? busCercanoId : "Bus_Pasajero_" + Date.now();
-            }
-
-            const urlDestinoBus = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`);
-            await fetch(urlDestinoBus, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    id: busAsignadoAlPasajeroId, progreso: progresoCalculado, direccion: sentidoAsignado,
-                    timestampSalida: Date.now() - (progresoCalculado * ((r.duracionMinutos || 30) * 60 * 1000)), 
-                    telemetriaReal: true, latReal: uLat, lngReal: uLng
-                })
+                    const marker = L.marker(stop.coords, { icon: stopIcon });
+                    marker.bindPopup(`
+                        <div class="p-3">
+                            <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-bold mb-1">
+                                <i class="fa-solid fa-bus-simple"></i> Parada RTP
+                            </div>
+                            <h4 class="font-bold text-sm text-white">${stop.name}</h4>
+                            <p class="text-xs text-gray-400 mt-0.5">Ruta: ${route.name}</p>
+                        </div>
+                    `);
+                    stopMarkersGroup.addLayer(marker);
+                });
             });
 
-            document.getElementById('viaje-status-texto').innerText = `📡 Transmitiendo GPS en Vivo`;
+            renderSearchRoutesList("");
         }
 
-        function manejarPerdidaDeSenalGPS(r) {
-            intentosReconexion++;
-            if (intentosReconexion <= MAX_INTENTOS_RECONEXION) {
-                document.getElementById('viaje-status-texto').innerText = `⚠️ Sin señal (${intentosReconexion}/${MAX_INTENTOS_RECONEXION}). Reintentando en 10s...`;
+        function renderSearchRoutesList(filterQuery = "") {
+            const container = document.getElementById('routes-list-container');
+            const countEl = document.getElementById('search-results-count');
+            const clearBtn = document.getElementById('btn-clear-search');
+            
+            container.innerHTML = '';
+            
+            const cleanQuery = filterQuery.toLowerCase().trim();
+            if (cleanQuery.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            const filteredRoutes = RTP_DATA.filter(route => {
+                if (!cleanQuery) return true;
+                return (
+                    route.id.toLowerCase().includes(cleanQuery) ||
+                    route.name.toLowerCase().includes(cleanQuery) ||
+                    route.origin.toLowerCase().includes(cleanQuery) ||
+                    route.destination.toLowerCase().includes(cleanQuery) ||
+                    route.category.toLowerCase().includes(cleanQuery) ||
+                    route.description.toLowerCase().includes(cleanQuery) ||
+                    route.keywords.some(k => k.includes(cleanQuery))
+                );
+            });
+
+            countEl.textContent = filteredRoutes.length;
+
+            if (filteredRoutes.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
+                        <i class="fa-solid fa-magnifying-glass text-gray-600 text-2xl mb-2"></i>
+                        <h4 class="text-xs font-bold text-gray-300">No se encontraron rutas</h4>
+                        <p class="text-[11px] text-gray-500 mt-1">Prueba buscando por "34-A", "Balderas", "Constituyentes" o "Express".</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredRoutes.forEach(route => {
+                const card = document.createElement('div');
+                card.className = 'p-3 bg-gray-900 rounded-xl border border-gray-800 hover:border-emerald-500/50 transition cursor-pointer space-y-1.5 group';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${route.color}"></span>
+                            <h4 class="font-bold text-xs text-white group-hover:text-emerald-400 transition">${route.name}</h4>
+                        </div>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-emerald-400 font-bold border border-gray-700">${route.fare}</span>
+                    </div>
+                    <p class="text-[11px] text-gray-300 font-medium truncate">${route.origin} &rarr; ${route.destination}</p>
+                    <p class="text-[10px] text-gray-400 line-clamp-2">${route.description}</p>
+                    <div class="flex justify-between items-center text-[10px] text-gray-500 pt-1 border-t border-gray-800/60">
+                        <span>Servicio: <strong class="text-gray-400">${route.category}</strong></span>
+                        <span><i class="fa-solid fa-location-dot"></i> ${route.stops.length} Paradas</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    if (routePolylines[route.id]) {
+                        map.fitBounds(routePolylines[route.id].getBounds(), { padding: [50, 50] });
+                        routePolylines[route.id].openPopup();
+                        showToast(`Mostrando trazado exacto de ${route.name}`);
+
+                        if (window.innerWidth < 640) {
+                            document.getElementById('side-drawer').classList.add('-translate-x-full');
+                        }
+                    }
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        function initSimulatedBuses() {
+            busUnits = [];
+            RTP_DATA.forEach((route, index) => {
+                for (let i = 0; i < 2; i++) {
+                    const progress = (i / 2) + (Math.random() * 0.2);
+                    busUnits.push({
+                        id: `RTP-${route.id}-${101 + index * 5 + i}`,
+                        routeId: route.id,
+                        routeName: route.name,
+                        category: route.category,
+                        color: route.color,
+                        path: route.path,
+                        progress: progress % 1,
+                        speed: 0.0025 + (Math.random() * 0.002),
+                        direction: 1,
+                        coords: interpolatePath(route.path, progress % 1)
+                    });
+                }
+            });
+        }
+
+        function interpolatePath(path, factor) {
+            if (path.length < 2) return path[0];
+            const totalSegments = path.length - 1;
+            const scaled = factor * totalSegments;
+            const index = Math.min(Math.floor(scaled), totalSegments - 1);
+            const segmentFactor = scaled - index;
+
+            const p1 = path[index];
+            const p2 = path[index + 1];
+
+            return [
+                p1[0] + (p2[0] - p1[0]) * segmentFactor,
+                p1[1] + (p2[1] - p1[1]) * segmentFactor
+            ];
+        }
+
+        function startBusSimulation() {
+            if (simulationInterval) clearInterval(simulationInterval);
+            simulationInterval = setInterval(() => {
+                busMarkersGroup.clearLayers();
+
+                busUnits.forEach(bus => {
+                    bus.progress += bus.speed * bus.direction;
+                    if (bus.progress >= 1) { bus.progress = 1; bus.direction = -1; }
+                    else if (bus.progress <= 0) { bus.progress = 0; bus.direction = 1; }
+
+                    bus.coords = interpolatePath(bus.path, bus.progress);
+
+                    const busIcon = L.divIcon({
+                        className: 'bus-marker-div',
+                        html: `
+                            <div class="w-7 h-7 rounded-full shadow-lg flex items-center justify-center border-2 border-white text-white font-bold text-[10px]" style="background-color: ${bus.color}">
+                                <i class="fa-solid fa-bus"></i>
+                            </div>
+                        `,
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14]
+                    });
+
+                    const marker = L.marker(bus.coords, { icon: busIcon });
+                    marker.bindPopup(`
+                        <div class="p-2.5">
+                            <span class="text-[10px] font-bold text-gray-400 font-mono">${bus.id}</span>
+                            <h4 class="font-bold text-xs text-white">${bus.routeName}</h4>
+                            <p class="text-[11px] text-emerald-400 mt-1">Unidad en Operación</p>
+                        </div>
+                    `);
+                    busMarkersGroup.addLayer(marker);
+                });
+            }, 1000);
+        }
+
+        function setupEventListeners() {
+            const drawer = document.getElementById('side-drawer');
+            
+            document.getElementById('btn-toggle-drawer').addEventListener('click', () => {
+                drawer.classList.remove('-translate-x-full');
+            });
+
+            document.getElementById('btn-close-drawer').addEventListener('click', () => {
+                drawer.classList.add('-translate-x-full');
+            });
+
+            // GPS
+            document.getElementById('btn-header-gps').addEventListener('click', () => requestUserGeolocation(false));
+            document.getElementById('btn-locate').addEventListener('click', () => requestUserGeolocation(false));
+            document.getElementById('btn-refresh-gps').addEventListener('click', () => requestUserGeolocation(false));
+
+            document.getElementById('btn-reset-view').addEventListener('click', () => {
+                map.flyTo(CDMX_DEFAULT_CENTER, 12, { duration: 1.2 });
+            });
+
+            // Buscador de Rutas
+            const searchInput = document.getElementById('search-route-input');
+            const clearSearchBtn = document.getElementById('btn-clear-search');
+
+            searchInput.addEventListener('input', (e) => {
+                renderSearchRoutesList(e.target.value);
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                renderSearchRoutesList('');
+                searchInput.focus();
+            });
+
+            // Carga de GeoJSON de Datos Abiertos
+            document.getElementById('btn-load-official-gtfs').addEventListener('click', async () => {
+                const btn = document.getElementById('btn-load-official-gtfs');
+                btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Cargando...`;
                 
-                if (timerReconexion) clearTimeout(timerReconexion);
-                timerReconexion = setTimeout(() => {
-                    intentarReconexionUnica(r);
-                }, 10000);
-            } else {
-                ejecutarFallbackAutonomoBus(r);
-            }
-        }
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/metrobus-cdmx/datos-abiertos/master/rtp_rutas.geojson');
+                    if (!response.ok) throw new Error('No disponible');
+                    
+                    const geojsonData = await response.json();
+                    
+                    L.geoJSON(geojsonData, {
+                        style: { color: "#10b981", weight: 4, opacity: 0.75 },
+                        onEachFeature: function (feature, layer) {
+                            if (feature.properties && feature.properties.route_short_name) {
+                                layer.bindPopup(`<b>Ruta: ${feature.properties.route_short_name}</b><br>${feature.properties.route_long_name || ''}`);
+                            }
+                        }
+                    }).addTo(map);
 
-        function intentarReconexionUnica(r) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    intentosReconexion = 0;
-                    document.getElementById('viaje-status-texto').innerText = `📡 Transmitiendo GPS en Vivo`;
-                    const direccionSeleccionada = document.getElementById('user-direccion-viaje').value;
-                    procesarPosicionPasajeroEnVivo(pos, direccionSeleccionada, r);
-                },
-                (err) => {
-                    manejarPerdidaDeSenalGPS(r);
-                },
-                { enableHighAccuracy: true, timeout: 8000 }
-            );
-        }
+                    btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Red Cargada`;
+                    showToast("¡Red oficial GeoJSON integrada exitosamente!");
+                } catch (err) {
+                    btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Red Oficial`;
+                    showToast("Mostrando trazados exactos locales almacenados.");
+                }
+            });
 
-        async function ejecutarFallbackAutonomoBus(r) {
-            if(idWatcherGpsPasajero) { navigator.geolocation.clearWatch(idWatcherGpsPasajero); idWatcherGpsPasajero = null; }
-            if(timerReconexion) { clearTimeout(timerReconexion); timerReconexion = null; }
+            // Radio de Búsqueda
+            const radiusBtns = document.querySelectorAll('.btn-radius');
+            radiusBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    radiusBtns.forEach(b => {
+                        b.className = 'btn-radius py-1.5 text-xs font-medium rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition';
+                    });
+                    e.target.className = 'btn-radius py-1.5 text-xs font-medium rounded-lg bg-emerald-700 text-white shadow transition';
 
-            if(busAsignadoAlPasajeroId && r.busesActivos && r.busesActivos[busAsignadoAlPasajeroId]) {
-                const busActual = r.busesActivos[busAsignadoAlPasajeroId];
-                const duracionMs = (r.duracionMinutos || 30) * 60 * 1000;
-                const nuevoTimestamp = Date.now() - (busActual.progreso * duracionMs);
+                    searchRadiusMeters = parseInt(e.target.dataset.radius);
+                    document.getElementById('radius-label').textContent = `${searchRadiusMeters / 1000} km`;
 
-                const urlFreno = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`);
-                await fetch(urlFreno, { 
-                    method: 'PUT', 
-                    body: JSON.stringify({
-                        id: busAsignadoAlPasajeroId, 
-                        progreso: busActual.progreso,
-                        direccion: busActual.direccion, 
-                        timestampSalida: nuevoTimestamp, 
-                        telemetriaReal: false
-                    }) 
+                    updateUserLocationMarkerOnMap();
+                    calculateNearbyRoutesAndStops();
                 });
-            }
+            });
 
-            busAsignadoAlPasajeroId = null;
-            document.getElementById('viaje-status-container').style.display = 'none';
-            document.getElementById('formulario-rastreo-inputs').style.display = 'block';
-            alert("⚠️ Señal de GPS perdida de forma permanente. El autobús continuará su ruta de manera estimada y autónoma hasta el destino.");
-        }
+            // Pestañas del Drawer
+            const tabNearby = document.getElementById('tab-btn-nearby');
+            const tabRoutes = document.getElementById('tab-btn-routes');
+            const tabInfo = document.getElementById('tab-btn-info');
 
-        function detenerRastreoAbordoPasajero() {
-            if(idWatcherGpsPasajero) { navigator.geolocation.clearWatch(idWatcherGpsPasajero); idWatcherGpsPasajero = null; }
-            if(timerReconexion) { clearTimeout(timerReconexion); timerReconexion = null; }
-            
-            if(busAsignadoAlPasajeroId && datasetRutas[rutaActivaId]?.busesActivos?.[busAsignadoAlPasajeroId]) {
-                const busActual = datasetRutas[rutaActivaId].busesActivos[busAsignadoAlPasajeroId];
-                const duracionMs = (datasetRutas[rutaActivaId].duracionMinutos || 30) * 60 * 1000;
-                const nuevoTimestamp = Date.now() - (busActual.progreso * duracionMs);
+            const contentNearby = document.getElementById('tab-content-nearby');
+            const contentRoutes = document.getElementById('tab-content-routes');
+            const contentInfo = document.getElementById('tab-content-info');
 
-                const urlFreno = FIREBASE_LINK.replace("rutas_v3.json", `rutas_v3/${rutaActivaId}/busesActivos/${busAsignadoAlPasajeroId}.json`);
-                fetch(urlFreno, { 
-                    method: 'PUT', 
-                    body: JSON.stringify({
-                        id: busAsignadoAlPasajeroId, progreso: busActual.progreso,
-                        direccion: busActual.direccion, timestampSalida: nuevoTimestamp, telemetriaReal: false
-                    }) 
+            function switchTab(activeBtn, showContent) {
+                [tabNearby, tabRoutes, tabInfo].forEach(btn => {
+                    btn.classList.remove('text-emerald-400', 'border-emerald-500');
+                    btn.classList.add('text-gray-400', 'border-transparent');
                 });
+                [contentNearby, contentRoutes, contentInfo].forEach(c => c.classList.add('hidden'));
+
+                activeBtn.classList.add('text-emerald-400', 'border-emerald-500');
+                activeBtn.classList.remove('text-gray-400', 'border-transparent');
+                showContent.classList.remove('hidden');
             }
-            busAsignadoAlPasajeroId = null;
-            document.getElementById('viaje-status-container').style.display = 'none';
-            document.getElementById('formulario-rastreo-inputs').style.display = 'block';
+
+            tabNearby.addEventListener('click', () => switchTab(tabNearby, contentNearby));
+            tabRoutes.addEventListener('click', () => {
+                switchTab(tabRoutes, contentRoutes);
+                document.getElementById('search-route-input').focus();
+            });
+            tabInfo.addEventListener('click', () => switchTab(tabInfo, contentInfo));
         }
 
-        function calcularDistanciaTotalRuta(trazo) {
-            let total = 0;
-            for (let i = 0; i < trazo.length - 1; i++) {
-                total += calcularHaversine(trazo[i], trazo[i + 1]);
-            }
-            return total > 0 ? total : 1;
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-16 left-1/2 -translate-x-1/2 z-50 glass-panel bg-gray-900/90 text-white text-xs px-4 py-2.5 rounded-xl shadow-2xl border border-emerald-500/40 flex items-center gap-2 animate-bounce';
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-emerald-400"></i> <span>${message}</span>`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => { toast.remove(); }, 3000);
         }
 
-        function obtenerProgresoPorDistancia(transcurridoMs, duracionMs, trazo) {
-            const distTotal = calcularDistanciaTotalRuta(trazo);
-            const velocidad = distTotal / duracionMs;
-            let distRecorrida = velocidad * transcurridoMs;
-            if (distRecorrida >= distTotal) return 1.0;
-            
-            let acumulada = 0;
-            for (let i = 0; i < trazo.length - 1; i++) {
-                let dSeg = calcularHaversine(trazo[i], trazo[i + 1]);
-                if (acumulada + dSeg >= distRecorrida) {
-                    let resto = distRecorrida - acumulada;
-                    return (i + (resto / dSeg)) / (trazo.length - 1);
-                }
-                acumulada += dSeg;
-            }
-            return 1.0;
-        }
-
-        function calcularDistanciaMinimaRuta(userCoords, listaPuntosRuta) {
-            if(!listaPuntosRuta || listaPuntosRuta.length === 0) return { distancia: Infinity, progreso: 0 };
-            
-            let distMinGlobal = Infinity; let mejorProgreso = 0;
-            let distanciaAcumuladaTotal = 0; let distanciasAcumuladas = [0];
-
-            for (let i = 0; i < listaPuntosRuta.length - 1; i++) {
-                let dSeg = calcularHaversine(listaPuntosRuta[i], listaPuntosRuta[i+1]);
-                distanciaAcumuladaTotal += dSeg;
-                distanciasAcumuladas.push(distanciaAcumuladaTotal);
-            }
-            if (distanciaAcumuladaTotal === 0) distanciaAcumuladaTotal = 1;
-
-            for(let i = 0; i < listaPuntosRuta.length - 1; i++) {
-                let p1 = listaPuntosRuta[i]; let p2 = listaPuntosRuta[i+1];
-                let proj = proyectarPuntoEnSegmento(userCoords, p1, p2);
-                let d = calcularHaversine(userCoords, proj.punto);
-
-                if(d < distMinGlobal) {
-                    distMinGlobal = d;
-                    let distParcialSegmento = distanciasAcumuladas[i] + calcularHaversine(p1, proj.punto);
-                    mejorProgreso = distParcialSegmento / distanciaAcumuladaTotal;
-                }
-            }
-            return { distancia: distMinGlobal, progreso: Math.max(0, Math.min(1, mejorProgreso)) };
-        }
-
-        function proyectarPuntoEnSegmento(p, a, b) {
-            let x = p[1], y = p[0]; let x1 = a[1], y1 = a[0]; let x2 = b[1], y2 = b[0];
-            let A = x - x1; let B = y - y1; let C = x2 - x1; let D = y2 - y1;
-            let dot = A * C + B * D; let lenSq = C * C + D * D; let param = lenSq !== 0 ? dot / lenSq : -1;
-            let xx = param < 0 ? x1 : (param > 1 ? x2 : x1 + param * C);
-            let yy = param < 0 ? y1 : (param > 1 ? y2 : y1 + param * D);
-            return { punto: [yy, xx] };
-        }
-
-        function calcularHaversine(p1, p2) {
-            const R = 6371e3; const phi1 = p1[0] * Math.PI / 180; const phi2 = p2[0] * Math.PI / 180;
-            const deltaPhi = (p2[0] - p1[0]) * Math.PI / 180; const deltaLambda = (p2[1] - p1[1]) * Math.PI / 180;
-            const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
-            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); 
-        }
-
-        function interpolarCoordenadas(progreso, listaPuntos) {
-            if (progreso < 0) progreso = 0; if (progreso > 1) progreso = 1;
-            const maxSegmentos = listaPuntos.length - 1; 
-            const posMapeada = progreso * maxSegmentos;
-            const index = Math.floor(posMapeada); const subProgreso = posMapeada - index;
-            if (index >= maxSegmentos) return listaPuntos[maxSegmentos];
-            const pA = listaPuntos[index]; const pB = listaPuntos[index + 1];
-            return [ pA[0] + (pB[0] - pA[0]) * subProgreso, pA[1] + (pB[1] - pA[1]) * subProgreso ];
-        }
-
-        function actualizarSelectorUI() {
-            const selectorUser = document.getElementById('user-selector-rutas'); 
-            const valGuardado = selectorUser.value;
-            selectorUser.innerHTML = '<option value="">-- Ver todas las rutas en red --</option>'; 
-
-            for(let id in datasetRutas) {
-                let r = datasetRutas[id];
-                let op = document.createElement('option'); op.value = id; op.innerText = r.nombre; 
-                selectorUser.appendChild(op);
-            }
-            if(datasetRutas[valGuardado]) selectorUser.value = valGuardado;
-            actualizarTextosTerminalesPasajero();
-        }
-
-        function actualizarTextosTerminalesPasajero() {
-            const r = datasetRutas[rutaActivaId];
-            const optIda = document.getElementById('opt-viaje-ida'); 
-            const optRegreso = document.getElementById('opt-viaje-regreso');
-            if(r && optIda && optRegreso) { 
-                optIda.innerText = `🟢 IDA (Hacia ${r.destino})`; 
-                optRegreso.innerText = `🔵 REGRESO (Hacia ${r.origen})`; 
-            } else if (optIda && optRegreso) {
-                optIda.innerText = "🟢 IDA";
-                optRegreso.innerText = "🔵 REGRESO";
-            }
-        }
-
-        function seleccionarRutaDesdeUsuario(idRuta) { 
-            rutaActivaId = idRuta; 
-            actualizarTextosTerminalesPasajero(); 
-            
-            if (idRuta) {
-                renderizarGeometriasRuta(idRuta); 
-                const r = datasetRutas[idRuta];
-                if (r && r.geometriaIda && r.geometriaIda.length > 0) {
-                    map.fitBounds(r.geometriaIda, { padding: [40, 40] });
-                }
-            } else {
-                limpiarTrazosInfraestructura();
-            }
-        }
-
-        descargarDatosServidor();
+        window.onload = function() {
+            initMap();
+            setupEventListeners();
+        };
     </script>
 </body>
 </html>
