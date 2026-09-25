@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RTP CDMX - Multi-Rutas Cercanas & Datos Abiertos</title>
+    <title>RTP CDMX - Rutas Multicolor & Selección Completa</title>
     
     <meta name="theme-color" content="#006837">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -77,7 +77,7 @@
                     RTP
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm text-white">RTP CDMX (Multi-Rutas Cercanas)</h1>
+                    <h1 class="font-bold text-sm text-white">RTP CDMX (Rutas Multicolor)</h1>
                     <span id="api-status" class="text-[10px] text-amber-400 font-medium">Buscando posición...</span>
                 </div>
             </div>
@@ -95,16 +95,16 @@
     <main class="relative flex-1 w-full h-full">
         <div id="map"></div>
 
-        <!-- Leyenda -->
+        <!-- Leyenda de Sentidos -->
         <div class="absolute top-20 right-4 z-10 glass-panel p-3 rounded-xl text-[11px] space-y-1.5 hidden sm:block">
-            <div class="font-bold text-gray-300 border-b border-gray-700 pb-1 mb-1">Simbología</div>
+            <div class="font-bold text-gray-300 border-b border-gray-700 pb-1 mb-1">Simbología de Sentido</div>
             <div class="flex items-center gap-2">
-                <div class="w-6 h-1 bg-emerald-500 rounded"></div>
-                <span class="text-gray-300">Trayecto Ida</span>
+                <div class="w-6 h-1 bg-white rounded"></div>
+                <span class="text-gray-300">Trayecto de Ida (Continua)</span>
             </div>
             <div class="flex items-center gap-2">
-                <div class="w-6 h-1 border-b-2 border-dashed border-emerald-500"></div>
-                <span class="text-gray-300">Trayecto Regreso</span>
+                <div class="w-6 h-1 border-b-2 border-dashed border-white"></div>
+                <span class="text-gray-300">Trayecto Regreso (Punteada)</span>
             </div>
         </div>
 
@@ -112,38 +112,38 @@
         <div id="nearest-card" class="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-96 z-10 glass-panel rounded-2xl p-3 shadow-2xl flex items-center justify-between border border-emerald-500/30">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                    <i class="fa-solid fa-layer-group text-lg"></i>
+                    <i class="fa-solid fa-palette text-lg"></i>
                 </div>
                 <div>
                     <span class="text-[10px] uppercase text-emerald-400 font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-network-wired"></i> Cobertura Cercana
+                        <i class="fa-solid fa-network-wired"></i> Rutas Cercanas Diferenciadas
                     </span>
                     <h2 id="nearest-title" class="text-xs font-bold text-white truncate max-w-[200px]">Ubicando zona...</h2>
-                    <p id="nearest-sub" class="text-[11px] text-gray-400">Escaneando radio ~9km</p>
+                    <p id="nearest-sub" class="text-[11px] text-gray-400">Radio de escaneo ~9km</p>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Panel Lateral con Buscador Dinámico -->
+    <!-- Panel Lateral de Rutas -->
     <aside id="side-drawer" class="fixed top-0 left-0 bottom-0 w-full sm:w-96 z-40 glass-panel border-r border-gray-800 transform -translate-x-full transition-transform duration-300 flex flex-col">
         
         <div class="p-4 border-b border-gray-800 flex items-center justify-between">
             <div>
-                <h2 class="font-bold text-base text-white">Rutas Cercanas</h2>
-                <p id="route-count" class="text-[11px] text-gray-400">Cargando catálogo...</p>
+                <h2 class="font-bold text-base text-white">Catálogo de Rutas</h2>
+                <p id="route-count" class="text-[11px] text-gray-400">Cargando datos...</p>
             </div>
             <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-2">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
         </div>
 
-        <!-- Buscador Inteligente -->
+        <!-- Buscador -->
         <div class="p-3 border-b border-gray-800 bg-gray-950/60">
             <div class="relative flex gap-2">
                 <div class="relative flex-1">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input type="text" id="route-search-input" placeholder="Buscar por código (34-A) o nombre..." 
+                    <input type="text" id="route-search-input" placeholder="Filtrar por código (34-A) o nombre..." 
                            class="w-full bg-gray-900 border border-gray-700/80 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
                 </div>
                 <button id="btn-search-route" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded-xl text-xs font-bold transition">
@@ -152,22 +152,14 @@
             </div>
         </div>
 
-        <!-- Lista de Rutas -->
+        <!-- Lista Dinámica de Rutas -->
         <div id="nearby-routes-list" class="flex-1 overflow-y-auto p-4 space-y-2.5">
             <!-- Renderizado dinámico -->
         </div>
     </aside>
 
     <script>
-        // API Oficial de Movilidad CDMX (Apimetro)
         const APIMETRO_BASE_URL = "https://apimetro.dev/movilidad/mapas";
-
-        // Paleta amplia para diferenciar múltiples rutas concurrentes
-        const ROUTE_COLORS = [
-            "#2563EB", "#10B981", "#F59E0B", "#EC4899", 
-            "#8B5CF6", "#06B6D4", "#F97316", "#84CC16", 
-            "#E11D48", "#14B8A6", "#6366F1", "#D97706"
-        ];
 
         let map;
         let userLocation = null;
@@ -175,13 +167,18 @@
 
         let loadedRoutesMap = new Map();
         let loadedStopsMap = new Map();
-        let routeColorAssignment = new Map();
+        let routeColorMap = new Map();
 
         let routesLayerGroup;
         let stopsLayerGroup;
 
-        // Radio ampliado (~8.5 a 9 km) para abarcar múltiples rutas cercanas
-        const SEARCH_RADIUS_DEG = 0.08; 
+        const SEARCH_RADIUS_DEG = 0.08; // Radio ~9 km
+
+        // Generador de colores únicos en formato HSL distribuido
+        function generateUniqueColor(index, total = 20) {
+            const hue = (index * (360 / Math.max(total, 12))) % 360;
+            return `hsl(${hue}, 85%, 55%)`;
+        }
 
         function initMap() {
             map = L.map('map', { center: [19.4326, -99.1332], zoom: 13, zoomControl: false });
@@ -226,7 +223,7 @@
         }
 
         function fallbackLocation() {
-            userLocation = [19.4230, -99.1630]; // Roma Norte / Centro
+            userLocation = [19.4230, -99.1630];
             updateUserMarker();
             fetchNearbyData(userLocation[0], userLocation[1]);
         }
@@ -261,7 +258,6 @@
             const maxLon = lon + SEARCH_RADIUS_DEG;
 
             try {
-                // Descarga desde la API de Datos Abiertos / Apimetro
                 const [routesRes, stopsRes] = await Promise.all([
                     fetch(`${APIMETRO_BASE_URL}/geojsonLinea?sistema=RTP`),
                     fetch(`${APIMETRO_BASE_URL}/geojsonEstacion?sistema=RTP`)
@@ -270,7 +266,6 @@
                 const routesData = await routesRes.json();
                 const stopsData = await stopsRes.json();
 
-                // Filtrar geográficamente todas las que intersecten el Bounding Box
                 const nearbyRoutes = (routesData.features || []).filter(feature => 
                     isFeatureInBBox(feature, minLat, maxLat, minLon, maxLon)
                 );
@@ -281,17 +276,21 @@
                     return coords[1] >= minLat && coords[1] <= maxLat && coords[0] >= minLon && coords[0] <= maxLon;
                 });
 
-                // Asignación de colores por código único de ruta
-                let colorIdx = 0;
-                nearbyRoutes.forEach(r => {
+                // Registrar rutas y asignarles un color único por código
+                nearbyRoutes.forEach((r) => {
                     const routeCode = getRouteCode(r);
-                    if (!routeColorAssignment.has(routeCode)) {
-                        const color = ROUTE_COLORS[colorIdx % ROUTE_COLORS.length];
-                        routeColorAssignment.set(routeCode, color);
-                        colorIdx++;
-                    }
                     const uniqueKey = r.properties.id || `${routeCode}_${getSentido(r)}_${Math.random()}`;
                     loadedRoutesMap.set(uniqueKey, r);
+                });
+
+                // Asignar color dinámico exclusivo a cada ruta
+                let colorIndex = 0;
+                const uniqueCodes = Array.from(new Set(Array.from(loadedRoutesMap.values()).map(r => getRouteCode(r))));
+                uniqueCodes.forEach((code) => {
+                    if (!routeColorMap.has(code)) {
+                        routeColorMap.set(code, generateUniqueColor(colorIndex, uniqueCodes.length));
+                        colorIndex++;
+                    }
                 });
 
                 nearbyStops.forEach(s => {
@@ -299,22 +298,19 @@
                     loadedStopsMap.set(stopKey, s);
                 });
 
-                // Conteo de líneas únicas
-                const uniqueCodes = new Set(Array.from(loadedRoutesMap.values()).map(r => getRouteCode(r)));
-
-                apiStatus.textContent = `${uniqueCodes.size} rutas en tu área`;
+                apiStatus.textContent = `${uniqueCodes.length} rutas en tu área`;
                 apiStatus.className = "text-[10px] text-emerald-400 font-medium";
 
-                document.getElementById('nearest-title').textContent = `${uniqueCodes.size} rutas disponibles en tu zona`;
-                document.getElementById('nearest-sub').textContent = `${loadedRoutesMap.size} trayectos cargados (Ida/Regreso)`;
-                document.getElementById('route-count').textContent = `${uniqueCodes.size} rutas detectadas cerca`;
+                document.getElementById('nearest-title').textContent = `${uniqueCodes.length} rutas detectadas cerca`;
+                document.getElementById('nearest-sub').textContent = `${loadedRoutesMap.size} trayectos (Ida y Regreso)`;
+                document.getElementById('route-count').textContent = `${uniqueCodes.length} rutas registradas`;
 
                 renderMapData();
                 renderDrawerList();
 
             } catch (err) {
                 console.error("Error al obtener datos:", err);
-                apiStatus.textContent = "Error al conectar API";
+                apiStatus.textContent = "Error de conexión con API";
             }
         }
 
@@ -328,29 +324,24 @@
             return coords.some(c => Array.isArray(c) && c[1] >= minLat && c[1] <= maxLat && c[0] >= minLon && c[0] <= maxLon);
         }
 
-        // Obtención robusta del código comercial (ej: 34-A, 11-A)
         function getRouteCode(feature) {
             const p = feature.properties || {};
             return p.num_comercial || p.linea || p.codigo || p.ruta || "RTP";
         }
 
-        // Obtención robusta del nombre oficial / denominación
         function getRouteName(feature) {
             const p = feature.properties || {};
             let name = p.nombre || p.denominacion || p.origen_destino || p.nombre_linea || "Ruta de RTP";
-            
-            // Limpieza básica si el nombre repite el código al inicio
             const code = getRouteCode(feature);
             if (name.startsWith(code)) {
                 name = name.replace(code, '').replace(/^[\s\-:]+/, '');
             }
-            return name.trim() || `Trayecto ${code}`;
+            return name.trim() || `Ruta ${code}`;
         }
 
         function getSentido(feature) {
             const p = feature.properties || {};
             const str = (p.sentido || p.direccion || p.sentido_circulacion || '').toString().toLowerCase();
-
             if (str.includes('2') || str.includes('b') || str.includes('regreso') || str.includes('sur') || str.includes('poniente')) {
                 return "Regreso";
             }
@@ -362,7 +353,7 @@
             if (!query) return;
 
             const apiStatus = document.getElementById('api-status');
-            apiStatus.textContent = `Consultando API para "${query}"...`;
+            apiStatus.textContent = `Buscando "${query}"...`;
 
             try {
                 const response = await fetch(`${APIMETRO_BASE_URL}/geojsonLinea?sistema=RTP`);
@@ -378,12 +369,12 @@
                 if (matchedFeatures.length > 0) {
                     matchedFeatures.forEach(f => {
                         const routeCode = getRouteCode(f);
-                        if (!routeColorAssignment.has(routeCode)) {
-                            const color = ROUTE_COLORS[routeColorAssignment.size % ROUTE_COLORS.length];
-                            routeColorAssignment.set(routeCode, color);
-                        }
                         const uniqueKey = f.properties.id || `${routeCode}_${getSentido(f)}_${Math.random()}`;
                         loadedRoutesMap.set(uniqueKey, f);
+
+                        if (!routeColorMap.has(routeCode)) {
+                            routeColorMap.set(routeCode, generateUniqueColor(routeColorMap.size, 15));
+                        }
                     });
 
                     apiStatus.textContent = `Ruta "${query}" agregada`;
@@ -393,8 +384,8 @@
                     const tempLayer = L.geoJSON(matchedFeatures);
                     map.fitBounds(tempLayer.getBounds(), { padding: [50, 50] });
                 } else {
-                    alert(`No se encontró la ruta "${query}" en el catálogo oficial.`);
-                    apiStatus.textContent = "Sin coincidencias";
+                    alert(`No se encontró la ruta "${query}" en el catálogo.`);
+                    apiStatus.textContent = "Sin resultados";
                 }
             } catch (e) {
                 console.error(e);
@@ -410,24 +401,23 @@
             L.geoJSON(routesArray, {
                 style: (feature) => {
                     const routeCode = getRouteCode(feature);
-                    const color = routeColorAssignment.get(routeCode) || '#006837';
+                    const color = routeColorMap.get(routeCode) || '#006837';
                     const sentido = getSentido(feature);
 
                     return {
                         color: color,
-                        weight: 4.5,
-                        opacity: 0.85,
-                        dashArray: sentido === "Regreso" ? "7, 7" : null
+                        weight: 5,
+                        opacity: 0.9,
+                        dashArray: sentido === "Regreso" ? "8, 8" : null // Continua para Ida, Punteada para Regreso
                     };
                 },
                 onEachFeature: (feature, layer) => {
                     const routeCode = getRouteCode(feature);
                     const routeName = getRouteName(feature);
-                    const color = routeColorAssignment.get(routeCode) || '#006837';
+                    const color = routeColorMap.get(routeCode) || '#006837';
                     const sentido = getSentido(feature);
 
-                    // Etiqueta al pasar cursor o hacer click
-                    layer.bindTooltip(`[Ruta ${routeCode}] ${routeName}`, {
+                    layer.bindTooltip(`[Ruta ${routeCode}] ${routeName} (${sentido})`, {
                         permanent: false,
                         direction: 'center',
                         className: 'route-label-tooltip'
@@ -445,19 +435,19 @@
                             </div>
                             <h3 class="font-bold text-sm text-white leading-tight">${routeName}</h3>
                             <p class="text-[11px] text-gray-400 mt-1">
-                                Tipo de trazado: <span class="text-gray-200">${sentido === 'Ida' ? 'Línea Continua' : 'Línea Punteada'}</span>
+                                Trazo en mapa: <span class="text-gray-200 font-semibold">${sentido === 'Ida' ? 'Línea Continua' : 'Línea Discontinua (Punteada)'}</span>
                             </p>
                         </div>
                     `);
                 }
             }).addTo(routesLayerGroup);
 
-            // Renderizar Paradas
+            // Renderizar paradas asociadas
             const stopsArray = Array.from(loadedStopsMap.values());
             L.geoJSON(stopsArray, {
                 pointToLayer: (feature, latlng) => {
                     const routeCode = getRouteCode(feature);
-                    const color = routeColorAssignment.get(routeCode) || '#006837';
+                    const color = routeColorMap.get(routeCode) || '#006837';
                     
                     const customStopIcon = L.divIcon({
                         className: 'rtp-stop-icon',
@@ -470,12 +460,10 @@
                 },
                 onEachFeature: (feature, layer) => {
                     const props = feature.properties;
-                    const sentido = getSentido(feature);
-
                     layer.bindPopup(`
                         <div class="p-3">
                             <span class="text-[10px] font-bold text-emerald-400 uppercase">
-                                <i class="fa-solid fa-bus"></i> Parada RTP
+                                <i class="fa-solid fa-bus"></i> Parada de RTP
                             </span>
                             <h3 class="font-bold text-sm text-white mt-0.5">${props.nombre || 'Parada oficial'}</h3>
                         </div>
@@ -489,7 +477,6 @@
             const searchFilter = document.getElementById('route-search-input').value.trim().toLowerCase();
             container.innerHTML = '';
 
-            // Agrupar variantes por Código de Ruta
             const groupedRoutes = new Map();
 
             loadedRoutesMap.forEach((feature) => {
@@ -512,19 +499,19 @@
                 container.innerHTML = `
                     <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
                         <i class="fa-solid fa-magnifying-glass text-gray-500 text-2xl mb-2"></i>
-                        <h4 class="text-xs font-bold text-gray-300">No se encontraron rutas</h4>
-                        <p class="text-[11px] text-gray-500 mt-1">Escribe el código o nombre y presiona "Buscar".</p>
+                        <h4 class="text-xs font-bold text-gray-300">No hay coincidencias</h4>
+                        <p class="text-[11px] text-gray-500 mt-1">Ingresa el número o nombre en la barra de búsqueda.</p>
                     </div>
                 `;
                 return;
             }
 
             groupedRoutes.forEach((features, routeCode) => {
-                const color = routeColorAssignment.get(routeCode) || '#006837';
+                const color = routeColorMap.get(routeCode) || '#006837';
                 const mainName = getRouteName(features[0]);
 
                 const card = document.createElement('div');
-                card.className = "p-3 bg-gray-900/90 rounded-xl border border-gray-800 hover:border-emerald-500/50 transition space-y-2 shadow-sm";
+                card.className = "p-3 bg-gray-900/90 rounded-xl border border-gray-800 hover:border-emerald-500/50 transition cursor-pointer space-y-2.5 shadow-sm";
                 
                 card.innerHTML = `
                     <div class="flex items-start gap-2.5">
@@ -533,47 +520,37 @@
                         </span>
                         <div class="flex-1 min-w-0">
                             <h4 class="font-bold text-xs text-white leading-tight truncate">${mainName}</h4>
-                            <p class="text-[10px] text-gray-400 mt-1">${features.length} trayectos cargados</p>
+                            <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-2">
+                                <span><i class="fa-solid fa-minus text-emerald-400"></i> Ida</span>
+                                <span><i class="fa-solid fa-ellipsis text-amber-400"></i> Regreso</span>
+                            </p>
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-2 pt-2 border-t border-gray-800/80">
-                        <button data-sentido="ida" class="flex-1 bg-gray-800 hover:bg-emerald-950/80 text-white border border-gray-700 hover:border-emerald-500/50 text-[10px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1.5">
-                            <div class="w-3.5 h-0.5 rounded" style="background-color: ${color}"></div> 
-                            <span class="truncate">Ver Ida</span>
-                        </button>
-                        <button data-sentido="regreso" class="flex-1 bg-gray-800 hover:bg-amber-950/80 text-white border border-gray-700 hover:border-amber-500/50 text-[10px] font-bold py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1.5">
-                            <div class="w-3.5 h-0.5 border-b-2 border-dashed" style="border-color: ${color}"></div> 
-                            <span class="truncate">Ver Regreso</span>
-                        </button>
-                    </div>
+                    <button class="w-full bg-gray-800 hover:bg-emerald-950/80 text-white border border-gray-700 hover:border-emerald-500/50 text-[11px] font-bold py-2 px-3 rounded-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-route text-emerald-400"></i> Ver Ruta Completa (Ida + Regreso)
+                    </button>
                 `;
 
-                const btnIda = card.querySelector('[data-sentido="ida"]');
-                const btnRegreso = card.querySelector('[data-sentido="regreso"]');
-
-                const idaFeature = features.find(f => getSentido(f) === 'Ida') || features[0];
-                const regresoFeature = features.find(f => getSentido(f) === 'Regreso') || features[0];
-
-                btnIda.onclick = (e) => {
-                    e.stopPropagation();
-                    const bounds = L.geoJSON(idaFeature).getBounds();
+                // Al hacer clic en cualquier parte de la tarjeta o en el botón, se muestran AMBOS trayectos (Ida y Regreso)
+                card.onclick = () => {
+                    const combinedGeoJSON = {
+                        type: "FeatureCollection",
+                        features: features
+                    };
+                    const bounds = L.geoJSON(combinedGeoJSON).getBounds();
                     map.fitBounds(bounds, { padding: [50, 50] });
-                    if (window.innerWidth < 640) document.getElementById('side-drawer').classList.add('-translate-x-full');
-                };
 
-                btnRegreso.onclick = (e) => {
-                    e.stopPropagation();
-                    const bounds = L.geoJSON(regresoFeature).getBounds();
-                    map.fitBounds(bounds, { padding: [50, 50] });
-                    if (window.innerWidth < 640) document.getElementById('side-drawer').classList.add('-translate-x-full');
+                    if (window.innerWidth < 640) {
+                        document.getElementById('side-drawer').classList.add('-translate-x-full');
+                    }
                 };
 
                 container.appendChild(card);
             });
         }
 
-        // Interfaz de Usuario
+        // Control visual de la interfaz
         document.getElementById('btn-toggle-drawer').onclick = () => document.getElementById('side-drawer').classList.remove('-translate-x-full');
         document.getElementById('btn-close-drawer').onclick = () => document.getElementById('side-drawer').classList.add('-translate-x-full');
         document.getElementById('btn-locate').onclick = () => getUserLocation();
