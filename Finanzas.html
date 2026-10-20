@@ -110,7 +110,7 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h3 id="modalMesTitulo" class="text-sm font-black uppercase text-blue-400 tracking-wider">Desglose del Mes</h3>
-                    <p class="text-[9px] text-slate-400 uppercase font-bold">Obligaciones programadas</p>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold">Toca cualquier transacción para editarla o eliminarla</p>
                 </div>
                 <button onclick="cerrarModal('modalDetalleMes')" class="text-slate-400 font-bold bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center">✕</button>
             </div>
@@ -623,17 +623,17 @@
 
             let tMSI = 0, tCorrientes = 0;
             let desgloseTDC = [];
-            let detalleConceptos = []; // Para almacenar el desglose detallado de compras del mes
+            let detalleConceptos = []; 
 
             let deudasPersonalesMes = 0;
             db.deudas.forEach(d => {
                 if(d.msi && d.msi.restantes > mesesHaciaAdelante) {
                     let cuotaP = (d.monto / d.msi.restantes);
                     deudasPersonalesMes += cuotaP;
-                    detalleConceptos.push({ txt: `Deuda: ${d.nombre}`, val: cuotaP });
+                    detalleConceptos.push({ txt: `Deuda: ${d.nombre}`, val: cuotaP, tipo: 'deuda', id: d.id });
                 } else if(!d.msi && mesesHaciaAdelante === 0) {
                     deudasPersonalesMes += d.monto;
-                    detalleConceptos.push({ txt: `Deuda: ${d.nombre}`, val: d.monto });
+                    detalleConceptos.push({ txt: `Deuda: ${d.nombre}`, val: d.monto, tipo: 'deuda', id: d.id });
                 }
             });
 
@@ -669,7 +669,7 @@
                         if (tLimitePago >= timestampInicioMes && tLimitePago <= timestampFinMes) {
                             tdcCorrienteMes += valToPay;
                             tCorrientes += valToPay;
-                            detalleConceptos.push({ txt: `[${tdc.nombre}] ${m.txt} (Corriente)`, val: valToPay });
+                            detalleConceptos.push({ txt: `[${tdc.nombre}] ${m.txt} (Corriente)`, val: valToPay, tipo: 'movimiento', id: m.id });
                         }
                     }
                 });
@@ -689,7 +689,7 @@
                             if (cuotasPorAsignar > 0) {
                                 tdcMSIMes += cuota;
                                 tMSI += cuota;
-                                detalleConceptos.push({ txt: `[${tdc.nombre}] ${m.txt} (MSI)`, val: cuota });
+                                detalleConceptos.push({ txt: `[${tdc.nombre}] ${m.txt} (MSI)`, val: cuota, tipo: 'movimiento', id: m.id });
                             }
                         }
                         if (tLimiteMensualidad >= timestampInicioMes) {
@@ -762,7 +762,7 @@
                         plugins: { legend: { display: false } },
                         scales: {
                             y: { 
-                                display: true, // Eje Y visible con precios
+                                display: true, 
                                 grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
                                 ticks: { 
                                     color: '#64748b', 
@@ -791,6 +791,15 @@
             }
         }
 
+        function seleccionarItemDetalleMes(tipo, id) {
+            cerrarModal('modalDetalleMes');
+            if (tipo === 'movimiento') {
+                abrirModalMovimiento(id);
+            } else if (tipo === 'deuda') {
+                abrirModalDeuda(id);
+            }
+        }
+
         function abrirModalDetalleMes(tituloMes, listaDetalle, totalPeriodo) {
             document.getElementById('modalMesTitulo').innerText = `Desglose: ${tituloMes}`;
             document.getElementById('modalMesTotal').innerText = `$${totalPeriodo.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
@@ -800,8 +809,11 @@
                 contenedor.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-6 italic">No hay compras u obligaciones registradas para este mes.</p>`;
             } else {
                 contenedor.innerHTML = listaDetalle.map(item => `
-                    <div class="bg-slate-800/40 p-3.5 rounded-2xl border border-white/5 flex justify-between items-center">
-                        <p class="text-[10px] font-bold text-white uppercase max-w-[220px] truncate">${item.txt}</p>
+                    <div onclick="seleccionarItemDetalleMes('${item.tipo}', ${item.id})" class="bg-slate-800/40 p-3.5 rounded-2xl border border-white/5 flex justify-between items-center active:scale-[0.98] cursor-pointer transition-transform">
+                        <div>
+                            <p class="text-[10px] font-bold text-white uppercase max-w-[220px] truncate">${item.txt}</p>
+                            <p class="text-[7px] text-slate-400 uppercase mt-0.5">Toca para modificar o eliminar</p>
+                        </div>
                         <p class="text-xs font-black text-amber-500">$${item.val.toLocaleString('es-MX', {minimumFractionDigits:2})}</p>
                     </div>
                 `).join('');
