@@ -2,474 +2,527 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoreo RTP CDMX - API apimetro.dev</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet JS & CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Metro CDMX - Red Completa & Ubicación</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#F7941D">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Metro CDMX">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23F7941D'/><path d='M20 70 V30 H35 L50 60 L65 30 H80 V70 H65 V48 L52 70 H48 L35 48 V70 Z' fill='white'/></svg>">
+    
+    <!-- Manifest PWA Inlined Data URI -->
+    <link rel="manifest" href="data:application/manifest+json;utf8,%7B%22name%22%3A%22Metro%20CDMX%20GPS%22%2C%22short_name%22%3A%22MetroCDMX%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23F7941D%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%3Butf8%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'20'%20fill%3D'%23F7941D'%2F%3E%3Cpath%20d%3D'M20%2070%20V30%20H35%20L50%2060%20L65%2030%20H80%20V70%20H65%20V48%20L52%2070%20H48%20L35%2048%20V70%20Z'%20fill%3D'white'%2F%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+
     <style>
         :root {
-            --rtp-green: #006837;
-            --rtp-gold: #D4AF37;
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-card: #282828;
+            --text-primary: #f5f5f5;
+            --text-secondary: #b0b0b0;
+            --accent: #F7941D;
+            --border: #383838;
+            --user-gps: #00E676;
         }
-        .bg-rtp-green { background-color: var(--rtp-green); }
-        .text-rtp-green { color: var(--rtp-green); }
-        .border-rtp-green { border-color: var(--rtp-green); }
-        
-        #map { height: calc(100vh - 64px); width: 100%; z-index: 1; }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
 
-        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 4px; }
-        .dark .leaflet-popup-content-wrapper, .dark .leaflet-popup-tip {
-            background-color: #1f2937;
-            color: #f3f4f6;
+        [data-theme="light"] {
+            --bg-primary: #f4f6f8;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --border: #e0e0e0;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; user-select: none; }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--bg-secondary);
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; }
+        .logo-icon {
+            width: 28px; height: 28px; background: var(--accent);
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold;
+        }
+
+        .controls { display: flex; gap: 8px; }
+        .btn-icon {
+            background: var(--bg-card); border: 1px solid var(--border);
+            color: var(--text-primary); width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        .tabs { display: flex; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+        .tab-btn {
+            flex: 1; padding: 10px; background: none; border: none;
+            color: var(--text-secondary); font-weight: 600; font-size: 0.85rem;
+            cursor: pointer; border-bottom: 3px solid transparent; text-align: center;
+        }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        .content-area { flex: 1; position: relative; overflow: hidden; }
+        .tab-content { display: none; width: 100%; height: 100%; overflow-y: auto; }
+        .tab-content.active { display: flex; flex-direction: column; }
+
+        #map-container {
+            width: 100%; height: 100%; background-color: #0b0e14;
+            position: relative; overflow: hidden; cursor: grab;
+        }
+
+        svg#metro-map { width: 100%; height: 100%; }
+
+        .line-path { fill: none; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+        .line-bg { fill: none; stroke-width: 9; stroke-opacity: 0.25; stroke-linecap: round; }
+
+        .station-node {
+            fill: var(--bg-secondary); stroke: #ffffff; stroke-width: 1.5;
+            cursor: pointer; transition: r 0.15s ease;
+        }
+        .station-node:hover { r: 6; fill: var(--accent); }
+        .terminal-node { fill: #ffffff; stroke: #000000; stroke-width: 2; }
+
+        .station-label { font-size: 8px; fill: #b0b0b0; font-weight: 500; pointer-events: none; }
+
+        .train-marker { transition: transform 0.4s linear; cursor: pointer; }
+        .train-body { fill: #ff5722; stroke: #ffffff; stroke-width: 1.5; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.7)); }
+
+        /* Indicador de Posición del Usuario */
+        .user-marker {
+            transform-origin: center;
+            filter: drop-shadow(0px 0px 8px rgba(0, 230, 118, 0.8));
+        }
+        @keyframes pulse {
+            0% { r: 6; opacity: 1; }
+            50% { r: 14; opacity: 0.3; }
+            100% { r: 6; opacity: 1; }
+        }
+        .user-pulse {
+            fill: var(--user-gps);
+            animation: pulse 2s infinite;
+        }
+
+        /* Tarjeta Flotante */
+        .info-card {
+            position: absolute; bottom: 16px; left: 16px; right: 16px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            transform: translateY(160%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 5;
+        }
+        .info-card.visible { transform: translateY(0); }
+        .info-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .info-card-title { font-weight: bold; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .badge-line { padding: 2px 8px; border-radius: 4px; color: white; font-weight: bold; font-size: 0.75rem; }
+
+        .map-controls {
+            position: absolute; top: 12px; right: 12px;
+            display: flex; flex-direction: column; gap: 6px; z-index: 5;
+        }
+        .map-btn {
+            background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);
+            width: 36px; height: 36px; border-radius: 8px; font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .gps-btn-active { border-color: var(--user-gps); color: var(--user-gps); }
+
+        .map-legend {
+            position: absolute; bottom: 12px; left: 12px;
+            background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(4px);
+            border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px;
+            font-size: 0.7rem; color: #ccc; pointer-events: none; z-index: 4;
+        }
+
+        .lines-list { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+        .line-item {
+            background: var(--bg-card); border-radius: 8px; padding: 12px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);
+        }
+        .line-info { display: flex; align-items: center; gap: 12px; }
+        .line-badge { width: 34px; height: 34px; border-radius: 6px; color: white; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+
+        .report-form { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        select, input, textarea {
+            background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary);
+            padding: 10px; border-radius: 6px; font-size: 0.95rem;
+        }
+        .btn-submit { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-screen overflow-hidden flex flex-col font-sans">
+<body>
 
-    <!-- Header Navigation -->
-    <header class="bg-rtp-green text-white shadow-md z-20 flex items-center justify-between px-4 py-3 shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="bg-white p-1.5 rounded-lg shadow text-rtp-green font-black text-xl tracking-wider">
-                RTP
-            </div>
-            <div>
-                <h1 class="font-bold text-lg leading-tight">Rutas CDMX</h1>
-                <p class="text-xs text-green-100 flex items-center gap-1">
-                    <span id="api-status-dot" class="w-2 h-2 rounded-full bg-yellow-400 inline-block animate-pulse"></span>
-                    <span id="api-status-text">Conectando a apimetro.dev...</span>
-                </p>
-            </div>
+    <header>
+        <div class="brand">
+            <div class="logo-icon">M</div>
+            <span>Metro CDMX Live GPS</span>
         </div>
-
-        <div class="flex items-center gap-2">
-            <!-- Filter Radius Select -->
-            <div class="relative">
-                <select id="radius-select" class="bg-emerald-800 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 border border-emerald-700">
-                    <option value="1">1 km</option>
-                    <option value="3" selected>3 km</option>
-                    <option value="5">5 km</option>
-                    <option value="10">10 km</option>
-                    <option value="all">Ver todas</option>
-                </select>
-            </div>
-
-            <!-- Locate Button -->
-            <button id="locate-btn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-gray-900 font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow">
-                <i data-lucide="crosshair" class="w-4 h-4"></i>
-                <span class="hidden sm:inline">Mi Ubicación</span>
-            </button>
+        <div class="controls">
+            <button class="btn-icon" id="theme-toggle" title="Tema">🌙</button>
         </div>
     </header>
 
-    <!-- Main Body Container -->
-    <div class="flex flex-1 relative overflow-hidden">
-        
-        <!-- Sidebar Panel -->
-        <aside id="sidebar" class="w-full md:w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-10 absolute md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-xl md:shadow-none">
-            
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
-                <div class="relative">
-                    <input type="text" id="search-input" placeholder="Buscar ruta por número o nombre (ej: 34-A, 200, Balderas)..." class="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rtp-green dark:text-white">
-                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-3"></i>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('map-tab', this)">🗺️ Red & Mi Posición</button>
+        <button class="tab-btn" onclick="switchTab('lines-tab', this)">📋 Estado Líneas</button>
+        <button class="tab-btn" onclick="switchTab('report-tab', this)">📣 Reportar</button>
+    </div>
+
+    <div class="content-area">
+        <!-- TAB MAPA -->
+        <div id="map-tab" class="tab-content active">
+            <div id="map-container">
+                <div class="map-controls">
+                    <button class="map-btn" onclick="zoomMap(1.25)">+</button>
+                    <button class="map-btn" onclick="zoomMap(0.8)">-</button>
+                    <button class="map-btn" onclick="resetMap()">🎯</button>
+                    <button class="map-btn" id="gps-btn" onclick="toggleGPS()" title="Ubicación GPS">📍</button>
                 </div>
 
-                <div class="flex gap-2">
-                    <button id="tab-routes" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-rtp-green text-white shadow-sm">
-                        Rutas (<span id="route-count">0</span>)
-                    </button>
-                    <button id="tab-stops" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
-                        Estaciones (<span id="stop-count">0</span>)
-                    </button>
+                <div class="map-legend">
+                    📍 Tu Ubicación (Verde Pulse)<br>
+                    🔴 L1 | 🔵 L2 | 🟡 L3 | 🟢 L4 | 🟡 L5 | 🔴 L6<br>
+                    🟠 L7 | 🟢 L8 | 🟤 L9 | 🟣 LA | 🩶 LB | 🟢 L12
+                </div>
+                
+                <svg id="metro-map" viewBox="0 0 1000 1000">
+                    <g id="map-viewport">
+                        <!-- CAPA DE TRAZADO DE LAS 12 LÍNEAS -->
+                        <g id="lines-layer">
+                            <!-- L1 -->
+                            <path class="line-bg" stroke="#F44336" d="M 220,600 L 320,600 L 400,600 L 520,530 L 680,530 L 820,530" />
+                            <path id="path-L1" class="line-path" stroke="#F44336" d="M 220,600 L 320,600 L 400,600 L 520,530 L 680,530 L 820,530" />
+
+                            <!-- L2 -->
+                            <path class="line-bg" stroke="#2196F3" d="M 220,240 L 440,240 L 440,320 L 440,530 L 440,750 L 520,830" />
+                            <path id="path-L2" class="line-path" stroke="#2196F3" d="M 220,240 L 440,240 L 440,320 L 440,530 L 440,750 L 520,830" />
+
+                            <!-- L3 -->
+                            <path class="line-bg" stroke="#FFC107" d="M 520,120 L 520,240 L 520,530 L 520,720 L 520,880" />
+                            <path id="path-L3" class="line-path" stroke="#FFC107" d="M 520,120 L 520,240 L 520,530 L 520,720 L 520,880" />
+
+                            <!-- L4 -->
+                            <path class="line-bg" stroke="#00BCD4" d="M 680,180 L 680,420 L 680,680" />
+                            <path id="path-L4" class="line-path" stroke="#00BCD4" d="M 680,180 L 680,420 L 680,680" />
+
+                            <!-- L5 -->
+                            <path class="line-bg" stroke="#FFEB3B" d="M 440,140 L 600,140 L 680,280 L 820,530" />
+                            <path id="path-L5" class="line-path" stroke="#FFEB3B" d="M 440,140 L 600,140 L 680,280 L 820,530" />
+
+                            <!-- L6 -->
+                            <path class="line-bg" stroke="#E91E63" d="M 220,180 L 520,180 L 680,180" />
+                            <path id="path-L6" class="line-path" stroke="#E91E63" d="M 220,180 L 520,180 L 680,180" />
+
+                            <!-- L7 -->
+                            <path class="line-bg" stroke="#FF9800" d="M 220,180 L 220,240 L 220,600 L 220,720 L 220,780" />
+                            <path id="path-L7" class="line-path" stroke="#FF9800" d="M 220,180 L 220,240 L 220,600 L 220,720 L 220,780" />
+
+                            <!-- L8 -->
+                            <path class="line-bg" stroke="#4CAF50" d="M 520,320 L 600,320 L 680,530 L 680,680 L 820,780" />
+                            <path id="path-L8" class="line-path" stroke="#4CAF50" d="M 520,320 L 600,320 L 680,530 L 680,680 L 820,780" />
+
+                            <!-- L9 -->
+                            <path class="line-bg" stroke="#795548" d="M 220,640 L 400,640 L 520,640 L 680,640 L 820,530" />
+                            <path id="path-L9" class="line-path" stroke="#795548" d="M 220,640 L 400,640 L 520,640 L 680,640 L 820,530" />
+
+                            <!-- LA -->
+                            <path class="line-bg" stroke="#9C27B0" d="M 820,530 L 950,680" />
+                            <path id="path-LA" class="line-path" stroke="#9C27B0" d="M 820,530 L 950,680" />
+
+                            <!-- LB -->
+                            <path class="line-bg" stroke="#607D8B" d="M 440,320 L 520,320 L 600,320 L 850,120" />
+                            <path id="path-LB" class="line-path" stroke="#607D8B" d="M 440,320 L 520,320 L 600,320 L 850,120" />
+
+                            <!-- L12 -->
+                            <path class="line-bg" stroke="#C0CA33" d="M 220,720 L 520,720 L 720,880 L 900,880" />
+                            <path id="path-L12" class="line-path" stroke="#C0CA33" d="M 220,720 L 520,720 L 720,880 L 900,880" />
+                        </g>
+
+                        <!-- ESTACIONES EXPANDIDAS -->
+                        <g id="stations-layer">
+                            <!-- L1 -->
+                            <circle class="station-node terminal-node" cx="220" cy="600" r="4" onclick="selectStation('Observatorio (L1)')"/>
+                            <circle class="station-node" cx="320" cy="600" r="4" onclick="selectStation('Tacubaya (L1, L7, L9)')"/>
+                            <circle class="station-node" cx="400" cy="600" r="4" onclick="selectStation('Balderas (L1, L3)')"/>
+                            <circle class="station-node" cx="520" cy="530" r="4" onclick="selectStation('Pino Suárez (L1, L2)')"/>
+                            <circle class="station-node" cx="680" cy="530" r="4" onclick="selectStation('San Lázaro (L1, LB)')"/>
+                            <circle class="station-node terminal-node" cx="820" cy="530" r="7" fill="#F7941D" onclick="selectStation('Pantitlán (L1, L5, L9, LA)')"/>
+
+                            <!-- L2 -->
+                            <circle class="station-node terminal-node" cx="220" cy="240" r="4" onclick="selectStation('Cuatro Caminos (L2)')"/>
+                            <circle class="station-node" cx="440" cy="240" r="4" onclick="selectStation('Hidalgo (L2, L3)')"/>
+                            <circle class="station-node" cx="440" cy="320" r="4" onclick="selectStation('Bellas Artes (L2, L8)')"/>
+                            <circle class="station-node" cx="440" cy="530" r="4" onclick="selectStation('Chabacano (L2, L8, L9)')"/>
+                            <circle class="station-node terminal-node" cx="520" cy="830" r="4" onclick="selectStation('Tasqueña (L2)')"/>
+
+                            <!-- L3 -->
+                            <circle class="station-node terminal-node" cx="520" cy="120" r="4" onclick="selectStation('Indios Verdes (L3)')"/>
+                            <circle class="station-node" cx="520" cy="180" r="4" onclick="selectStation('Deportivo 18 de Marzo (L3, L6)')"/>
+                            <circle class="station-node" cx="520" cy="240" r="4" onclick="selectStation('La Raza (L3, L5)')"/>
+                            <circle class="station-node" cx="520" cy="720" r="4" onclick="selectStation('Zapata (L3, L12)')"/>
+                            <circle class="station-node terminal-node" cx="520" cy="880" r="4" onclick="selectStation('Universidad (L3)')"/>
+
+                            <!-- OTRAS TERMINALES Y TRANSBORDOS CLAVE -->
+                            <circle class="station-node terminal-node" cx="680" cy="180" r="4" onclick="selectStation('Martín Carrera (L4, L6)')"/>
+                            <circle class="station-node terminal-node" cx="850" cy="120" r="4" onclick="selectStation('Ciudad Azteca (LB)')"/>
+                            <circle class="station-node terminal-node" cx="220" cy="780" r="4" onclick="selectStation('Barranca del Muerto (L7)')"/>
+                            <circle class="station-node terminal-node" cx="820" cy="780" r="4" onclick="selectStation('Constitución de 1917 (L8)')"/>
+                            <circle class="station-node terminal-node" cx="950" cy="680" r="4" onclick="selectStation('La Paz (LA)')"/>
+                            <circle class="station-node terminal-node" cx="900" cy="880" r="4" onclick="selectStation('Tláhuac (L12)')"/>
+
+                            <!-- Nombres de Estaciones Principales -->
+                            <text x="228" y="595" class="station-label">Observatorio</text>
+                            <text x="528" y="115" class="station-label">Indios Verdes</text>
+                            <text x="828" y="525" class="station-label" fill="#F7941D" font-weight="bold">Pantitlán</text>
+                            <text x="135" y="245" class="station-label">Cuatro Caminos</text>
+                            <text x="528" y="895" class="station-label">Universidad</text>
+                            <text x="905" y="895" class="station-label">Tláhuac</text>
+                        </g>
+
+                        <!-- MARCADOR DE TRENES -->
+                        <g id="trains-layer"></g>
+
+                        <!-- MARCADOR GPS DEL USUARIO (DINÁMICO) -->
+                        <g id="user-layer" style="display:none;">
+                            <g id="user-marker-group" class="user-marker">
+                                <circle class="user-pulse" cx="0" cy="0" r="10" />
+                                <circle cx="0" cy="0" r="5" fill="#00E676" stroke="#ffffff" stroke-width="1.5" />
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <div id="info-card" class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-title">
+                        <span id="card-line-badge" class="badge-line" style="background:#F7941D">GPS</span>
+                        <span id="card-title">Metro CDMX</span>
+                    </div>
+                    <button style="background:none; border:none; color:var(--text-secondary); cursor:pointer;" onclick="closeCard()">✕</button>
+                </div>
+                <div id="card-body" style="font-size:0.88rem; color:var(--text-secondary);">
+                    Selecciona una estación o presiona 📍 para ubicar tu posición en el mapa.
                 </div>
             </div>
+        </div>
 
-            <!-- List Container -->
-            <div id="list-container" class="flex-1 overflow-y-auto p-4 space-y-3">
-                <div class="text-center py-8 text-gray-400 text-sm">Cargando información desde apimetro.dev...</div>
-            </div>
+        <!-- TAB LÍNEAS -->
+        <div id="lines-tab" class="tab-content">
+            <div class="lines-list" id="lines-container"></div>
+        </div>
 
-            <div class="p-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-xs flex justify-between text-gray-500 dark:text-gray-400">
-                <span>Radio activo: <strong id="current-radius-label" class="text-gray-800 dark:text-gray-200">3 km</strong></span>
-                <span>Fuente: <strong class="text-emerald-600 font-semibold">apimetro.dev</strong></span>
-            </div>
-        </aside>
-
-        <!-- Toggle Sidebar (Mobile) -->
-        <button id="toggle-sidebar-btn" class="md:hidden absolute top-4 left-4 z-20 bg-white dark:bg-gray-800 p-2.5 rounded-full shadow-lg text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
-            <i data-lucide="menu" class="w-5 h-5"></i>
-        </button>
-
-        <!-- Leaflet Map Container -->
-        <main class="flex-1 relative">
-            <div id="map"></div>
-            
-            <div id="user-location-banner" class="hidden absolute top-4 right-4 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-xs">
-                <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                    GPS Detectado
-                </span>
-            </div>
-        </main>
+        <!-- TAB REPORTES -->
+        <div id="report-tab" class="tab-content">
+            <form class="report-form" onsubmit="handleReportSubmit(event)">
+                <h3>Reportar Avance</h3>
+                <div class="form-group">
+                    <label>Línea</label>
+                    <select id="report-line" required>
+                        <option value="L1">Línea 1</option><option value="L2">Línea 2</option>
+                        <option value="L3">Línea 3</option><option value="L4">Línea 4</option>
+                        <option value="L5">Línea 5</option><option value="L6">Línea 6</option>
+                        <option value="L7">Línea 7</option><option value="L8">Línea 8</option>
+                        <option value="L9">Línea 9</option><option value="LA">Línea A</option>
+                        <option value="LB">Línea B</option><option value="L12">Línea 12</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estatus</label>
+                    <select id="report-status">
+                        <option value="normal">Avance Fluido</option>
+                        <option value="slow">Marcha Lenta</option>
+                        <option value="stopped">Detenido</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-submit">Enviar Reporte</button>
+            </form>
+        </div>
     </div>
 
     <script>
-        // Global State Variables
-        let map;
-        let userLocation = { lat: 19.4326, lng: -99.1332 }; // Default: CDMX Center
-        let userMarker = null;
-        let userCircle = null;
-        let allRoutes = [];
-        let mapMarkers = [];
-        let mapPolylines = [];
-        let activeTab = 'routes';
+        const metroLines = [
+            { id: 'L1', name: 'Línea 1', color: '#F44336', status: 'normal', time: '4 min' },
+            { id: 'L2', name: 'Línea 2', color: '#2196F3', status: 'normal', time: '3 min' },
+            { id: 'L3', name: 'Línea 3', color: '#FFC107', status: 'slow', time: '6 min' },
+            { id: 'L4', name: 'Línea 4', color: '#00BCD4', status: 'normal', time: '5 min' },
+            { id: 'L5', name: 'Línea 5', color: '#FFEB3B', status: 'normal', time: '4 min' },
+            { id: 'L6', name: 'Línea 6', color: '#E91E63', status: 'normal', time: '5 min' },
+            { id: 'L7', name: 'Línea 7', color: '#FF9800', status: 'normal', time: '4 min' },
+            { id: 'L8', name: 'Línea 8', color: '#4CAF50', status: 'slow', time: '7 min' },
+            { id: 'L9', name: 'Línea 9', color: '#795548', status: 'stopped', time: '10 min' },
+            { id: 'LA', name: 'Línea A', color: '#9C27B0', status: 'normal', time: '5 min' },
+            { id: 'LB', name: 'Línea B', color: '#607D8B', status: 'slow', time: '6 min' },
+            { id: 'L12', name: 'Línea 12', color: '#C0CA33', status: 'normal', time: '4 min' }
+        ];
 
-        // Haversine formula to compute distance (in Km)
-        function getDistanceKm(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        const activeTrains = [
+            { id: 'M-01', line: 'L1', progress: 0.20, speed: 0.0012, dir: 1 },
+            { id: 'M-03', line: 'L2', progress: 0.40, speed: 0.0015, dir: 1 },
+            { id: 'M-05', line: 'L3', progress: 0.30, speed: 0.0008, dir: 1 },
+            { id: 'M-10', line: 'L7', progress: 0.50, speed: 0.0015, dir: 1 },
+            { id: 'M-15', line: 'L12', progress: 0.70, speed: 0.0013, dir: -1 }
+        ];
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
         }
 
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([userLocation.lat, userLocation.lng], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap | apimetro.dev'
-            }).addTo(map);
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        function renderLinesList() {
+            document.getElementById('lines-container').innerHTML = metroLines.map(l => `
+                <div class="line-item" style="border-left: 6px solid ${l.color}">
+                    <div class="line-info">
+                        <div class="line-badge" style="background:${l.color}">${l.id}</div>
+                        <div>
+                            <strong>${l.name}</strong>
+                            <div style="font-size:0.78rem; color:var(--text-secondary);">Frecuencia: ${l.time}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function updateUserPosition(lat, lng) {
-            userLocation = { lat, lng };
+        function initTrains() {
+            const layer = document.getElementById('trains-layer');
+            layer.innerHTML = '';
+            activeTrains.forEach((train, idx) => {
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                group.setAttribute('id', `train-${idx}`);
+                group.setAttribute('class', 'train-marker');
+                group.onclick = () => showTrainCard(train);
 
-            if (userMarker) map.removeLayer(userMarker);
-            if (userCircle) map.removeLayer(userCircle);
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('width', '12'); rect.setAttribute('height', '12');
+                rect.setAttribute('rx', '3'); rect.setAttribute('x', '-6'); rect.setAttribute('y', '-6');
+                rect.setAttribute('class', 'train-body');
 
-            userMarker = L.marker([lat, lng], {
-                icon: L.divIcon({
-                    className: 'user-icon',
-                    html: `<div class="w-5 h-5 bg-blue-600 border-2 border-white rounded-full shadow-lg flex items-center justify-center animate-bounce">
-                            <div class="w-2 h-2 bg-white rounded-full"></div>
-                           </div>`,
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
-                })
-            }).addTo(map);
-
-            const selectedRadius = document.getElementById('radius-select').value;
-            if (selectedRadius !== 'all') {
-                userCircle = L.circle([lat, lng], {
-                    radius: parseFloat(selectedRadius) * 1000,
-                    color: '#006837',
-                    fillColor: '#006837',
-                    fillOpacity: 0.08,
-                    weight: 1.5
-                }).addTo(map);
-            }
-
-            document.getElementById('user-location-banner').classList.remove('hidden');
-            renderUI();
-        }
-
-        // Fetch Data directly from apimetro.dev API
-        async function loadAPIData() {
-            const statusDot = document.getElementById('api-status-dot');
-            const statusText = document.getElementById('api-status-text');
-
-            try {
-                const response = await fetch('https://apimetro.dev/movilidad/RTP/estacion');
-                if (response.ok) {
-                    const rawStops = await response.json();
-                    allRoutes = groupStopsByRoute(rawStops);
-
-                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block";
-                    statusText.innerText = "Conectado a apimetro.dev";
-                    renderUI();
-                    return;
-                }
-            } catch (err) {
-                console.warn("No se pudo obtener datos directamente de la API, usando catálogo estático.", err);
-            }
-
-            // Fallback dataset if external API request fails
-            allRoutes = getFallbackCatalog();
-            statusDot.className = "w-2 h-2 rounded-full bg-amber-400 inline-block";
-            statusText.innerText = "Modo Respaldo (Datos Locales)";
-            renderUI();
-        }
-
-        function groupStopsByRoute(stopsArray) {
-            const routesMap = {};
-            
-            stopsArray.forEach(item => {
-                const routeCode = item.linea || item.num_comercial || "RTP";
-                const stopName = item.nombre || item.estacion || "Estación RTP";
-                const lat = parseFloat(item.latitud || item.lat);
-                const lng = parseFloat(item.longitud || item.lng);
-
-                if (isNaN(lat) || isNaN(lng)) return;
-
-                if (!routesMap[routeCode]) {
-                    routesMap[routeCode] = {
-                        id: routeCode,
-                        code: routeCode,
-                        name: item.ruta || `Ruta ${routeCode}`,
-                        color: "#006837",
-                        stops: []
-                    };
-                }
-
-                routesMap[routeCode].stops.push({
-                    name: stopName,
-                    lat: lat,
-                    lng: lng
-                });
+                group.appendChild(rect);
+                layer.appendChild(group);
             });
-
-            return Object.values(routesMap);
         }
 
-        // Render UI, Filtered map layers and list
-        function renderUI() {
-            const selectedRadius = document.getElementById('radius-select').value;
-            const radiusKm = selectedRadius === 'all' ? Infinity : parseFloat(selectedRadius);
-            const query = document.getElementById('search-input').value.trim().toLowerCase();
+        function updateTrainsPosition() {
+            activeTrains.forEach((train, idx) => {
+                const path = document.getElementById(`path-${train.line}`);
+                if (path) {
+                    const totalLen = path.getTotalLength();
+                    train.progress += train.speed * train.dir;
+                    if (train.progress >= 1) { train.progress = 1; train.dir = -1; }
+                    if (train.progress <= 0) { train.progress = 0; train.dir = 1; }
 
-            // Clear Map Elements
-            mapMarkers.forEach(m => map.removeLayer(m));
-            mapPolylines.forEach(p => map.removeLayer(p));
-            mapMarkers = [];
-            mapPolylines = [];
-
-            let totalStopsCount = 0;
-
-            const processedRoutes = allRoutes.map(route => {
-                const stopsWithDistance = route.stops.map(stop => {
-                    const distance = getDistanceKm(userLocation.lat, userLocation.lng, stop.lat, stop.lng);
-                    return { ...stop, distance };
-                });
-
-                const minDistance = stopsWithDistance.length > 0 
-                    ? Math.min(...stopsWithDistance.map(s => s.distance)) 
-                    : Infinity;
-
-                return {
-                    ...route,
-                    stops: stopsWithDistance,
-                    minDistance
-                };
+                    const pt = path.getPointAtLength(train.progress * totalLen);
+                    const elem = document.getElementById(`train-${idx}`);
+                    if (elem) elem.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
+                }
             });
-
-            // Filter rules:
-            // 1. If searching, override the radius filter to display matching routes anywhere in CDMX.
-            // 2. If not searching, display routes within the chosen radius.
-            const filteredRoutes = processedRoutes.filter(route => {
-                const matchesCode = route.code.toLowerCase().includes(query);
-                const matchesName = route.name.toLowerCase().includes(query);
-                const matchesStops = route.stops.some(s => s.name.toLowerCase().includes(query));
-
-                const matchesSearch = query === "" || matchesCode || matchesName || matchesStops;
-                const matchesRadius = query !== "" ? true : (route.minDistance <= radiusKm);
-
-                return matchesSearch && matchesRadius;
-            }).sort((a, b) => a.minDistance - b.minDistance);
-
-            // Draw filtered items on map
-            filteredRoutes.forEach(route => {
-                if (route.stops.length > 1) {
-                    const polyline = L.polyline(route.stops.map(s => [s.lat, s.lng]), {
-                        color: route.color,
-                        weight: 4,
-                        opacity: 0.8
-                    }).addTo(map);
-                    mapPolylines.push(polyline);
-                }
-
-                route.stops.forEach(stop => {
-                    totalStopsCount++;
-                    const stopMarker = L.circleMarker([stop.lat, stop.lng], {
-                        radius: 5,
-                        color: route.color,
-                        fillColor: '#FFFFFF',
-                        fillOpacity: 1,
-                        weight: 2
-                    }).bindPopup(`
-                        <div class="p-1">
-                            <strong class="text-emerald-700 font-bold">${stop.name}</strong><br>
-                            <span class="text-xs text-gray-600">Ruta ${route.code} - ${route.name}</span><br>
-                            <span class="text-xs text-amber-600 font-semibold">Distancia: ${stop.distance.toFixed(2)} km</span>
-                        </div>
-                    `).addTo(map);
-                    mapMarkers.push(stopMarker);
-                });
-            });
-
-            document.getElementById('route-count').innerText = filteredRoutes.length;
-            document.getElementById('stop-count').innerText = totalStopsCount;
-
-            renderSidebarList(filteredRoutes);
-            lucide.createIcons();
+            requestAnimationFrame(updateTrainsPosition);
         }
 
-        function renderSidebarList(routes) {
-            const container = document.getElementById('list-container');
-            container.innerHTML = '';
+        /* GEOLOCALIZACIÓN EN TIEMPO REAL */
+        let gpsActive = false;
+        function toggleGPS() {
+            const btn = document.getElementById('gps-btn');
+            const userLayer = document.getElementById('user-layer');
 
-            if (activeTab === 'routes') {
-                if (routes.length === 0) {
-                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No se encontraron rutas que coincidan con la búsqueda.</div>`;
-                    return;
-                }
-
-                routes.forEach(route => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white dark:bg-gray-700/50 p-3.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition cursor-pointer";
-                    card.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <span class="px-2 py-0.5 bg-rtp-green text-white text-xs font-bold rounded">Ruta ${route.code}</span>
-                            <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">A ${route.minDistance.toFixed(2)} km</span>
-                        </div>
-                        <h4 class="font-semibold text-sm mt-1.5 text-gray-800 dark:text-gray-100">${route.name}</h4>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-2 flex justify-between">
-                            <span>Estaciones: <b>${route.stops.length}</b></span>
-                            <span class="text-emerald-600 font-medium">Activa</span>
-                        </div>
-                    `;
-                    card.onclick = () => {
-                        if (route.stops.length > 0) {
-                            const bounds = L.latLngBounds(route.stops.map(s => [s.lat, s.lng]));
-                            map.fitBounds(bounds, { padding: [50, 50] });
-                        }
-                    };
-                    container.appendChild(card);
-                });
-            } else {
-                const allStops = routes.flatMap(r => r.stops.map(s => ({ ...s, routeCode: r.code, routeName: r.name })))
-                                       .sort((a, b) => a.distance - b.distance);
-
-                if (allStops.length === 0) {
-                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No hay estaciones disponibles.</div>`;
-                    return;
-                }
-
-                allStops.slice(0, 50).forEach(stop => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white dark:bg-gray-700/50 p-3 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition cursor-pointer";
-                    card.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-sm text-rtp-green dark:text-emerald-400">${stop.name}</span>
-                            <span class="text-xs text-gray-500 font-medium">A ${stop.distance.toFixed(2)} km</span>
-                        </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Ruta ${stop.routeCode} - ${stop.routeName}</p>
-                    `;
-                    card.onclick = () => {
-                        map.setView([stop.lat, stop.lng], 16);
-                    };
-                    container.appendChild(card);
-                });
-            }
-        }
-
-        function setupControls() {
-            document.getElementById('locate-btn').addEventListener('click', () => {
+            if (!gpsActive) {
                 if ('geolocation' in navigator) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            updateUserPosition(pos.coords.latitude, pos.coords.longitude);
-                            map.setView([pos.coords.latitude, pos.coords.longitude], 14);
-                        },
-                        () => alert("No se pudo obtener la ubicación GPS.")
-                    );
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        // Mapeo Geográfico CDMX -> Coordenadas SVG 0-1000
+                        const minLat = 19.25, maxLat = 19.55;
+                        const minLon = -99.35, maxLon = -98.95;
+
+                        const svgX = ((lon - minLon) / (maxLon - minLon)) * 800 + 100;
+                        const svgY = 1000 - (((lat - minLat) / (maxLat - minLat)) * 800 + 100);
+
+                        const userMarker = document.getElementById('user-marker-group');
+                        userMarker.setAttribute('transform', `translate(${svgX}, ${svgY})`);
+                        userLayer.style.display = 'block';
+
+                        btn.classList.add('gps-btn-active');
+                        gpsActive = true;
+
+                        selectStation(`Tu Posición Actual (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
+                    }, () => {
+                        alert('No se pudo acceder a la ubicación. Asegúrate de otorgar los permisos de GPS.');
+                    });
+                } else {
+                    alert('Geolocalización no soportada en este navegador.');
                 }
-            });
-
-            document.getElementById('radius-select').addEventListener('change', (e) => {
-                document.getElementById('current-radius-label').innerText = e.target.value === 'all' ? 'Ver todas' : `${e.target.value} km`;
-                updateUserPosition(userLocation.lat, userLocation.lng);
-            });
-
-            document.getElementById('search-input').addEventListener('input', renderUI);
-
-            document.getElementById('tab-routes').addEventListener('click', (e) => {
-                activeTab = 'routes';
-                e.target.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-rtp-green text-white shadow-sm";
-                document.getElementById('tab-stops').className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200";
-                renderUI();
-            });
-
-            document.getElementById('tab-stops').addEventListener('click', (e) => {
-                activeTab = 'stops';
-                e.target.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-rtp-green text-white shadow-sm";
-                document.getElementById('tab-routes').className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200";
-                renderUI();
-            });
-
-            document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
-                document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            });
-        }
-
-        function getFallbackCatalog() {
-            return [
-                {
-                    id: "34-A", code: "34-A", name: "Metro Balderas - Santa Fe", color: "#006837",
-                    stops: [
-                        { name: "Metro Balderas", lat: 19.4273, lng: -99.1492 },
-                        { name: "Av. Chapultepec", lat: 19.4231, lng: -99.1620 },
-                        { name: "Metro Sevilla", lat: 19.4219, lng: -99.1705 },
-                        { name: "Metro Tacubaya", lat: 19.4015, lng: -99.1870 },
-                        { name: "Constituyentes", lat: 19.4085, lng: -99.1950 },
-                        { name: "Santa Fe Center", lat: 19.3620, lng: -99.2625 }
-                    ]
-                },
-                {
-                    id: "200", code: "200", name: "Circuito Bicentenario", color: "#2563eb",
-                    stops: [
-                        { name: "Metro Oceanía", lat: 19.4455, lng: -99.0872 },
-                        { name: "Metro La Raza", lat: 19.4700, lng: -99.1370 },
-                        { name: "Metro Chapultepec", lat: 19.4205, lng: -99.1764 },
-                        { name: "Metro Coyoacán", lat: 19.3610, lng: -99.1710 }
-                    ]
-                },
-                {
-                    id: "13-A", code: "13-A", name: "Metro Chapultepec - Pedregal San Nicolás", color: "#047857",
-                    stops: [
-                        { name: "Metro Chapultepec", lat: 19.4205, lng: -99.1764 },
-                        { name: "Metro Mixcoac", lat: 19.3760, lng: -99.1875 },
-                        { name: "Periférico Sur", lat: 19.3300, lng: -99.1990 }
-                    ]
-                }
-            ];
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            initMap();
-            setupControls();
-            loadAPIData();
-            
-            if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => updateUserPosition(pos.coords.latitude, pos.coords.longitude),
-                    () => updateUserPosition(userLocation.lat, userLocation.lng)
-                );
             } else {
-                updateUserPosition(userLocation.lat, userLocation.lng);
+                userLayer.style.display = 'none';
+                btn.classList.remove('gps-btn-active');
+                gpsActive = false;
+                closeCard();
             }
+        }
+
+        function showTrainCard(train) {
+            const card = document.getElementById('info-card');
+            const lineInfo = metroLines.find(l => l.id === train.line);
+            document.getElementById('card-line-badge').textContent = train.line;
+            document.getElementById('card-line-badge').style.background = lineInfo.color;
+            document.getElementById('card-title').textContent = `Tren ${train.id}`;
+            document.getElementById('card-body').innerHTML = `<b>Línea:</b> ${lineInfo.name}<br><b>Velocidad estimada:</b> ${(train.speed * 20000).toFixed(0)} km/h`;
+            card.classList.add('visible');
+        }
+
+        function selectStation(name) {
+            const card = document.getElementById('info-card');
+            document.getElementById('card-line-badge').textContent = 'UBICACIÓN';
+            document.getElementById('card-line-badge').style.background = '#00E676';
+            document.getElementById('card-title').textContent = name;
+            document.getElementById('card-body').textContent = 'Punto de referencia activo en el mapa en tiempo real.';
+            card.classList.add('visible');
+        }
+
+        function closeCard() { document.getElementById('info-card').classList.remove('visible'); }
+
+        let currentScale = 1;
+        function zoomMap(f) { currentScale = Math.min(Math.max(0.5, currentScale * f), 3); document.getElementById('map-viewport').setAttribute('transform', `scale(${currentScale})`); }
+        function resetMap() { currentScale = 1; document.getElementById('map-viewport').setAttribute('transform', `scale(1)`); }
+
+        function handleReportSubmit(e) { e.preventDefault(); alert('Reporte enviado.'); e.target.reset(); }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const isDark = document.body.getAttribute('data-theme') !== 'light';
+            document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            document.getElementById('theme-toggle').textContent = isDark ? '☀️' : '🌙';
         });
+
+        if ('serviceWorker' in navigator) {
+            const blob = new Blob([`self.addEventListener('fetch', e => e.respondWith(fetch(e.request)));`], { type: 'application/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+        }
+
+        renderLinesList();
+        initTrains();
+        requestAnimationFrame(updateTrainsPosition);
     </script>
 </body>
 </html>
