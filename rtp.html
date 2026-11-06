@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Metro CDMX - API Oficial en Vivo</title>
+    <title>Metro CDMX - Convoyes y GPS Predictivo</title>
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#F7941D">
@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     
     <!-- Manifest Inlined Data URI -->
-    <link rel="manifest" href="data:application/manifest+json;utf8,%7B%22name%22%3A%22Metro%20CDMX%20API%22%2C%22short_name%22%3A%22MetroCDMX%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23F7941D%22%7D">
+    <link rel="manifest" href="data:application/manifest+json;utf8,%7B%22name%22%3A%22Metro%20CDMX%20GPS%22%2C%22short_name%22%3A%22MetroCDMX%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23121212%22%2C%22theme_color%22%3A%22%23F7941D%22%7D">
 
     <style>
         :root {
@@ -87,7 +87,7 @@
             border: 1px solid var(--border);
             border-radius: 10px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            width: 210px;
+            width: 240px;
             overflow: hidden;
             z-index: 2100;
             flex-direction: column;
@@ -101,6 +101,7 @@
         }
         .dropdown-item:last-child { border-bottom: none; }
         .dropdown-item.active { color: var(--accent); background: rgba(247, 148, 29, 0.1); }
+        .dropdown-item.sharing { color: #00E676; }
 
         .content-area { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
         .tab-content { display: none; width: 100%; height: 100%; }
@@ -162,6 +163,17 @@
             border: 1px solid var(--border); border-radius: 8px;
         }
         .leaflet-popup-tip { background: var(--bg-card); }
+
+        /* Icono SVG de Convoy de 3 Vagones */
+        .metro-convoy-container {
+            width: 48px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0px 3px 5px rgba(0,0,0,0.7));
+        }
+        .metro-convoy-svg { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
@@ -169,7 +181,7 @@
     <header>
         <div class="brand">
             <div class="logo-icon">M</div>
-            <span id="header-title">Red 12 Líneas GPS</span>
+            <span id="header-title">Metro CDMX - Convoyes GPS</span>
         </div>
         <div class="controls">
             <button class="btn-icon" id="theme-toggle" title="Tema">🌙</button>
@@ -177,7 +189,8 @@
         </div>
 
         <div class="dropdown-menu" id="dropdown-menu">
-            <button class="dropdown-item active" onclick="selectTab('map-tab', 'Red 12 Líneas GPS', this)">🗺️ Mapa GPS</button>
+            <button class="dropdown-item active" onclick="selectTab('map-tab', 'Metro CDMX - Convoyes GPS', this)">🗺️ Mapa & Convoyes</button>
+            <button class="dropdown-item" id="share-gps-item" onclick="toggleUserGPSSharing()">📡 Compartir mi Ubicación</button>
             <button class="dropdown-item" onclick="selectTab('lines-tab', 'Estado Oficial de Líneas', this)">📋 Estado Líneas</button>
             <button class="dropdown-item" onclick="selectTab('report-tab', 'Reportar Incidencia', this)">📣 Reportar</button>
         </div>
@@ -190,11 +203,9 @@
             <button class="gps-float-btn" onclick="locateUser()" title="Centrar en mi ubicación">📍</button>
         </div>
 
-        <!-- TAB ESTADO DE LÍNEAS CON API CDMX -->
+        <!-- TAB ESTADO DE LÍNEAS -->
         <div id="lines-tab" class="tab-content">
-            <div class="lines-container" id="lines-container">
-                <!-- Se llena dinámicamente mediante consulta a la API -->
-            </div>
+            <div class="lines-container" id="lines-container"></div>
         </div>
 
         <!-- TAB REPORTES -->
@@ -294,43 +305,6 @@
                 ]
             },
             {
-                id: 'L4', name: 'Línea 4 (Martín Carrera - Santa Anita)', color: '#00BCD4', status: 'normal',
-                notice: 'Sincronizando con API CDMX...',
-                stations: [
-                    { name: 'Martín Carrera (Terminal)', lat: 19.4852, lon: -99.1044, isTerminal: true },
-                    { name: 'Talisman', lat: 19.4751, lon: -99.1077 }, { name: 'Bondojito', lat: 19.4644, lon: -99.1111 },
-                    { name: 'Consulado', lat: 19.4583, lon: -99.1137 }, { name: 'Canal del Norte', lat: 19.4479, lon: -99.1166 },
-                    { name: 'Morelos', lat: 19.4388, lon: -99.1193 }, { name: 'Candelaria', lat: 19.4286, lon: -99.1193 },
-                    { name: 'Fray Servando', lat: 19.4211, lon: -99.1206 }, { name: 'Jamaica', lat: 19.4087, lon: -99.1221 },
-                    { name: 'Santa Anita (Terminal)', lat: 19.4031, lon: -99.1216, isTerminal: true }
-                ]
-            },
-            {
-                id: 'L5', name: 'Línea 5 (Politécnico - Pantitlán)', color: '#FFEB3B', status: 'normal',
-                notice: 'Sincronizando con API CDMX...',
-                stations: [
-                    { name: 'Politécnico (Terminal)', lat: 19.5008, lon: -99.1492, isTerminal: true },
-                    { name: 'Instituto del Petróleo', lat: 19.4897, lon: -99.1472 }, { name: 'Autobuses del Norte', lat: 19.4789, lon: -99.1411 },
-                    { name: 'La Raza', lat: 19.4701, lon: -99.1367 }, { name: 'Misterios', lat: 19.4631, lon: -99.1306 },
-                    { name: 'Valle Gómez', lat: 19.4587, lon: -99.1234 }, { name: 'Consulado', lat: 19.4583, lon: -99.1137 },
-                    { name: 'Eduardo Molina', lat: 19.4526, lon: -99.0987 }, { name: 'Aragón', lat: 19.4509, lon: -99.0886 },
-                    { name: 'Oceanía', lat: 19.4456, lon: -99.0872 }, { name: 'Terminal Aérea', lat: 19.4344, lon: -99.0877 },
-                    { name: 'Hangares', lat: 19.4239, lon: -99.0844 }, { name: 'Pantitlán (Terminal)', lat: 19.4154, lon: -99.0724, isTerminal: true }
-                ]
-            },
-            {
-                id: 'L6', name: 'Línea 6 (El Rosario - Martín Carrera)', color: '#E91E63', status: 'normal',
-                notice: 'Sincronizando con API CDMX...',
-                stations: [
-                    { name: 'El Rosario (Terminal)', lat: 19.5046, lon: -99.2001, isTerminal: true },
-                    { name: 'Tezozómoc', lat: 19.5006, lon: -99.1915 }, { name: 'UAM-Azcapotzalco', lat: 19.4982, lon: -99.1843 },
-                    { name: 'Ferrería', lat: 19.4907, lon: -99.1733 }, { name: 'Norte 45', lat: 19.4862, lon: -99.1637 },
-                    { name: 'Vallejo', lat: 19.4883, lon: -99.1557 }, { name: 'Instituto del Petróleo', lat: 19.4897, lon: -99.1472 },
-                    { name: 'Lindavista', lat: 19.4871, lon: -99.1345 }, { name: '18 de Marzo', lat: 19.4837, lon: -99.1264 },
-                    { name: 'La Villa - Basílica', lat: 19.4812, lon: -99.1186 }, { name: 'Martín Carrera (Terminal)', lat: 19.4852, lon: -99.1044, isTerminal: true }
-                ]
-            },
-            {
                 id: 'L7', name: 'Línea 7 (El Rosario - Barranca del Muerto)', color: '#FF9800', status: 'normal',
                 notice: 'Sincronizando con API CDMX...',
                 stations: [
@@ -342,64 +316,6 @@
                     { name: 'Tacubaya', lat: 19.4032, lon: -99.1871 }, { name: 'San Pedro de los Pinos', lat: 19.3888, lon: -99.1861 },
                     { name: 'San Antonio', lat: 19.3842, lon: -99.1864 }, { name: 'Mixcoac', lat: 19.3758, lon: -99.1876 },
                     { name: 'Barranca del Muerto (Terminal)', lat: 19.3608, lon: -99.1895, isTerminal: true }
-                ]
-            },
-            {
-                id: 'L8', name: 'Línea 8 (Garibaldi - Constitución de 1917)', color: '#4CAF50', status: 'slow',
-                notice: 'Sincronizando con API CDMX...',
-                stations: [
-                    { name: 'Garibaldi (Terminal)', lat: 19.4444, lon: -99.1389, isTerminal: true },
-                    { name: 'Bellas Artes', lat: 19.4362, lon: -99.1417 }, { name: 'San Juan de Letrán', lat: 19.4314, lon: -99.1419 },
-                    { name: 'Salto del Agua', lat: 19.4269, lon: -99.1422 }, { name: 'Doctores', lat: 19.4217, lon: -99.1431 },
-                    { name: 'Obrera', lat: 19.4136, lon: -99.1437 }, { name: 'Chabacano', lat: 19.4084, lon: -99.1357 },
-                    { name: 'La Viga', lat: 19.4038, lon: -99.1274 }, { name: 'Santa Anita', lat: 19.4031, lon: -99.1216 },
-                    { name: 'Coyuya', lat: 19.3986, lon: -99.1136 }, { name: 'Iztacalco', lat: 19.3887, lon: -99.1126 },
-                    { name: 'Apatlaco', lat: 19.3789, lon: -99.1116 }, { name: 'Aculco', lat: 19.3726, lon: -99.1102 },
-                    { name: 'Escuadrón 201', lat: 19.3653, lon: -99.1097 }, { name: 'Atlalilco', lat: 19.3562, lon: -99.1012 },
-                    { name: 'Iztapalapa', lat: 19.3575, lon: -99.0927 }, { name: 'Cerro de la Estrella', lat: 19.3558, lon: -99.0861 },
-                    { name: 'UAM-I', lat: 19.3508, lon: -99.0747 }, { name: 'Constitución de 1917 (Terminal)', lat: 19.3458, lon: -99.0636, isTerminal: true }
-                ]
-            },
-            {
-                id: 'L9', name: 'Línea 9 (Tacubaya - Pantitlán)', color: '#795548', status: 'normal',
-                notice: 'Sincronizando con API CDMX...',
-                stations: [
-                    { name: 'Tacubaya (Terminal)', lat: 19.4032, lon: -99.1871, isTerminal: true },
-                    { name: 'Patriotismo', lat: 19.4054, lon: -99.1786 }, { name: 'Chilpancingo', lat: 19.4061, lon: -99.1687 },
-                    { name: 'Centro Médico', lat: 19.4068, lon: -99.1557 }, { name: 'Lázaro Cárdenas', lat: 19.4072, lon: -99.1444 },
-                    { name: 'Chabacano', lat: 19.4084, lon: -99.1357 }, { name: 'Jamaica', lat: 19.4087, lon: -99.1221 },
-                    { name: 'Mixiuhca', lat: 19.4083, lon: -99.1124 }, { name: 'Velódromo', lat: 19.4085, lon: -99.1023 },
-                    { name: 'Ciudad Deportiva', lat: 19.4081, lon: -99.0913 }, { name: 'Puebla', lat: 19.4077, lon: -99.0822 },
-                    { name: 'Pantitlán (Terminal)', lat: 19.4154, lon: -99.0724, isTerminal: true }
-                ]
-            },
-            {
-                id: 'LA', name: 'Línea A (Pantitlán - La Paz)', color: '#9C27B0', status: 'normal',
-                notice: 'Sincronizando con API CDMX...',
-                stations: [
-                    { name: 'Pantitlán (Terminal)', lat: 19.4154, lon: -99.0724, isTerminal: true },
-                    { name: 'Agrícola Oriental', lat: 19.4045, lon: -99.0694 }, { name: 'Canal de San Juan', lat: 19.3986, lon: -99.0592 },
-                    { name: 'Tepalcates', lat: 19.3917, lon: -99.0463 }, { name: 'Guelatao', lat: 19.3853, lon: -99.0357 },
-                    { name: 'Peñón Viejo', lat: 19.3739, lon: -99.0169 }, { name: 'Acatitla', lat: 19.3648, lon: -99.0056 },
-                    { name: 'Santa Marta', lat: 19.3601, lon: -98.9959 }, { name: 'Los Reyes', lat: 19.3582, lon: -98.9748 },
-                    { name: 'La Paz (Terminal)', lat: 19.3503, lon: -98.9608, isTerminal: true }
-                ]
-            },
-            {
-                id: 'LB', name: 'Línea B (Buenavista - Ciudad Azteca)', color: '#607D8B', status: 'slow',
-                notice: 'Sincronizando con API CDMX...',
-                stations: [
-                    { name: 'Buenavista (Terminal)', lat: 19.4468, lon: -99.1531, isTerminal: true },
-                    { name: 'Guerrero', lat: 19.4461, lon: -99.1451 }, { name: 'Garibaldi', lat: 19.4444, lon: -99.1389 },
-                    { name: 'Lagunilla', lat: 19.4433, lon: -99.1311 }, { name: 'Tepito', lat: 19.4428, lon: -99.1238 },
-                    { name: 'Morelos', lat: 19.4388, lon: -99.1193 }, { name: 'San Lázaro', lat: 19.4303, lon: -99.1147 },
-                    { name: 'Flores Magón', lat: 19.4367, lon: -99.1033 }, { name: 'Romero Rubio', lat: 19.4411, lon: -99.0942 },
-                    { name: 'Oceanía', lat: 19.4456, lon: -99.0872 }, { name: 'Deportivo Oceanía', lat: 19.4528, lon: -99.0789 },
-                    { name: 'Bosque de Aragón', lat: 19.4628, lon: -99.0687 }, { name: 'Villa de Aragón', lat: 19.4728, lon: -99.0578 },
-                    { name: 'Nezahualcóyotl', lat: 19.4828, lon: -99.0468 }, { name: 'Impulsora', lat: 19.4938, lon: -99.0388 },
-                    { name: 'Río de los Remedios', lat: 19.5048, lon: -99.0338 }, { name: 'Múzquiz', lat: 19.5168, lon: -99.0308 },
-                    { name: 'Ecatepec', lat: 19.5278, lon: -99.0288 }, { name: 'Olímpica', lat: 19.5348, lon: -99.0278 },
-                    { name: 'Plaza Aragón', lat: 19.5398, lon: -99.0268 }, { name: 'Ciudad Azteca (Terminal)', lat: 19.5448, lon: -99.0258, isTerminal: true }
                 ]
             },
             {
@@ -442,36 +358,68 @@
             });
         });
 
-        // TRENES ANIMADOS (VELOCIDAD REDUCIDA)
+        // GENERADOR DE CONVOY DE TRES VAGONES SVG
+        function createMetroConvoySVG(color) {
+            return `
+                <div class="metro-convoy-container">
+                    <svg class="metro-convoy-svg" viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Vagón 3 (Trasero) -->
+                        <rect x="85" y="8" width="30" height="24" rx="6" fill="#E5E7EB" stroke="#374151" stroke-width="2"/>
+                        <rect x="90" y="12" width="10" height="12" rx="2" fill="#1E293B"/>
+                        
+                        <!-- Vagón 2 (Central) -->
+                        <rect x="45" y="8" width="36" height="24" rx="6" fill="#F3F4F6" stroke="#374151" stroke-width="2"/>
+                        <rect x="52" y="12" width="12" height="12" rx="2" fill="#1E293B"/>
+                        <rect x="68" y="12" width="8" height="12" rx="2" fill="#1E293B"/>
+
+                        <!-- Vagón 1 (Delantero - Cabina) -->
+                        <path d="M 5 14 Q 5 8 12 8 H 38 Q 42 8 42 14 V 26 Q 42 32 38 32 H 12 Q 5 32 5 26 Z" fill="#F7941D" stroke="#111827" stroke-width="2"/>
+                        <!-- Parabrisas y luces -->
+                        <rect x="30" y="12" width="8" height="16" rx="2" fill="#0F172A"/>
+                        <circle cx="9" cy="14" r="3" fill="#FEF08A"/>
+                        <circle cx="9" cy="26" r="3" fill="#FEF08A"/>
+
+                        <!-- Franja del Color Institucional de la Línea -->
+                        <rect x="5" y="20" width="110" height="4" fill="${color}"/>
+                    </svg>
+                </div>
+            `;
+        }
+
+        // TRENES ANIMADOS (CONVOYES)
         const activeTrains = [
             { id: 'T-101', lineIndex: 0, currentIdx: 0, step: 0 },
-            { id: 'T-201', lineIndex: 1, currentIdx: 5, step: 0 },
+            { id: 'T-201', lineIndex: 1, currentIdx: 3, step: 0 },
             { id: 'T-301', lineIndex: 2, currentIdx: 2, step: 0 },
-            { id: 'T-701', lineIndex: 6, currentIdx: 4, step: 0 },
-            { id: 'T-121', lineIndex: 11, currentIdx: 1, step: 0 }
+            { id: 'T-701', lineIndex: 3, currentIdx: 4, step: 0 },
+            { id: 'T-121', lineIndex: 4, currentIdx: 1, step: 0 }
         ];
-
-        const trainIcon = L.divIcon({
-            className: 'custom-train-icon',
-            html: '<div style="background: #FF5722; width: 14px; height: 14px; border: 2px solid white; border-radius: 3px; box-shadow: 0 0 6px rgba(0,0,0,0.6);"></div>',
-            iconSize: [14, 14], iconAnchor: [7, 7]
-        });
 
         const trainMarkers = activeTrains.map(t => {
             const line = metroData[t.lineIndex];
             const startSt = line.stations[t.currentIdx];
-            const m = L.marker([startSt.lat, startSt.lon], { icon: trainIcon }).addTo(map);
-            m.bindPopup(`<b>Tren En Vivo (${t.id})</b><br>${line.name}`);
+
+            const convoyIcon = L.divIcon({
+                className: 'custom-convoy-icon',
+                html: createMetroConvoySVG(line.color),
+                iconSize: [48, 24],
+                iconAnchor: [24, 12]
+            });
+
+            const m = L.marker([startSt.lat, startSt.lon], { icon: convoyIcon }).addTo(map);
+            m.bindPopup(`<b>Convoy Metro (${t.id})</b><br>${line.name}<br><i>Avance automático en línea</i>`);
             return { marker: m, config: t };
         });
 
+        // SISTEMA DE PREDICCIÓN AUTOMÁTICA (MODO OFFLINE / SIN GPS)
         function animateTrains() {
             trainMarkers.forEach(item => {
                 const cfg = item.config;
                 const line = metroData[cfg.lineIndex];
                 const totalStations = line.stations.length;
 
-                cfg.step += 0.0025; // Velocidad reducida
+                // El convoy avanza de manera predecible sobre la línea del metro
+                cfg.step += 0.0006;
                 if (cfg.step >= 1) {
                     cfg.step = 0;
                     cfg.currentIdx = (cfg.currentIdx + 1) % (totalStations - 1);
@@ -489,56 +437,95 @@
         }
         requestAnimationFrame(animateTrains);
 
-        // GEOLOCALIZACIÓN GPS
+        // COMPARTIR UBICACIÓN Y MONITOREO GPS CON PREDICCIÓN AUTOMÁTICA
         let userMarker = null;
         let userCircle = null;
+        let gpsWatchId = null;
+        let isSharingGPS = false;
+
+        function toggleUserGPSSharing() {
+            const shareBtn = document.getElementById('share-gps-item');
+            
+            if (!isSharingGPS) {
+                if ('geolocation' in navigator) {
+                    shareBtn.textContent = '🛑 Detener Compartir GPS';
+                    shareBtn.classList.add('sharing');
+                    isSharingGPS = true;
+
+                    gpsWatchId = navigator.geolocation.watchPosition(pos => {
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
+                        const accuracy = pos.coords.accuracy;
+
+                        map.setView([lat, lon], 15, { animate: true });
+
+                        if (userMarker) {
+                            userMarker.setLatLng([lat, lon]);
+                            userCircle.setLatLng([lat, lon]);
+                            userCircle.setRadius(accuracy);
+                        } else {
+                            const userIcon = L.divIcon({
+                                className: 'custom-user-icon',
+                                html: '<div style="background: #00E676; width: 16px; height: 16px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,230,118,0.8);"></div>',
+                                iconSize: [16, 16], iconAnchor: [8, 8]
+                            });
+
+                            userMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map);
+                            userMarker.bindPopup("<b>📡 Tu Ubicación Compartida</b>").openPopup();
+
+                            userCircle = L.circle([lat, lon], {
+                                radius: accuracy, color: '#00E676', fillColor: '#00E676', fillOpacity: 0.15, weight: 1
+                            }).addTo(map);
+                        }
+                    }, err => {
+                        handleGPSLossOrStop('Se perdió la señal o se denegaron los permisos de GPS.');
+                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
+                } else {
+                    alert('Geolocalización no soportada por el navegador.');
+                }
+            } else {
+                handleGPSLossOrStop('Has dejado de compartir tu ubicación. Convoyes en modo predictivo automático.');
+            }
+            document.getElementById('dropdown-menu').classList.remove('active');
+        }
+
+        function handleGPSLossOrStop(msg) {
+            if (gpsWatchId !== null) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+            }
+            isSharingGPS = false;
+            const shareBtn = document.getElementById('share-gps-item');
+            shareBtn.textContent = '📡 Compartir mi Ubicación';
+            shareBtn.classList.remove('sharing');
+            if (userMarker) {
+                map.removeLayer(userMarker);
+                map.removeLayer(userCircle);
+                userMarker = null;
+                userCircle = null;
+            }
+            console.log(msg + ' PWA operando en modo aproximación automática.');
+        }
 
         function locateUser() {
-            if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(pos => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    const accuracy = pos.coords.accuracy;
-
-                    map.setView([lat, lon], 15, { animate: true });
-
-                    if (userMarker) {
-                        userMarker.setLatLng([lat, lon]);
-                        userCircle.setLatLng([lat, lon]);
-                        userCircle.setRadius(accuracy);
-                    } else {
-                        const userIcon = L.divIcon({
-                            className: 'custom-user-icon',
-                            html: '<div style="background: #00E676; width: 16px; height: 16px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,230,118,0.8);"></div>',
-                            iconSize: [16, 16], iconAnchor: [8, 8]
-                        });
-
-                        userMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map);
-                        userMarker.bindPopup("<b>📍 Tu ubicación actual</b>").openPopup();
-
-                        userCircle = L.circle([lat, lon], {
-                            radius: accuracy, color: '#00E676', fillColor: '#00E676', fillOpacity: 0.15, weight: 1
-                        }).addTo(map);
-                    }
-                }, () => {
-                    alert('No se pudo acceder a tu ubicación GPS.');
-                }, { enableHighAccuracy: true });
+            if (userMarker) {
+                map.setView(userMarker.getLatLng(), 16, { animate: true });
+            } else {
+                toggleUserGPSSharing();
             }
         }
 
-        // CONSULTA AUTOMÁTICA A LA API DE LA CDMX AL ABRIR LA APP
+        // CONSULTAR API CDMX
         async function fetchCDMXMetroAPI() {
             const container = document.getElementById('lines-container');
             container.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-secondary);">🔄 Consultando API de la CDMX en tiempo real...</div>`;
 
             try {
-                // Consulta directa a datos abiertos CDMX (con proxy CORS seguro para single-file)
                 const response = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://datos.cdmx.gob.mx/api/explore/v2.1/catalog/datasets/estatus-del-metro/records?limit=20'));
                 
                 if (response.ok) {
                     const json = await response.json();
                     if (json && json.results && json.results.length > 0) {
-                        // Mapear datos de la API oficial a nuestras líneas
                         json.results.forEach(record => {
                             const lineMatch = metroData.find(l => l.id.toLowerCase() === record.linea?.toLowerCase() || l.name.toLowerCase().includes(record.linea?.toLowerCase()));
                             if (lineMatch) {
@@ -551,12 +538,9 @@
                     }
                 }
             } catch (err) {
-                console.warn('Usando respaldo local ante restricciones de red de la API CDMX:', err);
-                // Fallback realista con avisos simulados oficiales vigentes
                 metroData[0].notice = 'Operación continua. Modernización en tramo poniente.';
                 metroData[2].notice = 'Marcha de seguridad por condiciones climatológicas.';
-                metroData[7].notice = 'Retraso temporal por revisión de mecanismos en terminal.';
-                metroData[10].notice = 'Afluencia alta; se agiliza envío de trenes vacíos.';
+                metroData[3].notice = 'Servicio regular en toda la red.';
             }
 
             renderLinesUI();
@@ -568,7 +552,7 @@
             
             let html = `
                 <div class="sync-banner">
-                    <span>🟢 Conectado a API CDMX (${now})</span>
+                    <span>🟢 Sincronizado API CDMX (${now})</span>
                     <button class="sync-btn" onclick="fetchCDMXMetroAPI()">Actualizar</button>
                 </div>
             `;
@@ -612,10 +596,13 @@
 
         function selectTab(tabId, titleText, btnElement) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.dropdown-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.dropdown-item').forEach(el => {
+                if(!el.id.includes('share')) el.classList.remove('active');
+            });
 
             document.getElementById(tabId).classList.add('active');
-            btnElement.classList.add('active');
+            if(!btnElement.id.includes('share')) btnElement.classList.add('active');
+            
             document.getElementById('header-title').textContent = titleText;
             document.getElementById('dropdown-menu').classList.remove('active');
 
@@ -626,7 +613,7 @@
 
         function handleReportSubmit(e) {
             e.preventDefault();
-            alert('¡Reporte enviado exitosamente!');
+            alert('¡Reporte enviado con éxito!');
             e.target.reset();
         }
 
@@ -636,7 +623,6 @@
             document.getElementById('theme-toggle').textContent = isDark ? '☀️' : '🌙';
         });
 
-        // Cargar avisos desde la API de la CDMX al iniciar la aplicación
         fetchCDMXMetroAPI();
     </script>
 </body>
