@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Metro CDMX - Red Completa de 12 Líneas</title>
+    <title>Metro CDMX - Trayecto y Convoy GPS</title>
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#F7941D">
@@ -119,7 +119,7 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            width: 100%; max-width: 380px;
+            width: 100%; max-width: 390px;
             padding: 20px;
             display: flex;
             flex-direction: column;
@@ -133,6 +133,15 @@
             background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary);
             padding: 10px; border-radius: 6px; font-size: 0.95rem;
         }
+        .direction-row { display: flex; gap: 8px; align-items: center; }
+        .direction-row input { flex: 1; }
+        .btn-reverse-direction {
+            background: var(--bg-secondary); border: 1px solid var(--border); color: var(--text-primary);
+            padding: 10px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-reverse-direction:active { background: var(--accent); color: white; }
+
         .modal-buttons { display: flex; gap: 10px; margin-top: 6px; }
         .btn-modal-cancel { background: #4b5563; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; flex: 1; cursor: pointer; }
         .btn-modal-confirm { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; flex: 1; cursor: pointer; }
@@ -204,7 +213,7 @@
     <header>
         <div class="brand">
             <div class="logo-icon">M</div>
-            <span id="header-title">Metro CDMX - Las 12 Líneas</span>
+            <span id="header-title">Metro CDMX - Convoyes y GPS</span>
         </div>
         <div class="controls">
             <button class="btn-icon" id="theme-toggle" title="Tema">🌙</button>
@@ -212,7 +221,7 @@
         </div>
 
         <div class="dropdown-menu" id="dropdown-menu">
-            <button class="dropdown-item active" onclick="selectTab('map-tab', 'Metro CDMX - Las 12 Líneas', this)">🗺️ Mapa Red Completa</button>
+            <button class="dropdown-item active" onclick="selectTab('map-tab', 'Metro CDMX - Convoyes y GPS', this)">🗺️ Mapa Red Completa</button>
             <button class="dropdown-item" id="share-gps-item" onclick="openShareModal()">📡 Compartir mi Ubicación</button>
             <button class="dropdown-item" onclick="selectTab('lines-tab', 'Estado Oficial de Líneas', this)">📋 Estado Líneas</button>
         </div>
@@ -222,11 +231,11 @@
     <div class="modal-overlay" id="share-modal">
         <div class="modal-card">
             <div class="modal-title">🚇 Reportar Trayecto Activo</div>
-            <div style="font-size:0.83rem; color:var(--text-secondary);">Indica los detalles de tu viaje en el metro para compartir tu posición con la comunidad.</div>
+            <div style="font-size:0.83rem; color:var(--text-secondary);">Selecciona tu línea y el sentido de tu dirección para mostrar tu unidad en tiempo real.</div>
             
             <div class="form-group">
                 <label>Línea en la que viajas</label>
-                <select id="modal-line">
+                <select id="modal-line" onchange="updateLineDirection()">
                     <option value="L1">Línea 1 (Observatorio - Pantitlán)</option>
                     <option value="L2">Línea 2 (Cuatro Caminos - Tasqueña)</option>
                     <option value="L3">Línea 3 (Indios Verdes - Universidad)</option>
@@ -244,7 +253,10 @@
 
             <div class="form-group">
                 <label>Dirección / Sentido</label>
-                <input type="text" id="modal-direction" placeholder="Ej. Dirección Indios Verdes / Universidad" required>
+                <div class="direction-row">
+                    <input type="text" id="modal-direction" placeholder="Dirección automática..." required readonly>
+                    <button class="btn-reverse-direction" onclick="reverseDirection()" title="Cambiar sentido de dirección">🔄</button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -258,7 +270,7 @@
 
             <div class="modal-buttons">
                 <button class="btn-modal-cancel" onclick="closeShareModal()">Cancelar</button>
-                <button class="btn-modal-confirm" onclick="confirmStartSharing()">Iniciar GPS</button>
+                <button class="btn-modal-confirm" onclick="confirmStartSharing()">Mostrar como Convoy</button>
             </div>
         </div>
     </div>
@@ -289,10 +301,11 @@
 
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        // CONFIGURACIÓN OFICIAL DE LAS 12 LÍNEAS COMPLETAS DEL METRO CDMX
+        // CONFIGURACIÓN OFICIAL DE LAS 12 LÍNEAS COMPLETAS DEL METRO CDMX CON SUS SENTIDOS
         const metroData = [
             {
                 id: 'L1', name: 'Línea 1 (Observatorio - Pantitlán)', color: '#F44336', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Observatorio', 'Pantitlán'],
                 stations: [
                     { name: 'Observatorio (Terminal)', lat: 19.3982, lon: -99.2004, isTerminal: true },
                     { name: 'Tacubaya', lat: 19.4032, lon: -99.1871 }, { name: 'Juanacatlán', lat: 19.4129, lon: -99.1761 },
@@ -309,6 +322,7 @@
             },
             {
                 id: 'L2', name: 'Línea 2 (Cuatro Caminos - Tasqueña)', color: '#2196F3', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Cuatro Caminos', 'Tasqueña'],
                 stations: [
                     { name: 'Cuatro Caminos (Terminal)', lat: 19.4593, lon: -99.2159, isTerminal: true },
                     { name: 'Panteones', lat: 19.4588, lon: -99.2032 }, { name: 'Tacuba', lat: 19.4596, lon: -99.1873 },
@@ -327,6 +341,7 @@
             },
             {
                 id: 'L3', name: 'Línea 3 (Indios Verdes - Universidad)', color: '#FFC107', status: 'slow', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Indios Verdes', 'Universidad'],
                 stations: [
                     { name: 'Indios Verdes (Terminal)', lat: 19.4954, lon: -99.1195, isTerminal: true },
                     { name: '18 de Marzo', lat: 19.4837, lon: -99.1264 }, { name: 'Potrero', lat: 19.4772, lon: -99.1314 },
@@ -343,6 +358,7 @@
             },
             {
                 id: 'L4', name: 'Línea 4 (Martín Carrera - Santa Anita)', color: '#00BCD4', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Martín Carrera', 'Santa Anita'],
                 stations: [
                     { name: 'Martín Carrera (Terminal)', lat: 19.4852, lon: -99.1044, isTerminal: true },
                     { name: 'Talismán', lat: 19.4751, lon: -99.1077 }, { name: 'Bondojito', lat: 19.4644, lon: -99.1111 },
@@ -354,6 +370,7 @@
             },
             {
                 id: 'L5', name: 'Línea 5 (Politécnico - Pantitlán)', color: '#FFEB3B', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Politécnico', 'Pantitlán'],
                 stations: [
                     { name: 'Politécnico (Terminal)', lat: 19.5008, lon: -99.1492, isTerminal: true },
                     { name: 'Instituto del Petróleo', lat: 19.4897, lon: -99.1472 }, { name: 'Autobuses del Norte', lat: 19.4789, lon: -99.1411 },
@@ -366,6 +383,7 @@
             },
             {
                 id: 'L6', name: 'Línea 6 (El Rosario - Martín Carrera)', color: '#E91E63', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['El Rosario', 'Martín Carrera'],
                 stations: [
                     { name: 'El Rosario (Terminal)', lat: 19.5046, lon: -99.2001, isTerminal: true },
                     { name: 'Tezozómoc', lat: 19.5006, lon: -99.1915 }, { name: 'UAM-Azcapotzalco', lat: 19.4982, lon: -99.1843 },
@@ -377,6 +395,7 @@
             },
             {
                 id: 'L7', name: 'Línea 7 (El Rosario - Barranca del Muerto)', color: '#FF9800', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['El Rosario', 'Barranca del Muerto'],
                 stations: [
                     { name: 'El Rosario (Terminal)', lat: 19.5046, lon: -99.2001, isTerminal: true },
                     { name: 'Aquiles Serdán', lat: 19.4903, lon: -99.1947 }, { name: 'Camarones', lat: 19.4789, lon: -99.1897 },
@@ -390,6 +409,7 @@
             },
             {
                 id: 'L8', name: 'Línea 8 (Garibaldi - Constitución de 1917)', color: '#4CAF50', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Garibaldi', 'Constitución de 1917'],
                 stations: [
                     { name: 'Garibaldi / Lagunilla (Terminal)', lat: 19.4444, lon: -99.1389, isTerminal: true },
                     { name: 'Bellas Artes', lat: 19.4362, lon: -99.1417 }, { name: 'San Juan de Letrán', lat: 19.4314, lon: -99.1419 },
@@ -405,6 +425,7 @@
             },
             {
                 id: 'L9', name: 'Línea 9 (Tacubaya - Pantitlán)', color: '#795548', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Tacubaya', 'Pantitlán'],
                 stations: [
                     { name: 'Tacubaya (Terminal)', lat: 19.4032, lon: -99.1871, isTerminal: true },
                     { name: 'Patriotismo', lat: 19.4054, lon: -99.1786 }, { name: 'Chilpancingo', lat: 19.4061, lon: -99.1687 },
@@ -417,6 +438,7 @@
             },
             {
                 id: 'LA', name: 'Línea A (Pantitlán - La Paz)', color: '#9C27B0', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Pantitlán', 'La Paz'],
                 stations: [
                     { name: 'Pantitlán (Terminal)', lat: 19.4154, lon: -99.0724, isTerminal: true },
                     { name: 'Agrícola Oriental', lat: 19.4045, lon: -99.0694 }, { name: 'Canal de San Juan', lat: 19.3986, lon: -99.0592 },
@@ -428,6 +450,7 @@
             },
             {
                 id: 'LB', name: 'Línea B (Buenavista - Ciudad Azteca)', color: '#607D8B', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Buenavista', 'Ciudad Azteca'],
                 stations: [
                     { name: 'Buenavista (Terminal)', lat: 19.4468, lon: -99.1531, isTerminal: true },
                     { name: 'Guerrero', lat: 19.4461, lon: -99.1451 }, { name: 'Garibaldi / Lagunilla', lat: 19.4444, lon: -99.1389 },
@@ -444,6 +467,7 @@
             },
             {
                 id: 'L12', name: 'Línea 12 (Mixcoac - Tláhuac)', color: '#C0CA33', status: 'normal', notice: 'Sincronizando con API CDMX...',
+                terminals: ['Mixcoac', 'Tláhuac'],
                 stations: [
                     { name: 'Mixcoac (Terminal)', lat: 19.3758, lon: -99.1876, isTerminal: true },
                     { name: 'Insurgentes Sur', lat: 19.3742, lon: -99.1788 }, { name: 'Hospital 20 de Noviembre', lat: 19.3725, lon: -99.1706 },
@@ -491,11 +515,11 @@
                         <rect x="45" y="8" width="36" height="24" rx="6" fill="#F3F4F6" stroke="#374151" stroke-width="2"/>
                         <rect x="52" y="12" width="12" height="12" rx="2" fill="#1E293B"/>
                         <rect x="68" y="12" width="8" height="12" rx="2" fill="#1E293B"/>
-                        <path d="M 5 14 Q 5 8 12 8 H 38 Q 42 8 42 14 V 26 Q 42 32 38 32 H 12 Q 5 32 5 26 Z" fill="#F7941D" stroke="#111827" stroke-width="2"/>
+                        <path d="M 5 14 Q 5 8 12 8 H 38 Q 42 8 42 14 V 26 Q 42 32 38 32 H 12 Q 5 32 5 26 Z" fill="${color}" stroke="#111827" stroke-width="2"/>
                         <rect x="30" y="12" width="8" height="16" rx="2" fill="#0F172A"/>
                         <circle cx="9" cy="14" r="3" fill="#FEF08A"/>
                         <circle cx="9" cy="26" r="3" fill="#FEF08A"/>
-                        <rect x="5" y="20" width="110" height="4" fill="${color}"/>
+                        <rect x="5" y="20" width="110" height="4" fill="#FFFFFF"/>
                     </svg>
                 </div>
             `;
@@ -551,15 +575,38 @@
         }
         requestAnimationFrame(animateTrains);
 
-        // GESTIÓN DEL MODAL Y COMPARTIR UBICACIÓN GPS
-        let userMarker = null;
-        let userCircle = null;
+        // ACTUALIZACIÓN AUTOMÁTICA DE DIRECCIÓN AL SELECCIONAR LÍNEA
+        function updateLineDirection() {
+            const lineId = document.getElementById('modal-line').value;
+            const lineObj = metroData.find(l => l.id === lineId);
+            if (lineObj && lineObj.terminals) {
+                document.getElementById('modal-direction').value = `Dirección ${lineObj.terminals[1]}`;
+            }
+        }
+
+        function reverseDirection() {
+            const lineId = document.getElementById('modal-line').value;
+            const lineObj = metroData.find(l => l.id === lineId);
+            const currentDirInput = document.getElementById('modal-direction');
+            
+            if (lineObj && lineObj.terminals) {
+                if (currentDirInput.value.includes(lineObj.terminals[1])) {
+                    currentDirInput.value = `Dirección ${lineObj.terminals[0]}`;
+                } else {
+                    currentDirInput.value = `Dirección ${lineObj.terminals[1]}`;
+                }
+            }
+        }
+
+        // GESTIÓN DEL MODAL Y CONVOY DEL USUARIO EN TIEMPO REAL
+        let userConvoyMarker = null;
         let gpsWatchId = null;
         let isSharingGPS = false;
 
         function openShareModal() {
             document.getElementById('share-modal').classList.add('active');
             document.getElementById('dropdown-menu').classList.remove('active');
+            updateLineDirection(); // Inicializar dirección automática según línea por defecto
         }
 
         function closeShareModal() {
@@ -573,11 +620,6 @@
             const direction = document.getElementById('modal-direction').value;
             const crowd = document.getElementById('modal-crowd').value;
 
-            if (!direction) {
-                alert('Por favor ingresa la dirección de tu trayecto.');
-                return;
-            }
-
             closeShareModal();
 
             const shareBtn = document.getElementById('share-gps-item');
@@ -585,31 +627,33 @@
             shareBtn.classList.add('sharing');
             isSharingGPS = true;
 
+            const targetLine = metroData.find(l => l.id === lineId) || metroData[0];
+
             if ('geolocation' in navigator) {
                 gpsWatchId = navigator.geolocation.watchPosition(pos => {
                     const lat = pos.coords.latitude;
                     const lon = pos.coords.longitude;
-                    const accuracy = pos.coords.accuracy;
 
                     map.setView([lat, lon], 15, { animate: true });
 
-                    if (userMarker) {
-                        userMarker.setLatLng([lat, lon]);
-                        userCircle.setLatLng([lat, lon]);
-                        userCircle.setRadius(accuracy);
+                    if (userConvoyMarker) {
+                        userConvoyMarker.setLatLng([lat, lon]);
                     } else {
-                        const userIcon = L.divIcon({
-                            className: 'custom-user-icon',
-                            html: '<div style="background: #00E676; width: 16px; height: 16px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,230,118,0.8);"></div>',
-                            iconSize: [16, 16], iconAnchor: [8, 8]
+                        const userConvoyIcon = L.divIcon({
+                            className: 'custom-user-convoy',
+                            html: createMetroConvoySVG(targetLine.color),
+                            iconSize: [48, 24],
+                            iconAnchor: [24, 12]
                         });
 
-                        userMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map);
-                        userMarker.bindPopup(`<b>📡 Tu Posición Activa</b><br>${lineNameText}<br>Sentido: ${direction}<br>Afluencia: ${crowd}`).openPopup();
-
-                        userCircle = L.circle([lat, lon], {
-                            radius: accuracy, color: '#00E676', fillColor: '#00E676', fillOpacity: 0.15, weight: 1
-                        }).addTo(map);
+                        userConvoyMarker = L.marker([lat, lon], { icon: userConvoyIcon }).addTo(map);
+                        userConvoyMarker.bindPopup(`
+                            <div style="text-align: center;">
+                                <span style="background: ${targetLine.color}; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.8rem;">MI UNIDAD (${targetLine.id})</span>
+                                <h4 style="margin-top: 6px;">${direction}</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary);">Afluencia: ${crowd}</p>
+                            </div>
+                        `).openPopup();
                     }
                 }, err => {
                     handleGPSLossOrStop('Se perdió la señal o se denegaron los permisos de GPS.');
@@ -628,18 +672,16 @@
             const shareBtn = document.getElementById('share-gps-item');
             shareBtn.textContent = '📡 Compartir mi Ubicación';
             shareBtn.classList.remove('sharing');
-            if (userMarker) {
-                map.removeLayer(userMarker);
-                map.removeLayer(userCircle);
-                userMarker = null;
-                userCircle = null;
+            if (userConvoyMarker) {
+                map.removeLayer(userConvoyMarker);
+                userConvoyMarker = null;
             }
-            console.log(msg + ' Convoyes operando en modo predictivo automático.');
+            console.log(msg);
         }
 
         function locateUser() {
-            if (userMarker) {
-                map.setView(userMarker.getLatLng(), 16, { animate: true });
+            if (userConvoyMarker) {
+                map.setView(userConvoyMarker.getLatLng(), 16, { animate: true });
             } else {
                 openShareModal();
             }
