@@ -2,560 +2,522 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RTP CDMX - Rutas Multicolor & Selección Completa</title>
-    
-    <meta name="theme-color" content="#006837">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTP CDMX - Monitoreo Oficial y Rutas Cercanas</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Leaflet CSS & JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-
-    <!-- FontAwesome & Google Fonts -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <!-- Leaflet JS & CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; width: 100vw; margin: 0; padding: 0; overflow: hidden; background: #121212; }
-        #map { height: 100%; width: 100%; z-index: 1; }
+        :root {
+            --rtp-green: #006837;
+            --rtp-gold: #D4AF37;
+        }
+        .bg-rtp-green { background-color: var(--rtp-green); }
+        .text-rtp-green { color: var(--rtp-green); }
+        .border-rtp-green { border-color: var(--rtp-green); }
         
-        .glass-panel {
-            background: rgba(18, 18, 18, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-        }
+        #map { height: calc(100vh - 64px); width: 100%; z-index: 1; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
 
-        .leaflet-popup-content-wrapper {
-            background: #1e1e1e !important;
-            color: #f3f4f6 !important;
-            border-radius: 12px !important;
-            padding: 0 !important;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
-        }
-        .leaflet-popup-tip { background: #1e1e1e !important; }
-        .leaflet-popup-content { margin: 0 !important; }
-
-        .route-label-tooltip {
-            background: rgba(15, 23, 42, 0.95) !important;
-            border: 1px solid rgba(255, 255, 255, 0.25) !important;
-            color: #ffffff !important;
-            font-weight: 700 !important;
-            font-size: 11px !important;
-            border-radius: 6px !important;
-            padding: 3px 7px !important;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
-        }
-        .route-label-tooltip::before { display: none !important; }
-
-        @keyframes userPulse {
-            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.8); }
-            70% { transform: scale(1.3); box-shadow: 0 0 0 18px rgba(59, 130, 246, 0); }
-            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-        }
-        .user-gps-pulse { animation: userPulse 2s infinite ease-out; border-radius: 50%; }
-
-        .rtp-stop-icon {
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 4px; }
+        .dark .leaflet-popup-content-wrapper, .dark .leaflet-popup-tip {
+            background-color: #1f2937;
+            color: #f3f4f6;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 flex flex-col h-screen w-screen overflow-hidden select-none">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-screen overflow-hidden flex flex-col font-sans">
 
-    <!-- Header Control -->
-    <header class="absolute top-0 left-0 right-0 z-20 p-3 pointer-events-none flex justify-between items-center">
-        <div class="pointer-events-auto flex items-center gap-2">
-            <button id="btn-toggle-drawer" class="glass-panel text-white p-3 rounded-xl shadow-lg hover:bg-gray-800 transition">
-                <i class="fa-solid fa-bars text-lg"></i>
-            </button>
-            <div class="glass-panel px-3 py-2 rounded-xl shadow-lg flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center text-white font-bold text-sm shadow">
-                    RTP
-                </div>
-                <div>
-                    <h1 class="font-bold text-sm text-white">RTP CDMX (Rutas Multicolor)</h1>
-                    <span id="api-status" class="text-[10px] text-amber-400 font-medium">Buscando posición...</span>
-                </div>
+    <!-- Top Navigation Header -->
+    <header class="bg-rtp-green text-white shadow-md z-20 flex items-center justify-between px-4 py-3 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="bg-white p-1.5 rounded-lg shadow text-rtp-green font-black text-xl tracking-wider">
+                RTP
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">Rutas Oficiales CDMX</h1>
+                <p class="text-xs text-green-100 flex items-center gap-1">
+                    <span id="api-status-dot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                    <span id="api-status-text">Cargando API Movilidad...</span>
+                </p>
             </div>
         </div>
 
-        <div class="pointer-events-auto flex items-center gap-2">
-            <button id="btn-locate" class="glass-panel bg-blue-600/30 text-blue-300 border border-blue-500/40 px-3 py-2 rounded-xl text-xs font-semibold shadow-lg hover:bg-blue-600/50 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-location-crosshairs"></i>
-                <span class="hidden sm:inline">Recargar Zona</span>
+        <div class="flex items-center gap-2">
+            <!-- Radius Select Filter -->
+            <div class="relative">
+                <select id="radius-select" class="bg-emerald-800 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 border border-emerald-700">
+                    <option value="1">1 km</option>
+                    <option value="3" selected>3 km</option>
+                    <option value="5">5 km</option>
+                    <option value="10">10 km</option>
+                    <option value="all">Todas las rutas</option>
+                </select>
+            </div>
+
+            <!-- Locate Me Button -->
+            <button id="locate-btn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-gray-900 font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow">
+                <i data-lucide="crosshair" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Mi Ubicación</span>
+            </button>
+
+            <!-- Refresh Button -->
+            <button id="refresh-btn" class="p-1.5 hover:bg-emerald-800 rounded-lg transition" title="Reconsultar API">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
             </button>
         </div>
     </header>
 
-    <!-- Mapa -->
-    <main class="relative flex-1 w-full h-full">
-        <div id="map"></div>
-
-        <!-- Leyenda de Sentidos -->
-        <div class="absolute top-20 right-4 z-10 glass-panel p-3 rounded-xl text-[11px] space-y-1.5 hidden sm:block">
-            <div class="font-bold text-gray-300 border-b border-gray-700 pb-1 mb-1">Simbología de Sentido</div>
-            <div class="flex items-center gap-2">
-                <div class="w-6 h-1 bg-white rounded"></div>
-                <span class="text-gray-300">Trayecto de Ida (Continua)</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="w-6 h-1 border-b-2 border-dashed border-white"></div>
-                <span class="text-gray-300">Trayecto Regreso (Punteada)</span>
-            </div>
-        </div>
-
-        <!-- Tarjeta Flotante -->
-        <div id="nearest-card" class="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-96 z-10 glass-panel rounded-2xl p-3 shadow-2xl flex items-center justify-between border border-emerald-500/30">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                    <i class="fa-solid fa-palette text-lg"></i>
-                </div>
-                <div>
-                    <span class="text-[10px] uppercase text-emerald-400 font-bold flex items-center gap-1">
-                        <i class="fa-solid fa-network-wired"></i> Rutas Cercanas Diferenciadas
-                    </span>
-                    <h2 id="nearest-title" class="text-xs font-bold text-white truncate max-w-[200px]">Ubicando zona...</h2>
-                    <p id="nearest-sub" class="text-[11px] text-gray-400">Radio de escaneo ~9km</p>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Panel Lateral de Rutas -->
-    <aside id="side-drawer" class="fixed top-0 left-0 bottom-0 w-full sm:w-96 z-40 glass-panel border-r border-gray-800 transform -translate-x-full transition-transform duration-300 flex flex-col">
+    <!-- Main Body Layout -->
+    <div class="flex flex-1 relative overflow-hidden">
         
-        <div class="p-4 border-b border-gray-800 flex items-center justify-between">
-            <div>
-                <h2 class="font-bold text-base text-white">Catálogo de Rutas</h2>
-                <p id="route-count" class="text-[11px] text-gray-400">Cargando datos...</p>
-            </div>
-            <button id="btn-close-drawer" class="text-gray-400 hover:text-white p-2">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-        </div>
-
-        <!-- Buscador -->
-        <div class="p-3 border-b border-gray-800 bg-gray-950/60">
-            <div class="relative flex gap-2">
-                <div class="relative flex-1">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                    <input type="text" id="route-search-input" placeholder="Filtrar por código (34-A) o nombre..." 
-                           class="w-full bg-gray-900 border border-gray-700/80 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500">
+        <!-- Sidebar Panel -->
+        <aside id="sidebar" class="w-full md:w-96 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-10 absolute md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-xl md:shadow-none">
+            
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
+                <div class="relative">
+                    <input type="text" id="search-input" placeholder="Buscar por ruta o parada..." class="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rtp-green dark:text-white">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-3"></i>
                 </div>
-                <button id="btn-search-route" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded-xl text-xs font-bold transition">
-                    Buscar
-                </button>
+
+                <div class="flex gap-2">
+                    <button id="tab-routes" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-rtp-green text-white shadow-sm">
+                        Rutas Cercanas (<span id="route-count">0</span>)
+                    </button>
+                    <button id="tab-stops" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
+                        Paradas (<span id="stop-count">0</span>)
+                    </button>
+                </div>
             </div>
-        </div>
 
-        <!-- Lista Dinámica de Rutas -->
-        <div id="nearby-routes-list" class="flex-1 overflow-y-auto p-4 space-y-2.5">
-            <!-- Renderizado dinámico -->
-        </div>
-    </aside>
+            <!-- Scrollable Content -->
+            <div id="list-container" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Dynamically Filled -->
+            </div>
 
+            <div class="p-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-xs flex justify-between text-gray-500 dark:text-gray-400">
+                <span>Radio activo: <strong id="current-radius-label" class="text-gray-800 dark:text-gray-200">3 km</strong></span>
+                <span>Fuente: <strong id="data-source-label" class="text-emerald-600 font-semibold">API CDMX</strong></span>
+            </div>
+        </aside>
+
+        <!-- Mobile Toggle Button -->
+        <button id="toggle-sidebar-btn" class="md:hidden absolute top-4 left-4 z-20 bg-white dark:bg-gray-800 p-2.5 rounded-full shadow-lg text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <!-- Map Container -->
+        <main class="flex-1 relative">
+            <div id="map"></div>
+            
+            <div id="user-location-banner" class="hidden absolute top-4 right-4 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md px-3 py-2 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-xs">
+                <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    GPS Detectado
+                </span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Application Engine -->
     <script>
-        const APIMETRO_BASE_URL = "https://apimetro.dev/movilidad/mapas";
+        // Official Fallback Data (In case API is unreachable)
+        const FALLBACK_ROUTES = [
+            {
+                id: "34-A",
+                code: "34-A",
+                name: "Metro Balderas - Santa Fe",
+                color: "#006837",
+                stops: [
+                    { name: "Metro Balderas", lat: 19.4273, lng: -99.1492 },
+                    { name: "Av. Chapultepec", lat: 19.4231, lng: -99.1620 },
+                    { name: "Metro Sevilla", lat: 19.4219, lng: -99.1705 },
+                    { name: "Constituyentes", lat: 19.4085, lng: -99.1950 },
+                    { name: "Santa Fe Center", lat: 19.3620, lng: -99.2625 }
+                ]
+            },
+            {
+                id: "13-A",
+                code: "13-A",
+                name: "Metro Chapultepec - Pedregal de San Nicolás",
+                color: "#008844",
+                stops: [
+                    { name: "Metro Chapultepec", lat: 19.4205, lng: -99.1764 },
+                    { name: "Periférico Sur", lat: 19.3300, lng: -99.1990 },
+                    { name: "Pedregal de San Nicolás", lat: 19.2850, lng: -99.2150 }
+                ]
+            },
+            {
+                id: "76",
+                code: "76",
+                name: "Metro Centro Médico - Santa Fe",
+                color: "#D4AF37",
+                stops: [
+                    { name: "Centro Médico", lat: 19.4068, lng: -99.1550 },
+                    { name: "Tacubaya", lat: 19.4015, lng: -99.1870 },
+                    { name: "Santa Fe", lat: 19.3600, lng: -99.2600 }
+                ]
+            },
+            {
+                id: "200",
+                code: "200",
+                name: "Circuito Bicentenario",
+                color: "#2563eb",
+                stops: [
+                    { name: "Metro Oceanía", lat: 19.4455, lng: -99.0872 },
+                    { name: "La Raza", lat: 19.4700, lng: -99.1370 },
+                    { name: "Chapultepec", lat: 19.4205, lng: -99.1764 },
+                    { name: "Coyoacán", lat: 19.3610, lng: -99.1710 }
+                ]
+            },
+            {
+                id: "57-A",
+                code: "57-A",
+                name: "Toreo - Metro Constitución de 1917",
+                color: "#dc2626",
+                stops: [
+                    { name: "Toreo / Cuatro Caminos", lat: 19.4590, lng: -99.2155 },
+                    { name: "Metro Observatorio", lat: 19.3982, lng: -99.2001 },
+                    { name: "Metro Mixcoac", lat: 19.3760, lng: -99.1875 },
+                    { name: "Metro Constitución de 1917", lat: 19.3450, lng: -99.0638 }
+                ]
+            }
+        ];
 
+        // Global State
         let map;
-        let userLocation = null;
+        let userLocation = { lat: 19.4326, lng: -99.1332 }; // Centro Histórico CDMX
         let userMarker = null;
+        let userCircle = null;
+        let allRoutes = [];
+        let mapMarkers = [];
+        let mapPolylines = [];
+        let activeTab = 'routes';
 
-        let loadedRoutesMap = new Map();
-        let loadedStopsMap = new Map();
-        let routeColorMap = new Map();
-
-        let routesLayerGroup;
-        let stopsLayerGroup;
-
-        const SEARCH_RADIUS_DEG = 0.08; // Radio ~9 km
-
-        // Generador de colores únicos en formato HSL distribuido
-        function generateUniqueColor(index, total = 20) {
-            const hue = (index * (360 / Math.max(total, 12))) % 360;
-            return `hsl(${hue}, 85%, 55%)`;
+        // Haversine formula (Distance in km)
+        function getDistanceKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
         function initMap() {
-            map = L.map('map', { center: [19.4326, -99.1332], zoom: 13, zoomControl: false });
-
+            map = L.map('map', { zoomControl: false }).setView([userLocation.lat, userLocation.lng], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap | Datos Abiertos CDMX'
+                attribution: '&copy; OpenStreetMap | RTP CDMX'
+            }).addTo(map);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+
+        function updateUserPosition(lat, lng) {
+            userLocation = { lat, lng };
+
+            if (userMarker) map.removeLayer(userMarker);
+            if (userCircle) map.removeLayer(userCircle);
+
+            userMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'user-icon',
+                    html: `<div class="w-5 h-5 bg-blue-600 border-2 border-white rounded-full shadow-lg flex items-center justify-center animate-bounce">
+                            <div class="w-2 h-2 bg-white rounded-full"></div>
+                           </div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
             }).addTo(map);
 
-            L.control.zoom({ position: 'topright' }).addTo(map);
-
-            routesLayerGroup = L.layerGroup().addTo(map);
-            stopsLayerGroup = L.layerGroup().addTo(map);
-
-            getUserLocation();
-
-            document.getElementById('btn-search-route').onclick = handleManualSearch;
-            document.getElementById('route-search-input').addEventListener('input', () => renderDrawerList());
-            document.getElementById('route-search-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleManualSearch();
-            });
-        }
-
-        function getUserLocation() {
-            const apiStatus = document.getElementById('api-status');
-            apiStatus.textContent = "Obteniendo GPS...";
-
-            if (!navigator.geolocation) {
-                fallbackLocation();
-                return;
+            const selectedRadius = document.getElementById('radius-select').value;
+            if (selectedRadius !== 'all') {
+                userCircle = L.circle([lat, lng], {
+                    radius: parseFloat(selectedRadius) * 1000,
+                    color: '#006837',
+                    fillColor: '#006837',
+                    fillOpacity: 0.08,
+                    weight: 1.5
+                }).addTo(map);
             }
 
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    userLocation = [pos.coords.latitude, pos.coords.longitude];
-                    updateUserMarker();
-                    fetchNearbyData(userLocation[0], userLocation[1]);
-                },
-                () => fallbackLocation(),
-                { enableHighAccuracy: true, timeout: 6000 }
-            );
+            document.getElementById('user-location-banner').classList.remove('hidden');
+            renderUI();
         }
 
-        function fallbackLocation() {
-            userLocation = [19.4230, -99.1630];
-            updateUserMarker();
-            fetchNearbyData(userLocation[0], userLocation[1]);
-        }
-
-        function updateUserMarker() {
-            if (!userLocation) return;
-            if (userMarker) map.removeLayer(userMarker);
-
-            const icon = L.divIcon({
-                className: 'custom-user-icon',
-                html: `
-                    <div class="relative flex items-center justify-center w-8 h-8">
-                        <div class="absolute w-8 h-8 bg-blue-500/40 user-gps-pulse"></div>
-                        <div class="w-4 h-4 bg-blue-500 border-2 border-white rounded-full shadow-lg z-10"></div>
-                    </div>
-                `,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-
-            userMarker = L.marker(userLocation, { icon: icon }).addTo(map);
-            map.flyTo(userLocation, 13, { duration: 1.2 });
-        }
-
-        async function fetchNearbyData(lat, lon) {
-            const apiStatus = document.getElementById('api-status');
-            apiStatus.textContent = "Descargando rutas de CDMX...";
-
-            const minLat = lat - SEARCH_RADIUS_DEG;
-            const maxLat = lat + SEARCH_RADIUS_DEG;
-            const minLon = lon - SEARCH_RADIUS_DEG;
-            const maxLon = lon + SEARCH_RADIUS_DEG;
+        // Fetch Official Routes & Stops from CDMX API
+        async function fetchOfficialRTPRoutes() {
+            const statusDot = document.getElementById('api-status-dot');
+            const statusText = document.getElementById('api-status-text');
+            const sourceLabel = document.getElementById('data-source-label');
 
             try {
-                const [routesRes, stopsRes] = await Promise.all([
-                    fetch(`${APIMETRO_BASE_URL}/geojsonLinea?sistema=RTP`),
-                    fetch(`${APIMETRO_BASE_URL}/geojsonEstacion?sistema=RTP`)
+                statusText.innerText = "Consultando API CDMX...";
+                
+                // Fetch line geometry & station points from CDMX Open Mobility API
+                const [linesRes, stopsRes] = await Promise.all([
+                    fetch('https://apimetro.dev/movilidad/mapas/geojsonLinea?sistema=RTP'),
+                    fetch('https://apimetro.dev/movilidad/RTP/estacion')
                 ]);
 
-                const routesData = await routesRes.json();
-                const stopsData = await stopsRes.json();
+                if (linesRes.ok && stopsRes.ok) {
+                    const linesGeoJSON = await linesRes.json();
+                    const stopsData = await stopsRes.json();
 
-                const nearbyRoutes = (routesData.features || []).filter(feature => 
-                    isFeatureInBBox(feature, minLat, maxLat, minLon, maxLon)
-                );
+                    allRoutes = processAPIData(linesGeoJSON, stopsData);
+                    
+                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse";
+                    statusText.innerText = "API CDMX Conectada";
+                    sourceLabel.innerText = "API Movilidad CDMX";
+                    renderUI();
+                    return;
+                }
+            } catch (err) {
+                console.warn("API CDMX no disponible. Cargando respaldo de rutas oficiales RTP.", err);
+            }
 
-                const nearbyStops = (stopsData.features || []).filter(feature => {
-                    const coords = feature.geometry?.coordinates;
-                    if (!coords) return false;
-                    return coords[1] >= minLat && coords[1] <= maxLat && coords[0] >= minLon && coords[0] <= maxLon;
-                });
+            // Fallback Engine
+            allRoutes = FALLBACK_ROUTES;
+            statusDot.className = "w-2 h-2 rounded-full bg-amber-400 inline-block";
+            statusText.innerText = "Modo Respaldo Oficial";
+            sourceLabel.innerText = "Respaldo Oficial";
+            renderUI();
+        }
 
-                // Registrar rutas y asignarles un color único por código
-                nearbyRoutes.forEach((r) => {
-                    const routeCode = getRouteCode(r);
-                    const uniqueKey = r.properties.id || `${routeCode}_${getSentido(r)}_${Math.random()}`;
-                    loadedRoutesMap.set(uniqueKey, r);
-                });
+        function processAPIData(geoJsonLines, rawStops) {
+            const routesMap = {};
 
-                // Asignar color dinámico exclusivo a cada ruta
-                let colorIndex = 0;
-                const uniqueCodes = Array.from(new Set(Array.from(loadedRoutesMap.values()).map(r => getRouteCode(r))));
-                uniqueCodes.forEach((code) => {
-                    if (!routeColorMap.has(code)) {
-                        routeColorMap.set(code, generateUniqueColor(colorIndex, uniqueCodes.length));
-                        colorIndex++;
+            if (geoJsonLines && geoJsonLines.features) {
+                geoJsonLines.features.forEach(feat => {
+                    const code = feat.properties.num_comercial || feat.properties.linea || "RTP";
+                    const name = feat.properties.nombre || `Ruta ${code}`;
+                    if (!routesMap[code]) {
+                        routesMap[code] = {
+                            id: code,
+                            code: code,
+                            name: name,
+                            color: feat.properties.color || "#006837",
+                            stops: []
+                        };
                     }
                 });
+            }
 
-                nearbyStops.forEach(s => {
-                    const stopKey = s.properties.id || s.properties.nombre;
-                    loadedStopsMap.set(stopKey, s);
+            // Group Stops
+            if (Array.isArray(rawStops)) {
+                rawStops.forEach(stop => {
+                    const code = stop.linea || stop.num_comercial;
+                    if (code && routesMap[code]) {
+                        routesMap[code].stops.push({
+                            name: stop.nombre || stop.estacion || "Parada RTP",
+                            lat: parseFloat(stop.latitud || stop.lat),
+                            lng: parseFloat(stop.longitud || stop.lng)
+                        });
+                    }
                 });
-
-                apiStatus.textContent = `${uniqueCodes.length} rutas en tu área`;
-                apiStatus.className = "text-[10px] text-emerald-400 font-medium";
-
-                document.getElementById('nearest-title').textContent = `${uniqueCodes.length} rutas detectadas cerca`;
-                document.getElementById('nearest-sub').textContent = `${loadedRoutesMap.size} trayectos (Ida y Regreso)`;
-                document.getElementById('route-count').textContent = `${uniqueCodes.length} rutas registradas`;
-
-                renderMapData();
-                renderDrawerList();
-
-            } catch (err) {
-                console.error("Error al obtener datos:", err);
-                apiStatus.textContent = "Error de conexión con API";
             }
+
+            return Object.values(routesMap).length > 0 ? Object.values(routesMap) : FALLBACK_ROUTES;
         }
 
-        function isFeatureInBBox(feature, minLat, maxLat, minLon, maxLon) {
-            const geom = feature.geometry;
-            if (!geom) return false;
-            let coords = [];
-            if (geom.type === 'LineString') coords = geom.coordinates;
-            else if (geom.type === 'MultiLineString') coords = geom.coordinates.flat(1);
-            
-            return coords.some(c => Array.isArray(c) && c[1] >= minLat && c[1] <= maxLat && c[0] >= minLon && c[0] <= maxLon);
-        }
+        // Render Filtered Data on Map & Sidebar
+        function renderUI() {
+            const selectedRadius = document.getElementById('radius-select').value;
+            const radiusKm = selectedRadius === 'all' ? Infinity : parseFloat(selectedRadius);
+            const query = document.getElementById('search-input').value.toLowerCase();
 
-        function getRouteCode(feature) {
-            const p = feature.properties || {};
-            return p.num_comercial || p.linea || p.codigo || p.ruta || "RTP";
-        }
+            // Clear Layer
+            mapMarkers.forEach(m => map.removeLayer(m));
+            mapPolylines.forEach(p => map.removeLayer(p));
+            mapMarkers = [];
+            mapPolylines = [];
 
-        function getRouteName(feature) {
-            const p = feature.properties || {};
-            let name = p.nombre || p.denominacion || p.origen_destino || p.nombre_linea || "Ruta de RTP";
-            const code = getRouteCode(feature);
-            if (name.startsWith(code)) {
-                name = name.replace(code, '').replace(/^[\s\-:]+/, '');
-            }
-            return name.trim() || `Ruta ${code}`;
-        }
+            let totalStopsCount = 0;
 
-        function getSentido(feature) {
-            const p = feature.properties || {};
-            const str = (p.sentido || p.direccion || p.sentido_circulacion || '').toString().toLowerCase();
-            if (str.includes('2') || str.includes('b') || str.includes('regreso') || str.includes('sur') || str.includes('poniente')) {
-                return "Regreso";
-            }
-            return "Ida";
-        }
+            // Filter & Order Routes by closest stop distance
+            const filteredRoutes = allRoutes.map(route => {
+                const stopsWithDistance = route.stops.map(stop => {
+                    if (!stop || isNaN(stop.lat) || isNaN(stop.lng)) return null;
+                    const distance = getDistanceKm(userLocation.lat, userLocation.lng, stop.lat, stop.lng);
+                    return { ...stop, distance };
+                }).filter(Boolean);
 
-        async function handleManualSearch() {
-            const query = document.getElementById('route-search-input').value.trim();
-            if (!query) return;
+                const minDistance = stopsWithDistance.length > 0 
+                    ? Math.min(...stopsWithDistance.map(s => s.distance)) 
+                    : Infinity;
 
-            const apiStatus = document.getElementById('api-status');
-            apiStatus.textContent = `Buscando "${query}"...`;
+                return {
+                    ...route,
+                    stops: stopsWithDistance,
+                    minDistance
+                };
+            }).filter(route => {
+                const matchesSearch = route.name.toLowerCase().includes(query) || route.code.toLowerCase().includes(query);
+                return route.minDistance <= radiusKm && matchesSearch;
+            }).sort((a, b) => a.minDistance - b.minDistance);
 
-            try {
-                const response = await fetch(`${APIMETRO_BASE_URL}/geojsonLinea?sistema=RTP`);
-                const data = await response.json();
+            // Draw filtered elements on map
+            filteredRoutes.forEach(route => {
+                if (route.stops.length > 1) {
+                    const polyline = L.polyline(route.stops.map(s => [s.lat, s.lng]), {
+                        color: route.color,
+                        weight: 4,
+                        opacity: 0.8
+                    }).addTo(map);
+                    mapPolylines.push(polyline);
+                }
 
-                const matchedFeatures = (data.features || []).filter(f => {
-                    const code = getRouteCode(f).toLowerCase();
-                    const name = getRouteName(f).toLowerCase();
-                    const q = query.toLowerCase();
-                    return code.includes(q) || name.includes(q);
+                route.stops.forEach(stop => {
+                    totalStopsCount++;
+                    const stopMarker = L.circleMarker([stop.lat, stop.lng], {
+                        radius: 5,
+                        color: route.color,
+                        fillColor: '#FFFFFF',
+                        fillOpacity: 1,
+                        weight: 2
+                    }).bindPopup(`
+                        <div class="p-1">
+                            <strong class="text-emerald-700 font-bold">${stop.name}</strong><br>
+                            <span class="text-xs text-gray-500">Ruta ${route.code} - ${route.name}</span><br>
+                            <span class="text-xs text-amber-600 font-semibold">Distancia: ${stop.distance.toFixed(2)} km</span>
+                        </div>
+                    `).addTo(map);
+                    mapMarkers.push(stopMarker);
                 });
+            });
 
-                if (matchedFeatures.length > 0) {
-                    matchedFeatures.forEach(f => {
-                        const routeCode = getRouteCode(f);
-                        const uniqueKey = f.properties.id || `${routeCode}_${getSentido(f)}_${Math.random()}`;
-                        loadedRoutesMap.set(uniqueKey, f);
+            document.getElementById('route-count').innerText = filteredRoutes.length;
+            document.getElementById('stop-count').innerText = totalStopsCount;
 
-                        if (!routeColorMap.has(routeCode)) {
-                            routeColorMap.set(routeCode, generateUniqueColor(routeColorMap.size, 15));
-                        }
-                    });
-
-                    apiStatus.textContent = `Ruta "${query}" agregada`;
-                    renderMapData();
-                    renderDrawerList();
-
-                    const tempLayer = L.geoJSON(matchedFeatures);
-                    map.fitBounds(tempLayer.getBounds(), { padding: [50, 50] });
-                } else {
-                    alert(`No se encontró la ruta "${query}" en el catálogo.`);
-                    apiStatus.textContent = "Sin resultados";
-                }
-            } catch (e) {
-                console.error(e);
-            }
+            renderSidebarList(filteredRoutes);
+            lucide.createIcons();
         }
 
-        function renderMapData() {
-            routesLayerGroup.clearLayers();
-            stopsLayerGroup.clearLayers();
-
-            const routesArray = Array.from(loadedRoutesMap.values());
-            
-            L.geoJSON(routesArray, {
-                style: (feature) => {
-                    const routeCode = getRouteCode(feature);
-                    const color = routeColorMap.get(routeCode) || '#006837';
-                    const sentido = getSentido(feature);
-
-                    return {
-                        color: color,
-                        weight: 5,
-                        opacity: 0.9,
-                        dashArray: sentido === "Regreso" ? "8, 8" : null // Continua para Ida, Punteada para Regreso
-                    };
-                },
-                onEachFeature: (feature, layer) => {
-                    const routeCode = getRouteCode(feature);
-                    const routeName = getRouteName(feature);
-                    const color = routeColorMap.get(routeCode) || '#006837';
-                    const sentido = getSentido(feature);
-
-                    layer.bindTooltip(`[Ruta ${routeCode}] ${routeName} (${sentido})`, {
-                        permanent: false,
-                        direction: 'center',
-                        className: 'route-label-tooltip'
-                    });
-
-                    layer.bindPopup(`
-                        <div class="p-3">
-                            <div class="flex items-center gap-1.5 mb-1.5">
-                                <span class="text-xs font-bold px-2 py-0.5 rounded text-white shadow" style="background-color: ${color}">
-                                    Ruta ${routeCode}
-                                </span>
-                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded border ${sentido === 'Ida' ? 'bg-emerald-950 text-emerald-400 border-emerald-500/40' : 'bg-amber-950 text-amber-400 border-amber-500/40'}">
-                                    <i class="fa-solid ${sentido === 'Ida' ? 'fa-arrow-right' : 'fa-arrow-left'} text-[9px]"></i> ${sentido}
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-sm text-white leading-tight">${routeName}</h3>
-                            <p class="text-[11px] text-gray-400 mt-1">
-                                Trazo en mapa: <span class="text-gray-200 font-semibold">${sentido === 'Ida' ? 'Línea Continua' : 'Línea Discontinua (Punteada)'}</span>
-                            </p>
-                        </div>
-                    `);
-                }
-            }).addTo(routesLayerGroup);
-
-            // Renderizar paradas asociadas
-            const stopsArray = Array.from(loadedStopsMap.values());
-            L.geoJSON(stopsArray, {
-                pointToLayer: (feature, latlng) => {
-                    const routeCode = getRouteCode(feature);
-                    const color = routeColorMap.get(routeCode) || '#006837';
-                    
-                    const customStopIcon = L.divIcon({
-                        className: 'rtp-stop-icon',
-                        html: `<div style="background-color: ${color}; width: 10px; height: 10px; border-radius: 50%;"></div>`,
-                        iconSize: [10, 10],
-                        iconAnchor: [5, 5]
-                    });
-
-                    return L.marker(latlng, { icon: customStopIcon });
-                },
-                onEachFeature: (feature, layer) => {
-                    const props = feature.properties;
-                    layer.bindPopup(`
-                        <div class="p-3">
-                            <span class="text-[10px] font-bold text-emerald-400 uppercase">
-                                <i class="fa-solid fa-bus"></i> Parada de RTP
-                            </span>
-                            <h3 class="font-bold text-sm text-white mt-0.5">${props.nombre || 'Parada oficial'}</h3>
-                        </div>
-                    `);
-                }
-            }).addTo(stopsLayerGroup);
-        }
-
-        function renderDrawerList() {
-            const container = document.getElementById('nearby-routes-list');
-            const searchFilter = document.getElementById('route-search-input').value.trim().toLowerCase();
+        function renderSidebarList(routes) {
+            const container = document.getElementById('list-container');
             container.innerHTML = '';
 
-            const groupedRoutes = new Map();
-
-            loadedRoutesMap.forEach((feature) => {
-                const routeCode = getRouteCode(feature);
-                const routeName = getRouteName(feature);
-
-                if (searchFilter) {
-                    const matchCode = routeCode.toLowerCase().includes(searchFilter);
-                    const matchName = routeName.toLowerCase().includes(searchFilter);
-                    if (!matchCode && !matchName) return;
+            if (activeTab === 'routes') {
+                if (routes.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No se encontraron rutas RTP dentro del radio establecido.</div>`;
+                    return;
                 }
 
-                if (!groupedRoutes.has(routeCode)) {
-                    groupedRoutes.set(routeCode, []);
+                routes.forEach(route => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white dark:bg-gray-700/50 p-3.5 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition cursor-pointer";
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 bg-rtp-green text-white text-xs font-bold rounded">Ruta ${route.code}</span>
+                            <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">A ${route.minDistance.toFixed(2)} km</span>
+                        </div>
+                        <h4 class="font-semibold text-sm mt-1.5 text-gray-800 dark:text-gray-100">${route.name}</h4>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-2 flex justify-between">
+                            <span>Paradas oficiales: <b>${route.stops.length}</b></span>
+                            <span class="text-emerald-600 font-medium">Activa</span>
+                        </div>
+                    `;
+                    card.onclick = () => {
+                        if (route.stops.length > 0) {
+                            const bounds = L.latLngBounds(route.stops.map(s => [s.lat, s.lng]));
+                            map.fitBounds(bounds, { padding: [50, 50] });
+                        }
+                    };
+                    container.appendChild(card);
+                });
+            } else {
+                // Collect All Stops Flattened
+                const allStops = routes.flatMap(r => r.stops.map(s => ({ ...s, routeCode: r.code, routeName: r.name })))
+                                       .sort((a, b) => a.distance - b.distance);
+
+                if (allStops.length === 0) {
+                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No hay paradas en el radio actual.</div>`;
+                    return;
                 }
-                groupedRoutes.get(routeCode).push(feature);
+
+                allStops.slice(0, 50).forEach(stop => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white dark:bg-gray-700/50 p-3 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-md transition cursor-pointer";
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-sm text-rtp-green dark:text-emerald-400">${stop.name}</span>
+                            <span class="text-xs text-gray-500 font-medium">A ${stop.distance.toFixed(2)} km</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Ruta ${stop.routeCode} - ${stop.routeName}</p>
+                    `;
+                    card.onclick = () => {
+                        map.setView([stop.lat, stop.lng], 16);
+                    };
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        // Attach DOM Controls
+        function setupControls() {
+            document.getElementById('locate-btn').addEventListener('click', () => {
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            updateUserPosition(pos.coords.latitude, pos.coords.longitude);
+                            map.setView([pos.coords.latitude, pos.coords.longitude], 14);
+                        },
+                        () => alert("GPS deshabilitado o no disponible.")
+                    );
+                }
             });
 
-            if (groupedRoutes.size === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-8 px-4 bg-gray-900/60 rounded-xl border border-gray-800">
-                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-2xl mb-2"></i>
-                        <h4 class="text-xs font-bold text-gray-300">No hay coincidencias</h4>
-                        <p class="text-[11px] text-gray-500 mt-1">Ingresa el número o nombre en la barra de búsqueda.</p>
-                    </div>
-                `;
-                return;
-            }
+            document.getElementById('radius-select').addEventListener('change', (e) => {
+                document.getElementById('current-radius-label').innerText = e.target.value === 'all' ? 'Todas' : `${e.target.value} km`;
+                updateUserPosition(userLocation.lat, userLocation.lng);
+            });
 
-            groupedRoutes.forEach((features, routeCode) => {
-                const color = routeColorMap.get(routeCode) || '#006837';
-                const mainName = getRouteName(features[0]);
+            document.getElementById('search-input').addEventListener('input', renderUI);
 
-                const card = document.createElement('div');
-                card.className = "p-3 bg-gray-900/90 rounded-xl border border-gray-800 hover:border-emerald-500/50 transition cursor-pointer space-y-2.5 shadow-sm";
-                
-                card.innerHTML = `
-                    <div class="flex items-start gap-2.5">
-                        <span class="text-xs font-extrabold px-2 py-1 rounded text-white shadow shrink-0" style="background-color: ${color}">
-                            Ruta ${routeCode}
-                        </span>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-xs text-white leading-tight truncate">${mainName}</h4>
-                            <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-2">
-                                <span><i class="fa-solid fa-minus text-emerald-400"></i> Ida</span>
-                                <span><i class="fa-solid fa-ellipsis text-amber-400"></i> Regreso</span>
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <button class="w-full bg-gray-800 hover:bg-emerald-950/80 text-white border border-gray-700 hover:border-emerald-500/50 text-[11px] font-bold py-2 px-3 rounded-lg transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-route text-emerald-400"></i> Ver Ruta Completa (Ida + Regreso)
-                    </button>
-                `;
+            document.getElementById('tab-routes').addEventListener('click', (e) => {
+                activeTab = 'routes';
+                e.target.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-rtp-green text-white shadow-sm";
+                document.getElementById('tab-stops').className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200";
+                renderUI();
+            });
 
-                // Al hacer clic en cualquier parte de la tarjeta o en el botón, se muestran AMBOS trayectos (Ida y Regreso)
-                card.onclick = () => {
-                    const combinedGeoJSON = {
-                        type: "FeatureCollection",
-                        features: features
-                    };
-                    const bounds = L.geoJSON(combinedGeoJSON).getBounds();
-                    map.fitBounds(bounds, { padding: [50, 50] });
+            document.getElementById('tab-stops').addEventListener('click', (e) => {
+                activeTab = 'stops';
+                e.target.className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-rtp-green text-white shadow-sm";
+                document.getElementById('tab-routes').className = "flex-1 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200";
+                renderUI();
+            });
 
-                    if (window.innerWidth < 640) {
-                        document.getElementById('side-drawer').classList.add('-translate-x-full');
-                    }
-                };
+            document.getElementById('refresh-btn').addEventListener('click', fetchOfficialRTPRoutes);
 
-                container.appendChild(card);
+            document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('-translate-x-full');
             });
         }
 
-        // Control visual de la interfaz
-        document.getElementById('btn-toggle-drawer').onclick = () => document.getElementById('side-drawer').classList.remove('-translate-x-full');
-        document.getElementById('btn-close-drawer').onclick = () => document.getElementById('side-drawer').classList.add('-translate-x-full');
-        document.getElementById('btn-locate').onclick = () => getUserLocation();
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initMap();
+            setupControls();
+            fetchOfficialRTPRoutes();
 
-        window.onload = initMap;
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => updateUserPosition(pos.coords.latitude, pos.coords.longitude),
+                    () => updateUserPosition(userLocation.lat, userLocation.lng)
+                );
+            } else {
+                updateUserPosition(userLocation.lat, userLocation.lng);
+            }
+        });
     </script>
 </body>
 </html>
