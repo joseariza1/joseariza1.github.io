@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Metro CDMX - Trayecto y Convoy GPS</title>
+    <title>Metro CDMX - Convoyes y GPS</title>
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#F7941D">
@@ -101,7 +101,7 @@
         }
         .dropdown-item:last-child { border-bottom: none; }
         .dropdown-item.active { color: var(--accent); background: rgba(247, 148, 29, 0.1); }
-        .dropdown-item.sharing { color: #00E676; }
+        .dropdown-item.sharing { color: #00E676; background: rgba(0, 230, 118, 0.1); }
 
         /* Modal para Compartir Ubicación y Dirección */
         .modal-overlay {
@@ -222,7 +222,7 @@
 
         <div class="dropdown-menu" id="dropdown-menu">
             <button class="dropdown-item active" onclick="selectTab('map-tab', 'Metro CDMX - Convoyes y GPS', this)">🗺️ Mapa Red Completa</button>
-            <button class="dropdown-item" id="share-gps-item" onclick="openShareModal()">📡 Compartir mi Ubicación</button>
+            <button class="dropdown-item" id="share-gps-item" onclick="handleGPSMenuAction()">📡 Compartir mi Ubicación</button>
             <button class="dropdown-item" onclick="selectTab('lines-tab', 'Estado Oficial de Líneas', this)">📋 Estado Líneas</button>
         </div>
     </header>
@@ -598,15 +598,23 @@
             }
         }
 
-        // GESTIÓN DEL MODAL Y CONVOY DEL USUARIO EN TIEMPO REAL
+        // GESTIÓN DEL MENÚ Y COMPARTIR UBICACIÓN GPS
         let userConvoyMarker = null;
         let gpsWatchId = null;
         let isSharingGPS = false;
 
+        function handleGPSMenuAction() {
+            document.getElementById('dropdown-menu').classList.remove('active');
+            if (!isSharingGPS) {
+                openShareModal();
+            } else {
+                stopSharingGPS();
+            }
+        }
+
         function openShareModal() {
             document.getElementById('share-modal').classList.add('active');
-            document.getElementById('dropdown-menu').classList.remove('active');
-            updateLineDirection(); // Inicializar dirección automática según línea por defecto
+            updateLineDirection();
         }
 
         function closeShareModal() {
@@ -656,14 +664,15 @@
                         `).openPopup();
                     }
                 }, err => {
-                    handleGPSLossOrStop('Se perdió la señal o se denegaron los permisos de GPS.');
+                    stopSharingGPS();
+                    alert('No se pudo acceder a la señal GPS.');
                 }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
             } else {
                 alert('Geolocalización no soportada por el navegador.');
             }
         }
 
-        function handleGPSLossOrStop(msg) {
+        function stopSharingGPS() {
             if (gpsWatchId !== null) {
                 navigator.geolocation.clearWatch(gpsWatchId);
                 gpsWatchId = null;
@@ -672,11 +681,11 @@
             const shareBtn = document.getElementById('share-gps-item');
             shareBtn.textContent = '📡 Compartir mi Ubicación';
             shareBtn.classList.remove('sharing');
+            
             if (userConvoyMarker) {
                 map.removeLayer(userConvoyMarker);
                 userConvoyMarker = null;
             }
-            console.log(msg);
         }
 
         function locateUser() {
