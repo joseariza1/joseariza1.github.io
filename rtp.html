@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RTP CDMX - Monitoreo Oficial y Rutas Cercanas</title>
+    <title>Monitoreo RTP CDMX - API apimetro.dev</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet JS & CSS -->
@@ -36,47 +36,42 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-screen overflow-hidden flex flex-col font-sans">
 
-    <!-- Top Navigation Header -->
+    <!-- Header Navigation -->
     <header class="bg-rtp-green text-white shadow-md z-20 flex items-center justify-between px-4 py-3 shrink-0">
         <div class="flex items-center gap-3">
             <div class="bg-white p-1.5 rounded-lg shadow text-rtp-green font-black text-xl tracking-wider">
                 RTP
             </div>
             <div>
-                <h1 class="font-bold text-lg leading-tight">Rutas Oficiales CDMX</h1>
+                <h1 class="font-bold text-lg leading-tight">Rutas CDMX</h1>
                 <p class="text-xs text-green-100 flex items-center gap-1">
-                    <span id="api-status-dot" class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-                    <span id="api-status-text">Cargando API Movilidad...</span>
+                    <span id="api-status-dot" class="w-2 h-2 rounded-full bg-yellow-400 inline-block animate-pulse"></span>
+                    <span id="api-status-text">Conectando a apimetro.dev...</span>
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- Radius Select Filter -->
+            <!-- Filter Radius Select -->
             <div class="relative">
                 <select id="radius-select" class="bg-emerald-800 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400 border border-emerald-700">
                     <option value="1">1 km</option>
                     <option value="3" selected>3 km</option>
                     <option value="5">5 km</option>
                     <option value="10">10 km</option>
-                    <option value="all">Todas las rutas</option>
+                    <option value="all">Ver todas</option>
                 </select>
             </div>
 
-            <!-- Locate Me Button -->
+            <!-- Locate Button -->
             <button id="locate-btn" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-gray-900 font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow">
                 <i data-lucide="crosshair" class="w-4 h-4"></i>
                 <span class="hidden sm:inline">Mi Ubicación</span>
             </button>
-
-            <!-- Refresh Button -->
-            <button id="refresh-btn" class="p-1.5 hover:bg-emerald-800 rounded-lg transition" title="Reconsultar API">
-                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-            </button>
         </div>
     </header>
 
-    <!-- Main Body Layout -->
+    <!-- Main Body Container -->
     <div class="flex flex-1 relative overflow-hidden">
         
         <!-- Sidebar Panel -->
@@ -84,37 +79,37 @@
             
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
                 <div class="relative">
-                    <input type="text" id="search-input" placeholder="Buscar por ruta o parada..." class="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rtp-green dark:text-white">
+                    <input type="text" id="search-input" placeholder="Buscar ruta por número o nombre (ej: 34-A, 200, Balderas)..." class="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rtp-green dark:text-white">
                     <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-3"></i>
                 </div>
 
                 <div class="flex gap-2">
                     <button id="tab-routes" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-rtp-green text-white shadow-sm">
-                        Rutas Cercanas (<span id="route-count">0</span>)
+                        Rutas (<span id="route-count">0</span>)
                     </button>
                     <button id="tab-stops" class="flex-1 py-1.5 text-xs font-semibold rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200">
-                        Paradas (<span id="stop-count">0</span>)
+                        Estaciones (<span id="stop-count">0</span>)
                     </button>
                 </div>
             </div>
 
-            <!-- Scrollable Content -->
+            <!-- List Container -->
             <div id="list-container" class="flex-1 overflow-y-auto p-4 space-y-3">
-                <!-- Dynamically Filled -->
+                <div class="text-center py-8 text-gray-400 text-sm">Cargando información desde apimetro.dev...</div>
             </div>
 
             <div class="p-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 text-xs flex justify-between text-gray-500 dark:text-gray-400">
                 <span>Radio activo: <strong id="current-radius-label" class="text-gray-800 dark:text-gray-200">3 km</strong></span>
-                <span>Fuente: <strong id="data-source-label" class="text-emerald-600 font-semibold">API CDMX</strong></span>
+                <span>Fuente: <strong class="text-emerald-600 font-semibold">apimetro.dev</strong></span>
             </div>
         </aside>
 
-        <!-- Mobile Toggle Button -->
+        <!-- Toggle Sidebar (Mobile) -->
         <button id="toggle-sidebar-btn" class="md:hidden absolute top-4 left-4 z-20 bg-white dark:bg-gray-800 p-2.5 rounded-full shadow-lg text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
             <i data-lucide="menu" class="w-5 h-5"></i>
         </button>
 
-        <!-- Map Container -->
+        <!-- Leaflet Map Container -->
         <main class="flex-1 relative">
             <div id="map"></div>
             
@@ -127,74 +122,10 @@
         </main>
     </div>
 
-    <!-- Application Engine -->
     <script>
-        // Official Fallback Data (In case API is unreachable)
-        const FALLBACK_ROUTES = [
-            {
-                id: "34-A",
-                code: "34-A",
-                name: "Metro Balderas - Santa Fe",
-                color: "#006837",
-                stops: [
-                    { name: "Metro Balderas", lat: 19.4273, lng: -99.1492 },
-                    { name: "Av. Chapultepec", lat: 19.4231, lng: -99.1620 },
-                    { name: "Metro Sevilla", lat: 19.4219, lng: -99.1705 },
-                    { name: "Constituyentes", lat: 19.4085, lng: -99.1950 },
-                    { name: "Santa Fe Center", lat: 19.3620, lng: -99.2625 }
-                ]
-            },
-            {
-                id: "13-A",
-                code: "13-A",
-                name: "Metro Chapultepec - Pedregal de San Nicolás",
-                color: "#008844",
-                stops: [
-                    { name: "Metro Chapultepec", lat: 19.4205, lng: -99.1764 },
-                    { name: "Periférico Sur", lat: 19.3300, lng: -99.1990 },
-                    { name: "Pedregal de San Nicolás", lat: 19.2850, lng: -99.2150 }
-                ]
-            },
-            {
-                id: "76",
-                code: "76",
-                name: "Metro Centro Médico - Santa Fe",
-                color: "#D4AF37",
-                stops: [
-                    { name: "Centro Médico", lat: 19.4068, lng: -99.1550 },
-                    { name: "Tacubaya", lat: 19.4015, lng: -99.1870 },
-                    { name: "Santa Fe", lat: 19.3600, lng: -99.2600 }
-                ]
-            },
-            {
-                id: "200",
-                code: "200",
-                name: "Circuito Bicentenario",
-                color: "#2563eb",
-                stops: [
-                    { name: "Metro Oceanía", lat: 19.4455, lng: -99.0872 },
-                    { name: "La Raza", lat: 19.4700, lng: -99.1370 },
-                    { name: "Chapultepec", lat: 19.4205, lng: -99.1764 },
-                    { name: "Coyoacán", lat: 19.3610, lng: -99.1710 }
-                ]
-            },
-            {
-                id: "57-A",
-                code: "57-A",
-                name: "Toreo - Metro Constitución de 1917",
-                color: "#dc2626",
-                stops: [
-                    { name: "Toreo / Cuatro Caminos", lat: 19.4590, lng: -99.2155 },
-                    { name: "Metro Observatorio", lat: 19.3982, lng: -99.2001 },
-                    { name: "Metro Mixcoac", lat: 19.3760, lng: -99.1875 },
-                    { name: "Metro Constitución de 1917", lat: 19.3450, lng: -99.0638 }
-                ]
-            }
-        ];
-
-        // Global State
+        // Global State Variables
         let map;
-        let userLocation = { lat: 19.4326, lng: -99.1332 }; // Centro Histórico CDMX
+        let userLocation = { lat: 19.4326, lng: -99.1332 }; // Default: CDMX Center
         let userMarker = null;
         let userCircle = null;
         let allRoutes = [];
@@ -202,7 +133,7 @@
         let mapPolylines = [];
         let activeTab = 'routes';
 
-        // Haversine formula (Distance in km)
+        // Haversine formula to compute distance (in Km)
         function getDistanceKm(lat1, lon1, lat2, lon2) {
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -216,7 +147,7 @@
         function initMap() {
             map = L.map('map', { zoomControl: false }).setView([userLocation.lat, userLocation.lng], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap | RTP CDMX'
+                attribution: '&copy; OpenStreetMap | apimetro.dev'
             }).addTo(map);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
         }
@@ -253,88 +184,71 @@
             renderUI();
         }
 
-        // Fetch Official Routes & Stops from CDMX API
-        async function fetchOfficialRTPRoutes() {
+        // Fetch Data directly from apimetro.dev API
+        async function loadAPIData() {
             const statusDot = document.getElementById('api-status-dot');
             const statusText = document.getElementById('api-status-text');
-            const sourceLabel = document.getElementById('data-source-label');
 
             try {
-                statusText.innerText = "Consultando API CDMX...";
-                
-                // Fetch line geometry & station points from CDMX Open Mobility API
-                const [linesRes, stopsRes] = await Promise.all([
-                    fetch('https://apimetro.dev/movilidad/mapas/geojsonLinea?sistema=RTP'),
-                    fetch('https://apimetro.dev/movilidad/RTP/estacion')
-                ]);
+                const response = await fetch('https://apimetro.dev/movilidad/RTP/estacion');
+                if (response.ok) {
+                    const rawStops = await response.json();
+                    allRoutes = groupStopsByRoute(rawStops);
 
-                if (linesRes.ok && stopsRes.ok) {
-                    const linesGeoJSON = await linesRes.json();
-                    const stopsData = await stopsRes.json();
-
-                    allRoutes = processAPIData(linesGeoJSON, stopsData);
-                    
-                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse";
-                    statusText.innerText = "API CDMX Conectada";
-                    sourceLabel.innerText = "API Movilidad CDMX";
+                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 inline-block";
+                    statusText.innerText = "Conectado a apimetro.dev";
                     renderUI();
                     return;
                 }
             } catch (err) {
-                console.warn("API CDMX no disponible. Cargando respaldo de rutas oficiales RTP.", err);
+                console.warn("No se pudo obtener datos directamente de la API, usando catálogo estático.", err);
             }
 
-            // Fallback Engine
-            allRoutes = FALLBACK_ROUTES;
+            // Fallback dataset if external API request fails
+            allRoutes = getFallbackCatalog();
             statusDot.className = "w-2 h-2 rounded-full bg-amber-400 inline-block";
-            statusText.innerText = "Modo Respaldo Oficial";
-            sourceLabel.innerText = "Respaldo Oficial";
+            statusText.innerText = "Modo Respaldo (Datos Locales)";
             renderUI();
         }
 
-        function processAPIData(geoJsonLines, rawStops) {
+        function groupStopsByRoute(stopsArray) {
             const routesMap = {};
+            
+            stopsArray.forEach(item => {
+                const routeCode = item.linea || item.num_comercial || "RTP";
+                const stopName = item.nombre || item.estacion || "Estación RTP";
+                const lat = parseFloat(item.latitud || item.lat);
+                const lng = parseFloat(item.longitud || item.lng);
 
-            if (geoJsonLines && geoJsonLines.features) {
-                geoJsonLines.features.forEach(feat => {
-                    const code = feat.properties.num_comercial || feat.properties.linea || "RTP";
-                    const name = feat.properties.nombre || `Ruta ${code}`;
-                    if (!routesMap[code]) {
-                        routesMap[code] = {
-                            id: code,
-                            code: code,
-                            name: name,
-                            color: feat.properties.color || "#006837",
-                            stops: []
-                        };
-                    }
+                if (isNaN(lat) || isNaN(lng)) return;
+
+                if (!routesMap[routeCode]) {
+                    routesMap[routeCode] = {
+                        id: routeCode,
+                        code: routeCode,
+                        name: item.ruta || `Ruta ${routeCode}`,
+                        color: "#006837",
+                        stops: []
+                    };
+                }
+
+                routesMap[routeCode].stops.push({
+                    name: stopName,
+                    lat: lat,
+                    lng: lng
                 });
-            }
+            });
 
-            // Group Stops
-            if (Array.isArray(rawStops)) {
-                rawStops.forEach(stop => {
-                    const code = stop.linea || stop.num_comercial;
-                    if (code && routesMap[code]) {
-                        routesMap[code].stops.push({
-                            name: stop.nombre || stop.estacion || "Parada RTP",
-                            lat: parseFloat(stop.latitud || stop.lat),
-                            lng: parseFloat(stop.longitud || stop.lng)
-                        });
-                    }
-                });
-            }
-
-            return Object.values(routesMap).length > 0 ? Object.values(routesMap) : FALLBACK_ROUTES;
+            return Object.values(routesMap);
         }
 
-        // Render Filtered Data on Map & Sidebar
+        // Render UI, Filtered map layers and list
         function renderUI() {
             const selectedRadius = document.getElementById('radius-select').value;
             const radiusKm = selectedRadius === 'all' ? Infinity : parseFloat(selectedRadius);
-            const query = document.getElementById('search-input').value.toLowerCase();
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
 
-            // Clear Layer
+            // Clear Map Elements
             mapMarkers.forEach(m => map.removeLayer(m));
             mapPolylines.forEach(p => map.removeLayer(p));
             mapMarkers = [];
@@ -342,13 +256,11 @@
 
             let totalStopsCount = 0;
 
-            // Filter & Order Routes by closest stop distance
-            const filteredRoutes = allRoutes.map(route => {
+            const processedRoutes = allRoutes.map(route => {
                 const stopsWithDistance = route.stops.map(stop => {
-                    if (!stop || isNaN(stop.lat) || isNaN(stop.lng)) return null;
                     const distance = getDistanceKm(userLocation.lat, userLocation.lng, stop.lat, stop.lng);
                     return { ...stop, distance };
-                }).filter(Boolean);
+                });
 
                 const minDistance = stopsWithDistance.length > 0 
                     ? Math.min(...stopsWithDistance.map(s => s.distance)) 
@@ -359,12 +271,23 @@
                     stops: stopsWithDistance,
                     minDistance
                 };
-            }).filter(route => {
-                const matchesSearch = route.name.toLowerCase().includes(query) || route.code.toLowerCase().includes(query);
-                return route.minDistance <= radiusKm && matchesSearch;
+            });
+
+            // Filter rules:
+            // 1. If searching, override the radius filter to display matching routes anywhere in CDMX.
+            // 2. If not searching, display routes within the chosen radius.
+            const filteredRoutes = processedRoutes.filter(route => {
+                const matchesCode = route.code.toLowerCase().includes(query);
+                const matchesName = route.name.toLowerCase().includes(query);
+                const matchesStops = route.stops.some(s => s.name.toLowerCase().includes(query));
+
+                const matchesSearch = query === "" || matchesCode || matchesName || matchesStops;
+                const matchesRadius = query !== "" ? true : (route.minDistance <= radiusKm);
+
+                return matchesSearch && matchesRadius;
             }).sort((a, b) => a.minDistance - b.minDistance);
 
-            // Draw filtered elements on map
+            // Draw filtered items on map
             filteredRoutes.forEach(route => {
                 if (route.stops.length > 1) {
                     const polyline = L.polyline(route.stops.map(s => [s.lat, s.lng]), {
@@ -386,7 +309,7 @@
                     }).bindPopup(`
                         <div class="p-1">
                             <strong class="text-emerald-700 font-bold">${stop.name}</strong><br>
-                            <span class="text-xs text-gray-500">Ruta ${route.code} - ${route.name}</span><br>
+                            <span class="text-xs text-gray-600">Ruta ${route.code} - ${route.name}</span><br>
                             <span class="text-xs text-amber-600 font-semibold">Distancia: ${stop.distance.toFixed(2)} km</span>
                         </div>
                     `).addTo(map);
@@ -407,7 +330,7 @@
 
             if (activeTab === 'routes') {
                 if (routes.length === 0) {
-                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No se encontraron rutas RTP dentro del radio establecido.</div>`;
+                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No se encontraron rutas que coincidan con la búsqueda.</div>`;
                     return;
                 }
 
@@ -421,7 +344,7 @@
                         </div>
                         <h4 class="font-semibold text-sm mt-1.5 text-gray-800 dark:text-gray-100">${route.name}</h4>
                         <div class="text-xs text-gray-500 dark:text-gray-400 mt-2 flex justify-between">
-                            <span>Paradas oficiales: <b>${route.stops.length}</b></span>
+                            <span>Estaciones: <b>${route.stops.length}</b></span>
                             <span class="text-emerald-600 font-medium">Activa</span>
                         </div>
                     `;
@@ -434,12 +357,11 @@
                     container.appendChild(card);
                 });
             } else {
-                // Collect All Stops Flattened
                 const allStops = routes.flatMap(r => r.stops.map(s => ({ ...s, routeCode: r.code, routeName: r.name })))
                                        .sort((a, b) => a.distance - b.distance);
 
                 if (allStops.length === 0) {
-                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No hay paradas en el radio actual.</div>`;
+                    container.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">No hay estaciones disponibles.</div>`;
                     return;
                 }
 
@@ -461,7 +383,6 @@
             }
         }
 
-        // Attach DOM Controls
         function setupControls() {
             document.getElementById('locate-btn').addEventListener('click', () => {
                 if ('geolocation' in navigator) {
@@ -470,13 +391,13 @@
                             updateUserPosition(pos.coords.latitude, pos.coords.longitude);
                             map.setView([pos.coords.latitude, pos.coords.longitude], 14);
                         },
-                        () => alert("GPS deshabilitado o no disponible.")
+                        () => alert("No se pudo obtener la ubicación GPS.")
                     );
                 }
             });
 
             document.getElementById('radius-select').addEventListener('change', (e) => {
-                document.getElementById('current-radius-label').innerText = e.target.value === 'all' ? 'Todas' : `${e.target.value} km`;
+                document.getElementById('current-radius-label').innerText = e.target.value === 'all' ? 'Ver todas' : `${e.target.value} km`;
                 updateUserPosition(userLocation.lat, userLocation.lng);
             });
 
@@ -496,19 +417,50 @@
                 renderUI();
             });
 
-            document.getElementById('refresh-btn').addEventListener('click', fetchOfficialRTPRoutes);
-
             document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
                 document.getElementById('sidebar').classList.toggle('-translate-x-full');
             });
+        }
+
+        function getFallbackCatalog() {
+            return [
+                {
+                    id: "34-A", code: "34-A", name: "Metro Balderas - Santa Fe", color: "#006837",
+                    stops: [
+                        { name: "Metro Balderas", lat: 19.4273, lng: -99.1492 },
+                        { name: "Av. Chapultepec", lat: 19.4231, lng: -99.1620 },
+                        { name: "Metro Sevilla", lat: 19.4219, lng: -99.1705 },
+                        { name: "Metro Tacubaya", lat: 19.4015, lng: -99.1870 },
+                        { name: "Constituyentes", lat: 19.4085, lng: -99.1950 },
+                        { name: "Santa Fe Center", lat: 19.3620, lng: -99.2625 }
+                    ]
+                },
+                {
+                    id: "200", code: "200", name: "Circuito Bicentenario", color: "#2563eb",
+                    stops: [
+                        { name: "Metro Oceanía", lat: 19.4455, lng: -99.0872 },
+                        { name: "Metro La Raza", lat: 19.4700, lng: -99.1370 },
+                        { name: "Metro Chapultepec", lat: 19.4205, lng: -99.1764 },
+                        { name: "Metro Coyoacán", lat: 19.3610, lng: -99.1710 }
+                    ]
+                },
+                {
+                    id: "13-A", code: "13-A", name: "Metro Chapultepec - Pedregal San Nicolás", color: "#047857",
+                    stops: [
+                        { name: "Metro Chapultepec", lat: 19.4205, lng: -99.1764 },
+                        { name: "Metro Mixcoac", lat: 19.3760, lng: -99.1875 },
+                        { name: "Periférico Sur", lat: 19.3300, lng: -99.1990 }
+                    ]
+                }
+            ];
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             initMap();
             setupControls();
-            fetchOfficialRTPRoutes();
-
+            loadAPIData();
+            
             if ('geolocation' in navigator) {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => updateUserPosition(pos.coords.latitude, pos.coords.longitude),
